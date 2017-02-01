@@ -52,9 +52,7 @@ UINT32 PreRandom( UINT32 uiRange )
 	 */
 	uiNum = guiPreRandomNums[ guiPreRandomIndex ] % uiRange;
 	//Replace the current pregenerated number with a new one.
-
-	//This was removed in the name of optimization.  Uncomment if you hate recycling.
-	//guiPreRandomNums[ guiPreRandomIndex ] = rand();
+	guiPreRandomNums[ guiPreRandomIndex ] = rand();
 
 	//Go to the next index.
 	guiPreRandomIndex++;
