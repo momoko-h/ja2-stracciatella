@@ -3459,7 +3459,7 @@ static void ProcessNoise(SOLDIERTYPE* const noise_maker, INT16 const sGridNo, IN
 	const UINT8 ubSourceTerrType = gpWorldLevelData[sGridNo].ubTerrainID;
 
 	// if we have now somehow obtained a valid terrain type
-	if ((ubSourceTerrType >= FLAT_GROUND) || (ubSourceTerrType <= DEEP_WATER))
+  if ((ubSourceTerrType >= FLAT_GROUND) && (ubSourceTerrType <= DEEP_WATER))
 	{
 		bCheckTerrain = TRUE;
 	}
