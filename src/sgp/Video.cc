@@ -809,15 +809,13 @@ static void RefreshMovieCache(void)
 static void RecreateBackBuffer()
 {
   // ScreenBuffer should not be automatically removed because it was created
-  // with SDL_SetVideoMode.  So, using SGPVSurface instead of SGPVSurfaceAuto
-  SGPVSurface* newBackbuffer = new SGPVSurface(ScreenBuffer);
+  // with SDL_SetVideoMode.  So, making sure here ~SGPVSurface does not free it.
+  SGPVSurface* newBackbuffer = new SGPVSurface(ScreenBuffer, false);
 
   if(g_back_buffer != NULL)
   {
     ReplaceFontBackBuffer(g_back_buffer, newBackbuffer);
-
     delete g_back_buffer;
-    g_back_buffer = NULL;
   }
 
 	g_back_buffer  = newBackbuffer;
@@ -830,8 +828,8 @@ static void SetPrimaryVideoSurfaces(void)
 
     RecreateBackBuffer();
 
-	g_mouse_buffer = new SGPVSurfaceAuto(MouseCursor);
-	g_frame_buffer = new SGPVSurfaceAuto(FrameBuffer);
+	g_mouse_buffer = new SGPVSurface(MouseCursor, true);
+	g_frame_buffer = new SGPVSurface(FrameBuffer, true);
 }
 
 static void DeletePrimaryVideoSurfaces(void)

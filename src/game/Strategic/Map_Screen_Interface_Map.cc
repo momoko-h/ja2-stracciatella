@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <memory>
 
 #include "Directories.h"
 #include "Font.h"
@@ -1105,7 +1106,7 @@ static void ShadeMapElemZoomIn(const INT16 sMapX, const INT16 sMapY, INT32 iColo
 
 void InitializePalettesForMap(void)
 {
-	SGP::AutoPtr<SGPVSurfaceAuto> uiTempMap(AddVideoSurfaceFromFile(INTERFACEDIR "/b_map.pcx"));
+  auto const uiTempMap = SP::AddVideoSurfaceFromFile(INTERFACEDIR "/b_map.pcx");
 
 	SGPPaletteEntry const* const pal = uiTempMap->GetPalette();
 

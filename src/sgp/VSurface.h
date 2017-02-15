@@ -1,6 +1,7 @@
 #ifndef VSURFACE_H
 #define VSURFACE_H
 
+#include <memory>
 #include "AutoObj.h"
 #include "AutoPtr.h"
 #include "Buffer.h"
@@ -13,24 +14,21 @@
 #define MOUSE_BUFFER g_mouse_buffer
 
 class SGPVSurface;
-class SGPVSurfaceAuto;
 class SGPVSurface;
 
 extern SGPVSurface* g_back_buffer;
-extern SGPVSurfaceAuto* g_frame_buffer;
-extern SGPVSurfaceAuto* g_mouse_buffer;
+extern SGPVSurface* g_frame_buffer;
+extern SGPVSurface* g_mouse_buffer;
 
 /** Utility wrapper around SDL_Surface. */
 class SGPVSurface
 {
 	public:
-		SGPVSurface(SDL_Surface*);
-
-  protected:
+    SGPVSurface(SDL_Surface*, bool takeOwnership = false);
+    // Instances created with this constructor always own the wrapped SDL_Surface
     SGPVSurface(UINT16 w, UINT16 h, UINT8 bpp);
-
-	public:
-		virtual ~SGPVSurface();
+    SGPVSurface(const char *);
+    ~SGPVSurface();
 
 		UINT16 Width()  const { return surface_->w; }
 		UINT16 Height() const { return surface_->h; }
@@ -60,8 +58,9 @@ class SGPVSurface
 		 * If the 2 images are not 16 Bpp, it returns false. */
 		friend void BltStretchVideoSurface(SGPVSurface* dst, SGPVSurface const* src, SGPBox const* src_rect, SGPBox const* dst_rect);
 
-	protected:
+	private:
 		SDL_Surface*                               surface_;
+    bool                                       surfaceOwned_;
 		SGP::Buffer<SGPPaletteEntry>               palette_;
 	public:
 		UINT16*                                    p16BPPPalette; // A 16BPP palette used for 8->16 blits
@@ -126,21 +125,13 @@ class SGPVSurface
 		};
 };
 
-/**
- * Utility wrapper around SDL_Surface which automatically
- * frees SDL_Surface when the object is destroyed. */
-class SGPVSurfaceAuto : public SGPVSurface
-{
-	public:
-    SGPVSurfaceAuto(UINT16 w, UINT16 h, UINT8 bpp);
-    SGPVSurfaceAuto(SDL_Surface*);
+SGPVSurface* AddVideoSurface(UINT16 Width, UINT16 Height, UINT8 BitDepth);
+SGPVSurface* AddVideoSurfaceFromFile(const char* Filename);
 
-		virtual ~SGPVSurfaceAuto();
-};
-
-
-SGPVSurfaceAuto* AddVideoSurface(UINT16 Width, UINT16 Height, UINT8 BitDepth);
-SGPVSurfaceAuto* AddVideoSurfaceFromFile(const char* Filename);
+namespace SP {
+std::unique_ptr<SGPVSurface> AddVideoSurfaceFromFile(const char* const Filename);
+std::unique_ptr<SGPVSurface> AddVideoSurface(uint16_t Width, uint16_t Height, uint8_t BitDepth);
+}
 
 // Creates and adds a video Surface to list
 #ifdef SGP_VIDEO_DEBUGGING

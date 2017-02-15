@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <memory>
 
 #include "Debug.h"
 #include "HImage.h"
@@ -14,6 +15,7 @@ extern SGPVSurface* gpVSurfaceHead;
 
 
 SGPVSurface::SGPVSurface(UINT16 const w, UINT16 const h, UINT8 const bpp) :
+  surfaceOwned_(true),
 	p16BPPPalette(),
 #ifdef SGP_VIDEO_DEBUGGING
 	name_(),
@@ -50,8 +52,9 @@ SGPVSurface::SGPVSurface(UINT16 const w, UINT16 const h, UINT8 const bpp) :
 }
 
 
-SGPVSurface::SGPVSurface(SDL_Surface* const s) :
+SGPVSurface::SGPVSurface(SDL_Surface* const s, bool takeOwnership) :
 	surface_(s),
+  surfaceOwned_(takeOwnership),
 	p16BPPPalette(),
 #ifdef SGP_VIDEO_DEBUGGING
 	name_(),
@@ -79,7 +82,7 @@ SGPVSurface::~SGPVSurface()
 	}
 
 	if (p16BPPPalette) MemFree(p16BPPPalette);
-
+  if (surfaceOwned_ && surface_) SDL_FreeSurface(surface_);
 #ifdef SGP_VIDEO_DEBUGGING
 	if (name_) MemFree(name_);
 	if (code_) MemFree(code_);
@@ -119,24 +122,6 @@ void SGPVSurface::SetTransparency(const COLORVAL colour)
 void SGPVSurface::Fill(const UINT16 colour)
 {
 	SDL_FillRect(surface_, NULL, colour);
-}
-
-SGPVSurfaceAuto::SGPVSurfaceAuto(UINT16 w, UINT16 h, UINT8 bpp)
-  : SGPVSurface(w, h, bpp)
-{
-}
-
-SGPVSurfaceAuto::SGPVSurfaceAuto(SDL_Surface* surface)
-  : SGPVSurface(surface)
-{
-}
-
-SGPVSurfaceAuto::~SGPVSurfaceAuto()
-{
-  if(surface_)
-  {
-    SDL_FreeSurface(surface_);
-  }
 }
 
 
@@ -180,26 +165,21 @@ void SGPVSurface::ShadowRectUsingLowPercentTable(INT32 const x1, INT32 const y1,
 }
 
 SGPVSurface* g_back_buffer;
-SGPVSurfaceAuto* g_frame_buffer;
-SGPVSurfaceAuto* g_mouse_buffer;
+SGPVSurface* g_frame_buffer;
+SGPVSurface* g_mouse_buffer;
 
 
-#undef AddVideoSurface
-#undef AddVideoSurfaceFromFile
-
-
-SGPVSurfaceAuto* AddVideoSurface(UINT16 Width, UINT16 Height, UINT8 BitDepth)
+SGPVSurface* AddVideoSurface(UINT16 Width, UINT16 Height, UINT8 BitDepth)
 {
-	SGPVSurfaceAuto* const vs = new SGPVSurfaceAuto(Width, Height, BitDepth);
-	return vs;
+  return new SGPVSurface(Width, Height, BitDepth);
 }
 
 
-SGPVSurfaceAuto* AddVideoSurfaceFromFile(const char* const Filename)
+SGPVSurface* AddVideoSurfaceFromFile(const char* const Filename)
 {
 	AutoSGPImage img(CreateImage(Filename, IMAGE_ALLIMAGEDATA));
 
-	SGPVSurfaceAuto* const vs = new SGPVSurfaceAuto(img->usWidth, img->usHeight, img->ubBitDepth);
+	SGPVSurface* const vs = new SGPVSurface(img->usWidth, img->usHeight, img->ubBitDepth);
 
 	UINT8 const dst_bpp = vs->BPP();
 	UINT32      buffer_bpp;
@@ -226,6 +206,16 @@ SGPVSurfaceAuto* AddVideoSurfaceFromFile(const char* const Filename)
 	return vs;
 }
 
+namespace SP {
+std::unique_ptr<SGPVSurface> AddVideoSurfaceFromFile(const char* const Filename) {
+  return std::unique_ptr<SGPVSurface>(::AddVideoSurfaceFromFile(Filename));
+}
+
+std::unique_ptr<SGPVSurface> AddVideoSurface(uint16_t Width, uint16_t Height, uint8_t BitDepth) {
+  return std::make_unique<SGPVSurface>(Width, Height, BitDepth);
+}
+
+};
 
 #ifdef SGP_VIDEO_DEBUGGING
 
@@ -412,14 +402,14 @@ void BltStretchVideoSurface(SGPVSurface* const dst, SGPVSurface const* const src
 
 void BltVideoSurfaceOnce(SGPVSurface* const dst, const char* const filename, INT32 const x, INT32 const y)
 {
-	SGP::AutoPtr<SGPVSurfaceAuto> src(AddVideoSurfaceFromFile(filename));
+	SGP::AutoPtr<SGPVSurface> src(AddVideoSurfaceFromFile(filename));
 	BltVideoSurface(dst, src, x, y, NULL);
 }
 
 /** Draw image on the video surface stretching the image if necessary. */
 void BltVideoSurfaceOnceWithStretch(SGPVSurface* const dst, const char* const filename)
 {
-	SGP::AutoPtr<SGPVSurfaceAuto> src(AddVideoSurfaceFromFile(filename));
+	SGP::AutoPtr<SGPVSurface> src(AddVideoSurfaceFromFile(filename));
   FillVideoSurfaceWithStretch(dst, src);
 }
 
