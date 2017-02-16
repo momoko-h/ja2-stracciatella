@@ -48,7 +48,7 @@ EVENT* RemoveEvent(UINT32 uiIndex, EventQueueID ubQueueID)
 try
 {
 	EventList& queue = GetQueue(ubQueueID);
-	EVENT* ret = queue[uiIndex];
+	EVENT* ret = queue.at(uiIndex);
 	queue.erase(queue.begin() + uiIndex);
 	return ret;
 }
