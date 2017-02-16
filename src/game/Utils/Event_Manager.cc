@@ -61,9 +61,9 @@ catch (const std::exception&)
 EVENT* PeekEvent(UINT32 uiIndex, EventQueueID ubQueueID)
 try
 {
-	return GetQueue(ubQueueID)[uiIndex];
+	return GetQueue(ubQueueID).at(uiIndex);
 }
-catch (const std::exception&)
+catch (const std::out_of_range&)
 {
 	return 0;
 }
