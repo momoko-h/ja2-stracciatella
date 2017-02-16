@@ -1,7 +1,7 @@
 #include <stdexcept>
+#include <memory>
 
 #include "HImage.h"
-#include "PODObj.h"
 #include "Structure.h"
 #include "TileDef.h"
 #include "Tile_Surface.h"
@@ -51,7 +51,8 @@ try
 		AddZStripInfoToVObject(hVObject, pStructureFileRef, FALSE, 0);
 	}
 
-	SGP::PODObj<TILE_IMAGERY> pTileSurf;
+  auto pTileSurf = std::make_unique<TILE_IMAGERY>();
+  memset(pTileSurf.get(), 0, sizeof(TILE_IMAGERY));
 
 	if (pStructureFileRef && pStructureFileRef->pAuxData != NULL)
 	{
@@ -71,7 +72,7 @@ try
 
 	pTileSurf->vo                = hVObject.Release();
 	pTileSurf->pStructureFileRef = pStructureFileRef.Release();
-	return pTileSurf.Release();
+	return pTileSurf.release();
 }
 catch (...)
 {

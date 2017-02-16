@@ -1,9 +1,10 @@
+#include <memory>
+#include <stdarg.h>
 #include "Buffer.h"
 #include "Debug.h"
 #include "Directories.h"
 #include "Font.h"
 #include "LoadSaveData.h"
-#include "PODObj.h"
 #include "Types.h"
 #include "Font_Control.h"
 #include "Message.h"
@@ -17,7 +18,6 @@
 #include "SoundMan.h"
 #include "Dialogue_Control.h"
 #include "Game_Clock.h"
-#include <stdarg.h>
 #include "VSurface.h"
 #include "MemMan.h"
 #include "JAScreens.h"
@@ -33,6 +33,8 @@ struct ScrollStringSt
 	BOOLEAN fBeginningOfNewString;
 	UINT32  uiTimeOfLastUpdate;
 	ScrollStringSt* pNext;
+
+  ScrollStringSt() { memset(this, 0, sizeof(*this)); }
 };
 
 
@@ -539,7 +541,7 @@ static ScrollStringSt* ExtractScrollStringFromFile(HWFILE const f, bool stracLin
 	FileRead(f, &size, sizeof(size));
 	if (size == 0) return 0;
 
-	SGP::PODObj<ScrollStringSt> s;
+  auto s = std::make_unique<ScrollStringSt>();
   {
     SGP::Buffer<uint8_t> data(size);
     FileRead(f, data, size);
@@ -572,7 +574,7 @@ static ScrollStringSt* ExtractScrollStringFromFile(HWFILE const f, bool stracLin
 	EXTR_SKIP(d, 1)
 	Assert(d == endof(data));
 
-	return s.Release();
+  return s.release();
 }
 
 

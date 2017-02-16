@@ -1,11 +1,11 @@
 #include <stdexcept>
+#include <memory>
 
 #include "Directories.h"
 #include "Font.h"
 #include "HImage.h"
 #include "Local.h"
 #include "MercTextBox.h"
-#include "PODObj.h"
 #include "VObject.h"
 #include "VSurface.h"
 #include "Font_Control.h"
@@ -63,6 +63,8 @@ struct MercPopUpBox
 	UINT8        ubBorderIndex;
 	SGPVSurface* uiMercTextPopUpBackground;
 	SGPVObject*  uiMercTextPopUpBorder;
+
+  MercPopUpBox() { memset(this, 0, sizeof(*this)); }
 };
 
 
@@ -126,12 +128,13 @@ MercPopUpBox* PrepareMercPopupBox(MercPopUpBox* box, MercPopUpBackground const u
 
 	if (usWidth <= MERC_TEXT_MIN_WIDTH) usWidth = MERC_TEXT_MIN_WIDTH;
 
-	SGP::PODObj<MercPopUpBox> new_box(0);
-	// check id value, if -1, box has not been inited yet
+  std::unique_ptr<MercPopUpBox> new_box;
+	// check id value, if -1, box has not been inited/ yet
 	if (!box)
 	{
 		// no box yet
-		box = new_box.Allocate();
+    new_box.reset(new MercPopUpBox());
+		box = new_box.get();
 		LoadTextMercPopupImages(box, ubBackgroundIndex, ubBorderIndex);
 	}
 	else
@@ -265,7 +268,7 @@ MercPopUpBox* PrepareMercPopupBox(MercPopUpBox* box, MercPopUpBackground const u
 	SetFontDestBuffer(FRAME_BUFFER);
 	SetFontShadow(DEFAULT_SHADOW);
 
-	new_box.Release();
+	new_box.release();
 	return box;
 }
 

@@ -8,7 +8,6 @@
 #include "FileMan.h"
 #include "LibraryDataBase.h"
 #include "MemMan.h"
-#include "PODObj.h"
 
 #include "boost/filesystem.hpp"
 
