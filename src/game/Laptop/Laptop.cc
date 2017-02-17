@@ -1298,7 +1298,7 @@ static void ExitLaptopMode(LaptopMode& uiMode)
 
 	// This laptop mode is now destroyed, so also destroy the caller's reference to it.
 	// Fixes Stracciatella issue #68.
-	uiMode = LAPTOP_MODE_NONE;
+	//uiMode = LAPTOP_MODE_NONE;
 }
 
 
