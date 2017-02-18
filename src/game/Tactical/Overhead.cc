@@ -597,9 +597,6 @@ void ExecuteOverhead(void)
 			SOLDIERTYPE* pSoldier = MercSlots[cnt];
       SoldierSP soldier = GetSoldier(pSoldier);
 
-			// Syncronize for upcoming soldier counters
-			SYNCTIMECOUNTER();
-
 			if (pSoldier != NULL)
 			{
 				HandlePanelFaceAnimations(pSoldier);
@@ -1132,9 +1129,6 @@ void ExecuteOverhead(void)
 				guiAISlotToHandle == HANDLE_OFF_MAP_MERC
 				&& guiAIAwaySlotToHandle != RESET_HANDLE_OF_OFF_MAP_MERCS)
 		{
-			// Syncronize for upcoming soldier counters
-			SYNCTIMECOUNTER();
-
 			// the ONLY thing to do with away soldiers is process their schedule if they have one
 			// and there is an action for them to do (like go on-sector)
 			SOLDIERTYPE* const pSoldier = AwaySlots[guiAIAwaySlotToHandle];

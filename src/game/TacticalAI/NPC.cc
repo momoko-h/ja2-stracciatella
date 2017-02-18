@@ -1732,7 +1732,7 @@ void ConverseFull(UINT8 const ubNPC, UINT8 const ubMerc, Approach bApproach, UIN
 				if ( pQuotePtr->sActionData <= -NPC_ACTION_TURN_TO_FACE_NEAREST_MERC )
 				{
 					SOLDIERTYPE* const pSoldier = FindSoldierByProfileID(ubNPC);
-					ZEROTIMECOUNTER( pSoldier->AICounter );
+					pSoldier->AICounter = 0;
 					if (pSoldier->bNextAction == AI_ACTION_WAIT)
 					{
 						pSoldier->bNextAction = AI_ACTION_NONE;
@@ -1895,7 +1895,7 @@ void ConverseFull(UINT8 const ubNPC, UINT8 const ubMerc, Approach bApproach, UIN
 				if ( pQuotePtr->sActionData < 0 && pQuotePtr->sActionData > -NPC_ACTION_TURN_TO_FACE_NEAREST_MERC )
 				{
 					SOLDIERTYPE* const pSoldier = FindSoldierByProfileID(ubNPC);
-					ZEROTIMECOUNTER( pSoldier->AICounter );
+					pSoldier->AICounter = 0;
 					if (pSoldier->bNextAction == AI_ACTION_WAIT)
 					{
 						pSoldier->bNextAction = AI_ACTION_NONE;
@@ -1906,7 +1906,7 @@ void ConverseFull(UINT8 const ubNPC, UINT8 const ubMerc, Approach bApproach, UIN
 				else if ( pQuotePtr->usGoToGridno == NO_MOVE && pQuotePtr->sActionData > 0 )
 				{
 					SOLDIERTYPE* const pSoldier = FindSoldierByProfileID(ubNPC);
-					ZEROTIMECOUNTER( pSoldier->AICounter );
+					pSoldier->AICounter = 0;
 					if (pSoldier->bNextAction == AI_ACTION_WAIT)
 					{
 						pSoldier->bNextAction = AI_ACTION_NONE;

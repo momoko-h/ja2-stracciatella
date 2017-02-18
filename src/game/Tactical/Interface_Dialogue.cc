@@ -1451,7 +1451,7 @@ static void HandleNPCGotoGridNo(UINT8 const ubTargetNPC, UINT16 const usGridNo, 
 	}
 
 	// zap any delay in this soldier
-	ZEROTIMECOUNTER( pSoldier->AICounter );
+	pSoldier->AICounter = 0;
 	if (pSoldier->bNextAction == AI_ACTION_WAIT)
 	{
 		pSoldier->bNextAction = AI_ACTION_NONE;
