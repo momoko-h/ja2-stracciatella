@@ -403,7 +403,7 @@ static UINT8 DetermineCivQuoteEntry(SOLDIERTYPE* pCiv, UINT8* pubCivHintToUse, B
 		// Are are we going to attack?
 
 		if ( pCiv->bAction == AI_ACTION_TOSS_PROJECTILE || pCiv->bAction == AI_ACTION_FIRE_GUN ||
-							pCiv->bAction == AI_ACTION_FIRE_GUN || pCiv->bAction == AI_ACTION_KNIFE_MOVE )
+				 pCiv->bAction == AI_ACTION_KNIFE_MOVE )
 		{
 			return( CIV_QUOTE_ENEMY_THREAT );
 		}

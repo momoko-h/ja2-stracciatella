@@ -1142,21 +1142,19 @@ void AddItemToLeaveIndex(const OBJECTTYPE* const o, const UINT32 uiSlotIndex)
 // release memory for all items in this slot's leave item list
 static void FreeLeaveListSlot(UINT32 uiSlotIndex)
 {
-	MERC_LEAVE_ITEM *pCurrent = NULL, *pTemp = NULL;
-
 	Assert( uiSlotIndex < NUM_LEAVE_LIST_SLOTS );
 
-	pCurrent = gpLeaveListHead[ uiSlotIndex ];
+	auto pCurrent = gpLeaveListHead[ uiSlotIndex ];
 
 	// go through nodes and free them
 	while( pCurrent )
 	{
-		pTemp = pCurrent->pNext;
+		auto pTemp = pCurrent->pNext;
 		MemFree( pCurrent );
 		pCurrent = pTemp;
 	}
 
-	gpLeaveListHead[ uiSlotIndex ] = NULL;
+	gpLeaveListHead[ uiSlotIndex ] = nullptr;
 }
 
 
@@ -2832,9 +2830,6 @@ static void HandleSettingTheSelectedListOfMercs(void);
 
 static void HandleMoveoutOfSectorMovementTroops(void)
 {
-	INT32 iCounter = 0;
-	SOLDIERTYPE *pSoldier = 0;
-	INT32 iSquadNumber = -1;
 	BOOLEAN fCheckForCompatibleSquad = FALSE;
 
 
@@ -2842,9 +2837,9 @@ static void HandleMoveoutOfSectorMovementTroops(void)
 	fShowMapScreenMovementList = FALSE;
 
 
-	for( iCounter = 0; iCounter < giNumberOfSoldiersInSectorMoving; iCounter++ )
+	for(int iCounter = 0; iCounter < giNumberOfSoldiersInSectorMoving; iCounter++ )
 	{
-		pSoldier = pSoldierMovingList[ iCounter ];
+		auto pSoldier = pSoldierMovingList[ iCounter ];
 
 		fCheckForCompatibleSquad = FALSE;
 
@@ -2882,7 +2877,7 @@ static void HandleMoveoutOfSectorMovementTroops(void)
 		if ( fCheckForCompatibleSquad )
 		{
 			// look for a squad that's doing the same thing as this guy is and has room for him
-			iSquadNumber = FindSquadThatSoldierCanJoin( pSoldier );
+			auto iSquadNumber = FindSquadThatSoldierCanJoin( pSoldier );
 			if( iSquadNumber != -1 )
 			{
 				if ( !AddCharacterToSquad( pSoldier, ( INT8 )( iSquadNumber ) ) )
@@ -3158,7 +3153,7 @@ void AddSoldierToWaitingListQueue(SOLDIERTYPE& s)
 	class DialogueEventUpdateBoxAddSoldier : public CharacterDialogueEvent
 	{
 		public:
-			DialogueEventUpdateBoxAddSoldier(SOLDIERTYPE& s) : CharacterDialogueEvent(s) {}
+			explicit DialogueEventUpdateBoxAddSoldier(SOLDIERTYPE& s) : CharacterDialogueEvent(s) {}
 
 			bool Execute()
 			{
@@ -3176,7 +3171,7 @@ void AddReasonToWaitingListQueue(UpdateBoxReason const reason)
 	class DialogueEventUpdateBoxSetReason : public DialogueEvent
 	{
 		public:
-			DialogueEventUpdateBoxSetReason(UpdateBoxReason const reason) : reason_(reason) {}
+			explicit DialogueEventUpdateBoxSetReason(UpdateBoxReason const reason) : reason_(reason) {}
 
 			bool Execute()
 			{
@@ -4079,8 +4074,6 @@ void RequestDecreaseInTimeCompression( void )
 static BOOLEAN CanSoldierMoveWithVehicleId(const SOLDIERTYPE* const pSoldier, const INT32 iVehicle1Id)
 {
 	INT32 iVehicle2Id = -1;
-	VEHICLETYPE *pVehicle1, *pVehicle2;
-
 
 	Assert( iVehicle1Id != -1 );
 
@@ -4112,8 +4105,8 @@ static BOOLEAN CanSoldierMoveWithVehicleId(const SOLDIERTYPE* const pSoldier, co
 			return( FALSE );
 		}
 
-		pVehicle1 = &( pVehicleList[ iVehicle1Id ] );
-		pVehicle2 = &( pVehicleList[ iVehicle2Id ] );
+		auto pVehicle1 = &( pVehicleList[ iVehicle1Id ] );
+		auto pVehicle2 = &( pVehicleList[ iVehicle2Id ] );
 
 		// as long as they're in the same location, amd neither is between sectors, different vehicles is also ok
 		if( ( pVehicle1->sSectorX == pVehicle2->sSectorX ) &&
@@ -4357,7 +4350,7 @@ void MakeDialogueEventShowContractMenu(SOLDIERTYPE& s)
 	class CharacterDialogueEventShowContractMenu : public CharacterDialogueEvent
 	{
 		public:
-			CharacterDialogueEventShowContractMenu(SOLDIERTYPE& s) : CharacterDialogueEvent(s) {}
+			explicit CharacterDialogueEventShowContractMenu(SOLDIERTYPE& s) : CharacterDialogueEvent(s) {}
 
 			bool Execute()
 			{

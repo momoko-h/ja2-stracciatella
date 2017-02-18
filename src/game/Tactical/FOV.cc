@@ -216,20 +216,17 @@ static BOOLEAN FindSlantRoofSlot(INT16 sGridNo)
 
 void AddSlantRoofFOVSlot( INT16 sGridNo )
 {
-  INT32               iSlantRoofSlot;
-  SLANT_ROOF_FOV_TYPE *pSlantRoof;
-
   // Check if this is a duplicate!
   if ( FindSlantRoofSlot( sGridNo ) )
   {
     return;
   }
 
-  iSlantRoofSlot = GetFreeSlantRoof( );
+  auto iSlantRoofSlot = GetFreeSlantRoof( );
 
   if ( iSlantRoofSlot != -1 )
   {
-    pSlantRoof = &gSlantRoofData[ iSlantRoofSlot ];
+    auto pSlantRoof = &gSlantRoofData[ iSlantRoofSlot ];
     pSlantRoof->sGridNo = sGridNo;
     pSlantRoof->fAllocated = TRUE;
   }

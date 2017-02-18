@@ -86,13 +86,12 @@ SCHEDULENODE* GetSchedule( UINT8 ubScheduleID )
 //Removes all schedules from the event list, and cleans out the list.
 void DestroyAllSchedules()
 {
-	SCHEDULENODE *curr;
 	//First remove all of the events.
 	DeleteAllStrategicEventsOfType( EVENT_PROCESS_TACTICAL_SCHEDULE );
 	//Now, delete all of the schedules.
 	while( gpScheduleList )
 	{
-		curr = gpScheduleList;
+		auto curr = gpScheduleList;
 		gpScheduleList = gpScheduleList->next;
 		MemFree( curr );
 	}
@@ -103,12 +102,10 @@ void DestroyAllSchedules()
 // cleans out the schedule list without touching events, for saving & loading games
 void DestroyAllSchedulesWithoutDestroyingEvents()
 {
-	SCHEDULENODE *curr;
-
 	//delete all of the schedules.
 	while( gpScheduleList )
 	{
-		curr = gpScheduleList;
+		auto curr = gpScheduleList;
 		gpScheduleList = gpScheduleList->next;
 		MemFree( curr );
 	}
@@ -967,12 +964,10 @@ void PostSchedules()
 
 static void PerformActionOnDoorAdjacentToGridNo(UINT8 ubScheduleAction, UINT16 usGridNo)
 {
-	INT16			sDoorGridNo;
-	DOOR *		pDoor;
-
-	sDoorGridNo = FindDoorAtGridNoOrAdjacent( (INT16) usGridNo );
+	auto sDoorGridNo = FindDoorAtGridNoOrAdjacent( (INT16) usGridNo );
 	if (sDoorGridNo != NOWHERE)
 	{
+    DOOR *pDoor;
 		switch( ubScheduleAction )
 		{
 			case SCHEDULE_ACTION_LOCKDOOR:

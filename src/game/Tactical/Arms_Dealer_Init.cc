@@ -1534,10 +1534,6 @@ static void AddSpecialItemToArmsDealerInventoryAtElement(ArmsDealerID const ubAr
 // removes ubHowMany items of usItemIndex with the matching Info from dealer ubArmsDealer
 void RemoveItemFromArmsDealerInventory(ArmsDealerID const ubArmsDealer, UINT16 const usItemIndex, SPECIAL_ITEM_INFO* const pSpclItemInfo, UINT8 ubHowMany)
 {
-	DEALER_SPECIAL_ITEM *pSpecialItem;
-	UINT8 ubElement;
-
-
 	Assert( ubHowMany <= gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].ubTotalItems );
 
 	if ( ubHowMany == 0)
@@ -1550,9 +1546,9 @@ void RemoveItemFromArmsDealerInventory(ArmsDealerID const ubArmsDealer, UINT16 c
 	if ( IsItemInfoSpecial( pSpclItemInfo ) )
 	{
 		// look through the elements, trying to find special items matching the specifications
-		for ( ubElement = 0; ubElement < gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].ubElementsAlloced; ubElement++ )
+		for (int ubElement = 0; ubElement < gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].ubElementsAlloced; ubElement++ )
 		{
-			pSpecialItem = &(gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].SpecialItem[ ubElement ]);
+			auto pSpecialItem = &(gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].SpecialItem[ ubElement ]);
 
 			// if this element is in use
 			if ( pSpecialItem->fActive )
@@ -1588,13 +1584,6 @@ void RemoveItemFromArmsDealerInventory(ArmsDealerID const ubArmsDealer, UINT16 c
 
 static void RemoveRandomItemFromArmsDealerInventory(ArmsDealerID const ubArmsDealer, UINT16 const usItemIndex, UINT8 ubHowMany)
 {
-	UINT8 ubWhichOne;
-	UINT8 ubSkippedAlready;
-	BOOLEAN fFoundIt;
-	UINT8 ubElement;
-	SPECIAL_ITEM_INFO SpclItemInfo;
-
-
 	// not permitted for repair dealers - would take extra code to subtract items under repair from ubTotalItems!!!
 	Assert( !DoesDealerDoRepairs( ubArmsDealer ) );
 	// Can't remove any items in for repair, though!
@@ -1603,11 +1592,12 @@ static void RemoveRandomItemFromArmsDealerInventory(ArmsDealerID const ubArmsDea
 	while ( ubHowMany > 0)
 	{
 		// pick a random one to get rid of
-		ubWhichOne = (UINT8)Random(gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].ubTotalItems );
+		auto ubWhichOne = (UINT8)Random(gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].ubTotalItems );
 
 		// if we picked one of the perfect ones...
 		if ( ubWhichOne < gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].ubPerfectItems )
 		{
+      SPECIAL_ITEM_INFO SpclItemInfo;
 			// create item info describing a perfect item
 			SetSpecialItemInfoToDefaults( &SpclItemInfo );
 			// then that's easy, its condition is 100, so remove one of those
@@ -1617,11 +1607,11 @@ static void RemoveRandomItemFromArmsDealerInventory(ArmsDealerID const ubArmsDea
 		{
 			// Yikes!  Gotta look through the special items.  We already know it's not any of the perfect ones, subtract those
 			ubWhichOne -= gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].ubPerfectItems;
-			ubSkippedAlready = 0;
+			uint8_t ubSkippedAlready = 0;
 
-			fFoundIt = FALSE;
+			bool fFoundIt = false;
 
-			for ( ubElement = 0; ubElement < gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].ubElementsAlloced; ubElement++ )
+			for (int ubElement = 0; ubElement < gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].ubElementsAlloced; ubElement++ )
 			{
 				// if this is an active special item, not in repair
 				if ( gArmsDealersInventory[ ubArmsDealer ][ usItemIndex ].SpecialItem[ ubElement ].fActive ) // &&

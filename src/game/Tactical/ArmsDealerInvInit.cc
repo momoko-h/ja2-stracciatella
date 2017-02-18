@@ -399,18 +399,13 @@ int BobbyRayItemQsortCompare(const void *pArg1, const void *pArg2)
 
 int ArmsDealerItemQsortCompare(const void *pArg1, const void *pArg2)
 {
-	UINT16	usItem1Index;
-	UINT16	usItem2Index;
-	UINT8		ubItem1Quality;
-	UINT8		ubItem2Quality;
+  auto &item1 = *static_cast<const INVENTORY_IN_SLOT *>(pArg1);
+  auto &item2 = *static_cast<const INVENTORY_IN_SLOT *>(pArg2);
 
-	usItem1Index = ( ( INVENTORY_IN_SLOT * ) pArg1 ) -> sItemIndex;
-	usItem2Index = ( ( INVENTORY_IN_SLOT * ) pArg2 ) -> sItemIndex;
+	auto const ubItem1Quality = item1.ItemObject.bStatus[ 0 ];
+	auto const ubItem2Quality = item2.ItemObject.bStatus[ 0 ];
 
-	ubItem1Quality = ( ( INVENTORY_IN_SLOT * ) pArg1 ) -> ItemObject.bStatus[ 0 ];
-	ubItem2Quality = ( ( INVENTORY_IN_SLOT * ) pArg2 ) -> ItemObject.bStatus[ 0 ];
-
-	return( CompareItemsForSorting( usItem1Index, usItem2Index, ubItem1Quality, ubItem2Quality ) );
+	return( CompareItemsForSorting(item1.sItemIndex, item2.sItemIndex, ubItem1Quality, ubItem2Quality ) );
 }
 
 

@@ -2749,10 +2749,9 @@ void LoadStrategicAI(HWFILE const hFile)
 				INT32 cnt, iRandom;
 				INT32 iEliteChance, iTroopChance, iAdminChance;
 				INT32 iStartPop;
-				SECTORINFO *pSector = NULL;
 
 				//Change the garrison composition to LEVEL1_DEFENCE from LEVEL2_DEFENCE
-				pSector = &SectorInfo[ SEC_N7 ];
+				auto pSector = &SectorInfo[ SEC_N7 ];
 				gGarrisonGroup[ pSector->ubGarrisonID ].ubComposition = LEVEL1_DEFENCE;
 
 				iStartPop = gArmyComp[ gGarrisonGroup[ pSector->ubGarrisonID ].ubComposition ].bStartPopulation;

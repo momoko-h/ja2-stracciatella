@@ -2076,11 +2076,9 @@ static void UnPauseAfterSaveGame(void)
 
 static void TruncateStrategicGroupSizes(void)
 {
-	SECTORINFO *pSector;
-	INT32 i;
-	for( i = SEC_A1; i < SEC_P16; i++ )
+	for( int i = SEC_A1; i < SEC_P16; i++ )
 	{
-		pSector = &SectorInfo[ i ];
+		auto pSector = &SectorInfo[ i ];
 		if( pSector->ubNumAdmins + pSector->ubNumTroops + pSector->ubNumElites > MAX_STRATEGIC_TEAM_SIZE )
 		{
 			if( pSector->ubNumAdmins > pSector->ubNumTroops )

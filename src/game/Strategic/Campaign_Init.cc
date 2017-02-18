@@ -73,10 +73,9 @@ static void InitKnowFacilitiesFlags(void)
 
 void TrashUndergroundSectorInfo()
 {
-	UNDERGROUND_SECTORINFO *curr;
 	while( gpUndergroundSectorInfoHead )
 	{
-		curr = gpUndergroundSectorInfoHead;
+		auto curr = gpUndergroundSectorInfoHead;
 		gpUndergroundSectorInfoHead = gpUndergroundSectorInfoHead->next;
 		MemFree( curr );
 	}

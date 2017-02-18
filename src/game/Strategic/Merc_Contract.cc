@@ -595,7 +595,7 @@ void MakeCharacterDialogueEventContractEndingNoAskEquip(SOLDIERTYPE& s)
 	class CharacterDialogueEventContractEndingNoAskEquip: public CharacterDialogueEvent
 	{
 		public:
-			CharacterDialogueEventContractEndingNoAskEquip(SOLDIERTYPE& s) : CharacterDialogueEvent(s) {}
+			explicit CharacterDialogueEventContractEndingNoAskEquip(SOLDIERTYPE& s) : CharacterDialogueEvent(s) {}
 
 			bool Execute()
 			{

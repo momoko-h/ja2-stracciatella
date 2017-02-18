@@ -2995,9 +2995,7 @@ static INVENTORY_IN_SLOT* GetPtrToOfferSlotWhereThisItemIs(UINT8 ubProfileID, IN
 
 BOOLEAN ShouldSoldierDisplayHatchOnItem( UINT8 ubProfileID, INT16 sSlotNum )
 {
-	INVENTORY_IN_SLOT	*pInvSlot = NULL;
-
-	pInvSlot = GetPtrToOfferSlotWhereThisItemIs( ubProfileID, ( INT8 ) sSlotNum );
+	auto pInvSlot = GetPtrToOfferSlotWhereThisItemIs( ubProfileID, ( INT8 ) sSlotNum );
 
 	if( pInvSlot == NULL )
 		// not found in either offer area
@@ -3069,7 +3067,7 @@ class DialogueEventSkipAFrame : public DialogueEvent
 class DialogueEventShopkeeperLockTransactionButton : public DialogueEvent
 {
 	public:
-		DialogueEventShopkeeperLockTransactionButton(bool const lock) : lock_(lock) {}
+		explicit DialogueEventShopkeeperLockTransactionButton(bool const lock) : lock_(lock) {}
 
 		bool Execute()
 		{
@@ -4044,7 +4042,7 @@ static BOOLEAN StartShopKeeperTalking(UINT16 usQuoteNum)
 	class DialogueEventShopkeeperSetQuote : public DialogueEvent
 	{
 		public:
-			DialogueEventShopkeeperSetQuote(INT32 const quote) : quote_(quote) {}
+			explicit DialogueEventShopkeeperSetQuote(INT32 const quote) : quote_(quote) {}
 
 			bool Execute()
 			{

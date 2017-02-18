@@ -779,7 +779,7 @@ static void RenderSoldierCell(SOLDIERCELL* const c)
 
 	if (c->pSoldier->bLife == 0)
 	{
-		UINT16 const skull = c->uiFlags & CELL_CREATURE ? CREATURE_SKULL : HUMAN_SKULL;
+		UINT16 const skull = (c->uiFlags & CELL_CREATURE) ? CREATURE_SKULL : HUMAN_SKULL;
 		BltVideoObject(buf, gpAR->iFaces, skull, x, y);
 	}
 	else
@@ -2774,11 +2774,7 @@ static SOLDIERCELL* ChooseTarget(SOLDIERCELL* pAttacker)
 
 static BOOLEAN FireAShot(SOLDIERCELL* pAttacker)
 {
-	OBJECTTYPE *pItem;
-	SOLDIERTYPE *pSoldier;
-	INT32 i;
-
-	pSoldier = pAttacker->pSoldier;
+	auto pSoldier = pAttacker->pSoldier;
 
 	if( pAttacker->uiFlags & CELL_MALECREATURE )
 	{
@@ -2786,9 +2782,9 @@ static BOOLEAN FireAShot(SOLDIERCELL* pAttacker)
 		pAttacker->bWeaponSlot = SECONDHANDPOS;
 		return TRUE;
 	}
-	for( i = 0; i < NUM_INV_SLOTS; i++ )
+	for(int i = 0; i < NUM_INV_SLOTS; i++ )
 	{
-		pItem = &pSoldier->inv[ i ];
+		auto pItem = &pSoldier->inv[ i ];
 
 		if( GCM->getItem(pItem->usItem)->getItemClass() == IC_GUN )
 		{
@@ -2971,7 +2967,6 @@ static void AttackTarget(SOLDIERCELL* pAttacker, SOLDIERCELL* pTarget)
 	}
 	else
 	{
-		OBJECTTYPE *pItem;
 		PlayAutoResolveSample(SoundRange<BULLET_IMPACT_1, BULLET_IMPACT_3>(), 50, 1, MIDDLEPAN);
 		if( !pTarget->pSoldier->bLife )
 		{ //Soldier already dead (can't kill him again!)
@@ -2984,7 +2979,7 @@ static void AttackTarget(SOLDIERCELL* pAttacker, SOLDIERCELL* pTarget)
 		pAttacker->pSoldier->usAttackingWeapon = 0;
 		if( pAttacker->bWeaponSlot != -1 )
 		{
-			pItem = &pAttacker->pSoldier->inv[ pAttacker->bWeaponSlot ];
+			auto pItem = &pAttacker->pSoldier->inv[ pAttacker->bWeaponSlot ];
 			if( GCM->getItem(pItem->usItem)->isWeapon() )
 				pAttacker->pSoldier->usAttackingWeapon = pAttacker->pSoldier->inv[ pAttacker->bWeaponSlot ].usItem;
 		}

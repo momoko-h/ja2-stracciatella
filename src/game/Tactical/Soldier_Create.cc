@@ -2114,17 +2114,15 @@ static UINT8 GetLocationModifier(UINT8 ubSoldierClass)
 UINT8 GetPythDistanceFromPalace( INT16 sSectorX, INT16 sSectorY )
 {
 	UINT8 ubDistance = 0;
-	INT16 sRows = 0, sCols = 0;
-	float fValue = 0.0;
 
 	// grab number of rows and cols
-	sRows = (INT16)(ABS((sSectorX) - ( PALACE_SECTOR_X )));
-	sCols = (INT16)(ABS((sSectorY) - ( PALACE_SECTOR_Y )));
+	INT16 sRows = (INT16)(ABS((sSectorX) - ( PALACE_SECTOR_X )));
+	INT16 sCols = (INT16)(ABS((sSectorY) - ( PALACE_SECTOR_Y )));
 
 
 	// apply Pythagoras's theorem for right-handed triangle:
 	// dist^2 = rows^2 + cols^2, so use the square root to get the distance
-	fValue = ( float )sqrt(( float )(sRows * sRows) + ( float )(sCols * sCols));
+	float fValue = ( float )sqrt(( float )(sRows * sRows) + ( float )(sCols * sCols));
 
 	if(  fmod( fValue, 1.0f ) >= 0.50 )
 	{

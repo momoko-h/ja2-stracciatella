@@ -3335,22 +3335,17 @@ static bool AssignMercToAMovementGroup(SOLDIERTYPE&);
 static void RepairMenuBtnCallback(MOUSE_REGION* pRegion, INT32 iReason)
 {
 	// btn callback handler for assignment region
-	INT32 iValue = -1;
-	SOLDIERTYPE *pSoldier = NULL;
-	INT32 iRepairWhat;
 
-
-	iValue = MSYS_GetRegionUserData( pRegion, 0 );
+	auto iValue = MSYS_GetRegionUserData( pRegion, 0 );
 
 	// ignore clicks on disabled lines
 	if (GetBoxShadeFlag(ghRepairBox, iValue)) return;
 
 	// WHAT is being repaired is stored in the second user data argument
-	iRepairWhat = MSYS_GetRegionUserData( pRegion, 1 );
+	auto iRepairWhat = MSYS_GetRegionUserData( pRegion, 1 );
 
 
-	pSoldier = GetSelectedAssignSoldier( FALSE );
-
+	auto pSoldier = GetSelectedAssignSoldier( FALSE );
 
 	if ( pSoldier && pSoldier->bActive && ( iReason & MSYS_CALLBACK_REASON_LBUTTON_UP ) )
 	{
@@ -4329,10 +4324,8 @@ static void RemoveMercMenuBtnCallback(MOUSE_REGION* pRegion, INT32 iReason)
 {
 	// btn callback handler for contract region
 	INT32 iValue = -1;
-	SOLDIERTYPE * pSoldier = NULL;
 
-
-	pSoldier = GetSelectedAssignSoldier( FALSE );
+	auto pSoldier = GetSelectedAssignSoldier( FALSE );
 
 	iValue = MSYS_GetRegionUserData( pRegion, 0 );
 
@@ -4450,7 +4443,6 @@ static void MercDismissConfirmCallBack(MessageBoxReturnValue const bExitValue)
 static void ContractMenuBtnCallback(MOUSE_REGION* pRegion, INT32 iReason)
 {
 	// btn callback handler for contract region
-	INT32 iValue = -1;
 	BOOLEAN fOkToClose = FALSE;
 
 	// can't renew contracts from tactical!
@@ -4459,7 +4451,7 @@ static void ContractMenuBtnCallback(MOUSE_REGION* pRegion, INT32 iReason)
 	SOLDIERTYPE* const pSoldier = GetSelectedInfoChar();
 	Assert(pSoldier);
 
-	iValue = MSYS_GetRegionUserData( pRegion, 0 );
+	auto iValue = MSYS_GetRegionUserData( pRegion, 0 );
 
 	if (iReason & MSYS_CALLBACK_REASON_RBUTTON_UP)
 	{
@@ -4549,9 +4541,8 @@ static BOOLEAN HandleAssignmentExpansionAndHighLightForTrainingMenu(void);
 static void TrainingMenuMvtCallBack(MOUSE_REGION* pRegion, INT32 iReason)
 {
 	// mvt callback handler for assignment region
-	INT32 iValue = -1;
 
-	iValue = MSYS_GetRegionUserData( pRegion, 0 );
+	auto iValue = MSYS_GetRegionUserData( pRegion, 0 );
 
 	if (HandleAssignmentExpansionAndHighLightForTrainingMenu()) return;
 
@@ -4668,15 +4659,12 @@ show_error:
 static void TrainingMenuBtnCallback(MOUSE_REGION* pRegion, INT32 iReason)
 {
 	// btn callback handler for assignment region
-	INT32 iValue = -1;
-	SOLDIERTYPE * pSoldier = NULL;
 	wchar_t sString[ 128 ];
 	wchar_t sStringA[ 128 ];
 
 
-	pSoldier = GetSelectedAssignSoldier( FALSE );
-
-	iValue = MSYS_GetRegionUserData( pRegion, 0 );
+	auto pSoldier = GetSelectedAssignSoldier( FALSE );
+	auto iValue = MSYS_GetRegionUserData( pRegion, 0 );
 
 	if( ( iReason & MSYS_CALLBACK_REASON_LBUTTON_DWN ) || ( iReason & MSYS_CALLBACK_REASON_RBUTTON_DWN ) )
 	{
@@ -4850,13 +4838,8 @@ static void TrainingMenuBtnCallback(MOUSE_REGION* pRegion, INT32 iReason)
 static void AttributesMenuBtnCallback(MOUSE_REGION* pRegion, INT32 iReason)
 {
 	// btn callback handler for assignment region
-	INT32 iValue = -1;
-	SOLDIERTYPE * pSoldier = NULL;
-
-
-	pSoldier = GetSelectedAssignSoldier( FALSE );
-
-	iValue = MSYS_GetRegionUserData( pRegion, 0 );
+	auto pSoldier = GetSelectedAssignSoldier( FALSE );
+	auto iValue = MSYS_GetRegionUserData( pRegion, 0 );
 
 
 	if (iReason & MSYS_CALLBACK_REASON_LBUTTON_UP)
@@ -4914,15 +4897,9 @@ static bool DisplayVehicleMenu(SOLDIERTYPE const&);
 static void AssignmentMenuBtnCallback(MOUSE_REGION* pRegion, INT32 iReason)
 {
 	// btn callback handler for assignment region
-	INT32 iValue = -1;
 	wchar_t sString[ 128 ];
-
-	SOLDIERTYPE * pSoldier = NULL;
-
-
-	pSoldier = GetSelectedAssignSoldier( FALSE );
-
-	iValue = MSYS_GetRegionUserData( pRegion, 0 );
+	auto pSoldier = GetSelectedAssignSoldier( FALSE );
+	auto iValue = MSYS_GetRegionUserData( pRegion, 0 );
 
 
 	if (iReason & MSYS_CALLBACK_REASON_LBUTTON_UP)
@@ -5890,10 +5867,8 @@ static SOLDIERTYPE* GetRobotSoldier(void)
 // can soldier repair robot
 static BOOLEAN CanCharacterRepairRobot(SOLDIERTYPE const* const pSoldier)
 {
-	SOLDIERTYPE *pRobot = NULL;
-
 	// do we in fact have the robot on the team?
-	pRobot = GetRobotSoldier( );
+	auto pRobot = GetRobotSoldier( );
 	if( pRobot == NULL )
 	{
 		return( FALSE );
@@ -5931,12 +5906,8 @@ static UINT8 RepairRobot(SOLDIERTYPE* pRobot, UINT8 ubRepairPts, BOOLEAN* pfNoth
 
 static UINT8 HandleRepairOfRobotBySoldier(UINT8 const ubRepairPts, BOOLEAN* const pfNothingLeftToRepair)
 {
-	SOLDIERTYPE *pRobot = NULL;
-
-	pRobot = GetRobotSoldier( );
-
 	// do the actual repairs
-	return( RepairRobot( pRobot, ubRepairPts, pfNothingLeftToRepair ) );
+	return( RepairRobot( GetRobotSoldier(), ubRepairPts, pfNothingLeftToRepair ) );
 }
 
 
@@ -7025,7 +6996,7 @@ static void InternalUnescortEPC(SOLDIERTYPE* const s)
 	class DialogueEventRemoveEPC : public DialogueEvent
 	{
 		public:
-			DialogueEventRemoveEPC(ProfileID const epc) : epc_(epc) {}
+			explicit DialogueEventRemoveEPC(ProfileID const epc) : epc_(epc) {}
 
 			bool Execute()
 			{

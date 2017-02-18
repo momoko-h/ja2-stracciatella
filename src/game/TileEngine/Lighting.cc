@@ -180,21 +180,19 @@ BOOLEAN gfLoadShadeTablesFromTextFile =		FALSE;
 
 void LoadShadeTablesFromTextFile()
 {
-	FILE *fp;
-	INT32 i, j;
-	INT32 num;
 	if( gfLoadShadeTablesFromTextFile )
 	{
-		fp = fopen("ShadeTables.txt", "r");
+		FILE *fp = fopen("ShadeTables.txt", "r");
 		Assert( fp );
 		if( fp )
 		{
-			for( i = 0; i < 16; i++ )
+			for(int i = 0; i < 16; i++ )
 			{
-				for( j = 0; j < 3; j++ )
+				for(int j = 0; j < 3; j++ )
 				{
 					char str[10];
-					fscanf( fp, "%s", str );
+          int32_t num;
+					fscanf( fp, "%8s", str );
 					sscanf( str, "%d", &num );
 					gusShadeLevels[i][j] = (UINT16)num;
 				}

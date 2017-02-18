@@ -3015,7 +3015,6 @@ static INT8 DrawUIMovementPath(SOLDIERTYPE* const pSoldier, UINT16 usMapPos, Mov
 	STRUCTURE					*pStructure;
 	INT16							sAdjustedGridNo;
   INT16							sIntTileGridNo;
-	LEVELNODE					*pIntTile;
 	INT8							bReturnCode = 0;
 	BOOLEAN						fPlot;
 
@@ -3037,7 +3036,7 @@ static INT8 DrawUIMovementPath(SOLDIERTYPE* const pSoldier, UINT16 usMapPos, Mov
 	if ( uiFlags == MOVEUI_TARGET_INTTILES )
 	{
 			// Get structure info for in tile!
-			pIntTile = GetCurInteractiveTileGridNoAndStructure( &sIntTileGridNo, &pStructure );
+			auto pIntTile = GetCurInteractiveTileGridNoAndStructure( &sIntTileGridNo, &pStructure );
 
 			// We should not have null here if we are given this flag...
 			if ( pIntTile != NULL )
@@ -3105,7 +3104,7 @@ static INT8 DrawUIMovementPath(SOLDIERTYPE* const pSoldier, UINT16 usMapPos, Mov
 	else if ( uiFlags == MOVEUI_TARGET_CAN )
 	{
 		// Get structure info for in tile!
-		pIntTile = GetCurInteractiveTileGridNoAndStructure( &sIntTileGridNo, &pStructure );
+		auto pIntTile = GetCurInteractiveTileGridNoAndStructure( &sIntTileGridNo, &pStructure );
 
 		// We should not have null here if we are given this flag...
 		if ( pIntTile != NULL )
@@ -4919,7 +4918,6 @@ BOOLEAN SelectedGuyInBusyAnimation( )
 		sel->usAnimState == DROP_ITEM                      ||
 		sel->usAnimState == OPEN_DOOR                      ||
 		sel->usAnimState == OPEN_STRUCT                    ||
-		sel->usAnimState == OPEN_STRUCT                    ||
 		sel->usAnimState == END_OPEN_DOOR                  ||
 		sel->usAnimState == END_OPEN_LOCKED_DOOR           ||
 		sel->usAnimState == ADJACENT_GET_ITEM              ||
@@ -4927,7 +4925,6 @@ BOOLEAN SelectedGuyInBusyAnimation( )
 		sel->usAnimState == OPEN_DOOR_CROUCHED             ||
 		sel->usAnimState == BEGIN_OPENSTRUCT_CROUCHED      ||
 		sel->usAnimState == CLOSE_DOOR_CROUCHED            ||
-		sel->usAnimState == OPEN_DOOR_CROUCHED             ||
 		sel->usAnimState == OPEN_STRUCT_CROUCHED           ||
 		sel->usAnimState == END_OPENSTRUCT_CROUCHED        ||
 		sel->usAnimState == END_OPEN_DOOR_CROUCHED         ||

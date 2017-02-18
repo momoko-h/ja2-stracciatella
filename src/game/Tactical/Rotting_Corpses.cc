@@ -883,7 +883,6 @@ void HandleCrowFlyAway( SOLDIERTYPE *pSoldier )
 
 void HandleRottingCorpses( )
 {
-	ROTTING_CORPSE		*pCorpse;
 	INT8							bNumCrows = 0;
   UINT32            uiChosenCorpseID;
 
@@ -938,7 +937,7 @@ void HandleRottingCorpses( )
 	{
     uiChosenCorpseID = Random( giNumRottingCorpse );
 
-		pCorpse = &(gRottingCorpse[ uiChosenCorpseID ] );
+    auto pCorpse = &(gRottingCorpse[ uiChosenCorpseID ] );
 
     if ( pCorpse->fActivated )
     {
@@ -1019,21 +1018,16 @@ void CorpseHit( INT16 sGridNo, UINT16 usStructureID )
 
 void VaporizeCorpse( INT16 sGridNo, UINT16 usStructureID )
 {
-	STRUCTURE				*pStructure, *pBaseStructure;
-	ROTTING_CORPSE	*pCorpse = NULL;
-	INT16						sBaseGridNo;
-	ANITILE_PARAMS		AniParams;
-
-	pStructure = FindStructureByID( sGridNo, usStructureID );
+	auto pStructure = FindStructureByID( sGridNo, usStructureID );
 
 	// Get base....
-	pBaseStructure = FindBaseStructure( pStructure );
+	auto pBaseStructure = FindBaseStructure( pStructure );
 
 	// Find base gridno...
-	sBaseGridNo = pBaseStructure->sGridNo;
+	auto sBaseGridNo = pBaseStructure->sGridNo;
 
 	// Get corpse ID.....
-	pCorpse = FindCorpseBasedOnStructure( sBaseGridNo, pBaseStructure );
+	auto pCorpse = FindCorpseBasedOnStructure( sBaseGridNo, pBaseStructure );
 
 	if ( pCorpse == NULL )
 	{
@@ -1048,6 +1042,7 @@ void VaporizeCorpse( INT16 sGridNo, UINT16 usStructureID )
 
 	if ( GridNoOnScreen( sBaseGridNo ) )
 	{
+    ANITILE_PARAMS AniParams;
 		// Add explosion
 		memset( &AniParams, 0, sizeof( ANITILE_PARAMS ) );
 		AniParams.sGridNo							= sBaseGridNo;
@@ -1090,7 +1085,6 @@ INT16 FindNearestAvailableGridNoForCorpse( ROTTING_CORPSE_DEFINITION *pDef, INT8
 	SOLDIERTYPE soldier;
 	UINT8 ubSaveNPCAPBudget;
 	UINT8 ubSaveNPCDistLimit;
-	STRUCTURE_FILE_REF * pStructureFileRef = NULL;
 	UINT8						ubBestDirection=0;
 	BOOLEAN	fSetDirection   = FALSE;
 
@@ -1100,7 +1094,7 @@ INT16 FindNearestAvailableGridNoForCorpse( ROTTING_CORPSE_DEFINITION *pDef, INT8
 	// Used to find struct data for this corpse...
   std::string zFilename(FileMan::getFileNameWithoutExt(zCorpseFilenames[pDef->ubType]));
 
-	pStructureFileRef = GetCachedTileStructureRefFromFilename( zFilename.c_str() );
+	auto pStructureFileRef = GetCachedTileStructureRefFromFilename( zFilename.c_str() );
 
 	sSweetGridNo = pDef->sGridNo;
 
@@ -1222,21 +1216,17 @@ BOOLEAN IsValidDecapitationCorpse(const ROTTING_CORPSE* const c)
 
 ROTTING_CORPSE *GetCorpseAtGridNo( INT16 sGridNo, INT8 bLevel )
 {
-	STRUCTURE				*pStructure, *pBaseStructure;
-	INT16						sBaseGridNo;
-
-	pStructure = FindStructure( sGridNo, STRUCTURE_CORPSE );
+	auto pStructure = FindStructure( sGridNo, STRUCTURE_CORPSE );
 
 	if ( pStructure != NULL )
 	{
 		// Get base....
-		pBaseStructure = FindBaseStructure( pStructure );
-
-		// Find base gridno...
-		sBaseGridNo = pBaseStructure->sGridNo;
+		auto pBaseStructure = FindBaseStructure( pStructure );
 
 		if ( pBaseStructure != NULL )
 		{
+      // Find base gridno...
+      auto sBaseGridNo = pBaseStructure->sGridNo;
 			return( FindCorpseBasedOnStructure( sBaseGridNo, pBaseStructure ) );
 		}
 	}

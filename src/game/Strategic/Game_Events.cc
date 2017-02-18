@@ -99,7 +99,7 @@ void ProcessPendingGameEvents(UINT32 uiAdjustment, const UINT8 ubWarpCode)
 
 				fDeleteEvent = ExecuteStrategicEvent( curr );
 
-				if( curr && prev && fDeleteQueuedEvent )
+				if( prev && fDeleteQueuedEvent )
 				{ //The only case where we are deleting a node in the middle of the list
 					prev->next = curr->next;
 				}
