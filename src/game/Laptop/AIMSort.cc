@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "Cursors.h"
 #include "Directories.h"
 #include "Font.h"
@@ -369,33 +370,25 @@ static void DrawSelectLight(const UINT8 ubMode, const UINT8 ubImage)
 }
 
 
-static INT32 QsortCompare(const void* pNum1, const void* pNum2);
-
-
 static void SortMercArray(void)
 {
-	qsort(AimMercArray, MAX_NUMBER_MERCS, sizeof(UINT8), QsortCompare);
-}
+  bool ascending = (gubCurrentListMode == AIM_ASCEND);
+  std::sort(AimMercArray, AimMercArray + MAX_NUMBER_MERCS,
+    [ascending] (uint8_t ID1, uint8_t ID2) {
+      auto GetValue = [] (uint8_t id) -> int {
+        auto const profile = GetProfile(id);
 
-
-static INT32 QsortCompare(const void* pNum1, const void* pNum2)
-{
-	MERCPROFILESTRUCT const& p1 = GetProfile(*(UINT8*)pNum1);
-	MERCPROFILESTRUCT const& p2 = GetProfile(*(UINT8*)pNum2);
-
-	INT32 v1;
-	INT32 v2;
-	switch (gubCurrentSortMode)
-	{
-		/* Price        */ case 0: v1 = p1.uiWeeklySalary; v2 = p2.uiWeeklySalary; break;
-		/* Experience   */ case 1: v1 = p1.bExpLevel;      v2 = p2.bExpLevel;      break;
-		/* Marksmanship */ case 2: v1 = p1.bMarksmanship;  v2 = p2.bMarksmanship;  break;
-		/* Medical      */ case 3: v1 = p1.bMedical;       v2 = p2.bMedical;       break;
-		/* Explosives   */ case 4: v1 = p1.bExplosive;     v2 = p2.bExplosive;     break;
-		/* Mechanical   */ case 5: v1 = p1.bMechanical;    v2 = p2.bMechanical;    break;
-
-		default: SLOGE(DEBUG_TAG_ASSERTS, "QsortCompare: invalid sort mode"); return 0;
-	}
-	const INT32 ret = (v1 > v2) - (v1 < v2);
-	return gubCurrentListMode == AIM_ASCEND ? ret : -ret;
+        switch (gubCurrentSortMode)
+        {
+          /* Price        */ case 0: return profile.uiWeeklySalary;
+          /* Experience   */ case 1: return profile.bExpLevel;
+          /* Marksmanship */ case 2: return profile.bMarksmanship;
+          /* Medical      */ case 3: return profile.bMedical;
+          /* Explosives   */ case 4: return profile.bExplosive;
+          /* Mechanical   */ case 5: return profile.bMechanical;
+          default: SLOGE(DEBUG_TAG_ASSERTS, "SortMercArray: invalid sort mode"); return 0;
+        }
+      };
+      return (GetValue(ID1) > GetValue(ID2)) != ascending;
+    });
 }
