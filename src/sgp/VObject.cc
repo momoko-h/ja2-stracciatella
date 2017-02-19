@@ -261,6 +261,12 @@ SGPVObject* AddVideoObjectFromFile(const char* const ImageFile)
 
 
 namespace SP {
+std::unique_ptr<SGPVObject> AddVideoObjectFromHImage(SGPImage* const img)
+{
+  return std::make_unique<SGPVObject>(img, false);
+}
+
+
 std::unique_ptr<SGPVObject> AddVideoObjectFromFile(const char* const ImageFile)
 {
   std::unique_ptr<SGPImage> hImage(CreateImage(ImageFile, IMAGE_ALLIMAGEDATA));

@@ -102,6 +102,7 @@ SGPVObject* AddVideoObjectFromFile(const char* ImageFile);
 
 
 namespace SP {
+std::unique_ptr<SGPVObject> AddVideoObjectFromHImage(SGPImage* const img);
 std::unique_ptr<SGPVObject> AddVideoObjectFromFile(const char* const ImageFile);
 }
 
