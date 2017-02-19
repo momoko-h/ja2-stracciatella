@@ -4,17 +4,10 @@
 #include "Debug.h"
 #include "Types.h"
 
-static inline bool IS_VALID_SECTOR(UINT8 const x, UINT8 const y)
-{
-  return 1 <= x && x <= 16 && 1 <= y && y <= 16;
-}
+bool IS_VALID_SECTOR(uint8_t const x, uint8_t const y);
 
-//Macro to convert sector coordinates (1-16,1-16) to 0-255
-static inline UINT8 SECTOR(UINT8 const x, UINT8 const y)
-{
-	Assert(IS_VALID_SECTOR(x, y));
-	return (y - 1) * 16 + x - 1;
-}
+//Function to convert sector coordinates (1-16,1-16) to 0-255
+uint8_t SECTOR(uint8_t const x, uint8_t const y);
 
 #define SECTORX(SectorID) ((SectorID % 16) + 1)
 #define SECTORY(SectorID) ((SectorID / 16) + 1)
@@ -227,5 +220,9 @@ struct UNDERGROUND_SECTORINFO
 //as well as intentions, etc.
 extern SECTORINFO SectorInfo[256];
 extern UNDERGROUND_SECTORINFO *gpUndergroundSectorInfoHead;
+
+//Get a reference to a SECTORINFO struct, shortcut for
+//SectorInfo[SECTOR(x,y)]
+SECTORINFO& GetSectorInfo(uint8_t x, uint8_t y);
 
 #endif

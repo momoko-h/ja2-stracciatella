@@ -200,9 +200,8 @@ INT8 SoldierClassToMilitiaRank(UINT8 const soldier_class)
 // add militias of a certain rank
 static void StrategicAddMilitiaToSector(INT16 sMapX, INT16 sMapY, UINT8 ubRank, UINT8 ubHowMany)
 {
-	SECTORINFO *pSectorInfo = &( SectorInfo[ SECTOR( sMapX, sMapY ) ] );
-
-	pSectorInfo->ubNumberOfCivsAtLevel[ ubRank ] += ubHowMany;
+  auto si = GetSectorInfo(sMapX, sMapY);
+  si.ubNumberOfCivsAtLevel[ubRank] += ubHowMany;
 
 	// update the screen display
 	fMapPanelDirty = TRUE;
@@ -212,7 +211,7 @@ static void StrategicAddMilitiaToSector(INT16 sMapX, INT16 sMapY, UINT8 ubRank, 
 // Promote militias of a certain rank
 static void StrategicPromoteMilitiaInSector(INT16 const x, INT16 const y, UINT8 const current_rank, UINT8 const n)
 {
-	SECTORINFO& si = SectorInfo[SECTOR(x, y)];
+  auto si = GetSectorInfo(x, y);
 
 	Assert(si.ubNumberOfCivsAtLevel[current_rank] >= n);
 	//KM : July 21, 1999 patch fix
@@ -227,18 +226,15 @@ static void StrategicPromoteMilitiaInSector(INT16 const x, INT16 const y, UINT8 
 
 void StrategicRemoveMilitiaFromSector(INT16 sMapX, INT16 sMapY, UINT8 ubRank, UINT8 ubHowMany)
 {
-	SECTORINFO *pSectorInfo = &( SectorInfo[ SECTOR( sMapX, sMapY ) ] );
-
-	// damn well better have that many around to remove!
-	Assert(pSectorInfo->ubNumberOfCivsAtLevel[ ubRank ] >= ubHowMany);
+  auto si = GetSectorInfo(sMapX, sMapY);
 
 	//KM : July 21, 1999 patch fix
-	if( pSectorInfo->ubNumberOfCivsAtLevel[ ubRank ] < ubHowMany )
+	if(si.ubNumberOfCivsAtLevel[ ubRank ] < ubHowMany )
 	{
 		return;
 	}
 
-	pSectorInfo->ubNumberOfCivsAtLevel[ ubRank ] -= ubHowMany;
+	si.ubNumberOfCivsAtLevel[ ubRank ] -= ubHowMany;
 
 	// update the screen display
 	fMapPanelDirty = TRUE;
@@ -331,7 +327,7 @@ UINT8 CountAllMilitiaInSector(INT16 sMapX, INT16 sMapY)
 
 UINT8 MilitiaInSectorOfRank(INT16 sMapX, INT16 sMapY, UINT8 ubRank)
 {
-	return( SectorInfo[ SECTOR( sMapX, sMapY ) ].ubNumberOfCivsAtLevel[ ubRank ] );
+	return GetSectorInfo(sMapX, sMapY).ubNumberOfCivsAtLevel[ubRank];
 }
 
 
@@ -800,7 +796,7 @@ static void AddIfTrainingUnpaidSector(SOLDIERTYPE const& s)
 {
 	if (!CanCharacterTrainMilitia(&s)) return;
 	// Check if this sector is a town and needs equipment.
-	if (SectorInfo[SECTOR(s.sSectorX, s.sSectorY)].fMilitiaTrainingPaid) return;
+	if (GetSectorInfo(s.sSectorX, s.sSectorY).fMilitiaTrainingPaid) return;
 	INT16 const sector = CALCULATE_STRATEGIC_INDEX(s.sSectorX, s.sSectorY);
 	for (INT16* i = gsUnpaidStrategicSector;; ++i)
 	{
