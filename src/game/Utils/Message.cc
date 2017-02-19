@@ -1,5 +1,6 @@
 #include <memory>
 #include <stdarg.h>
+#include <string>
 #include "Buffer.h"
 #include "Debug.h"
 #include "Directories.h"
@@ -27,7 +28,7 @@
 
 struct ScrollStringSt
 {
-	wchar_t*        pString;
+  std::wstring wString;
 	VIDEO_OVERLAY* video_overlay;
 	UINT16  usColor;
 	BOOLEAN fBeginningOfNewString;
@@ -74,9 +75,8 @@ static UINT32  uiStartOfPauseTime = 0;
 
 static ScrollStringSt* AddString(const wchar_t* pString, UINT16 usColor, BOOLEAN fStartOfNewString)
 {
-	ScrollStringSt* const i = MALLOC(ScrollStringSt);
-	i->pString              = MALLOCN(wchar_t, wcslen(pString) + 1);
-	wcscpy(i->pString, pString);
+	ScrollStringSt* const i = new ScrollStringSt();
+	i->wString              = pString;
 	i->video_overlay         = NULL;
 	i->usColor               = usColor;
 	i->fBeginningOfNewString = fStartOfNewString;
@@ -120,8 +120,7 @@ void ClearDisplayedListOfTacticalStrings(void)
 		if (gpDisplayList[cnt] != NULL)
 		{
 			RemoveStringVideoOverlay(gpDisplayList[cnt]);
-			MemFree(gpDisplayList[cnt]->pString);
-			MemFree(gpDisplayList[cnt]);
+			delete gpDisplayList[cnt];
 			gpDisplayList[cnt] = NULL;
 		}
 	}
@@ -178,8 +177,7 @@ void ScrollString(void)
 			if (suiTimer - gpDisplayList[cnt]->uiTimeOfLastUpdate > (UINT32)(iMaxAge - 1000 * iNumberOfMessagesOnQueue))
 			{
 				RemoveStringVideoOverlay(gpDisplayList[cnt]);
-				MemFree(gpDisplayList[cnt]->pString);
-				MemFree(gpDisplayList[cnt]);
+				delete gpDisplayList[cnt];
 				gpDisplayList[cnt] = NULL;
 			}
 		}
@@ -207,7 +205,7 @@ void ScrollString(void)
 
 			// now add in the new string
 			gpDisplayList[0] = pStringS;
-			pStringS->video_overlay = RegisterVideoOverlay(BlitString, X_START, Y_START, TINYFONT1, pStringS->usColor, FONT_MCOLOR_BLACK, pStringS->pString);
+			pStringS->video_overlay = RegisterVideoOverlay(BlitString, X_START, Y_START, TINYFONT1, pStringS->usColor, FONT_MCOLOR_BLACK, pStringS->wString.data());
 			if (pStringS->fBeginningOfNewString)
 			{
 				iNumberOfNewStrings++;
@@ -448,8 +446,7 @@ static void AddStringToMapScreenMessageList(const wchar_t* pString, UINT16 usCol
 	ScrollStringSt* const old = gMapScreenMessageList[gubEndOfMapScreenMessageList];
 	if (old != NULL)
 	{
-		MemFree(old->pString);
-		MemFree(old);
+		delete old;
 	}
 
 	// store the new message there
@@ -492,7 +489,7 @@ void DisplayStringsInMapScreenMessageList(void)
 		if (s == NULL) break;
 
 		SetFontForeground(s->usColor);
-		MPrint(STD_SCREEN_X + 20, sY, s->pString);
+		MPrint(STD_SCREEN_X + 20, sY, s->wString.data());
 
 		sY += usSpacing;
 
@@ -551,14 +548,14 @@ static ScrollStringSt* ExtractScrollStringFromFile(HWFILE const f, bool stracLin
       size_t const len = size / 4;
       SGP::Buffer<wchar_t> str(len);
       reader.readUTF32(str, len);
-      s->pString = str.Release();
+      s->wString = str.Release();
     }
     else
     {
       size_t const len = size / 2;
       SGP::Buffer<wchar_t> str(len);
       reader.readUTF16(str, len);
-      s->pString = str.Release();
+      s->wString = str.Release();
     }
   }
 
@@ -587,7 +584,7 @@ static void InjectScrollStringIntoFile(HWFILE const f, ScrollStringSt const* con
     return;
   }
 
-  UTF8String str(s->pString);
+  UTF8String str(s->wString.data());
   std::vector<uint16_t> utf16data = str.getUTF16();
   UINT32 const size = 2 * utf16data.size();
   FileWrite(f, &size, sizeof(size));
@@ -649,12 +646,7 @@ void LoadMapScreenMessagesFromSaveGameFile(HWFILE const hFile, bool stracLinuxFo
 		ScrollStringSt* const s = ExtractScrollStringFromFile(hFile, stracLinuxFormat);
 
 		ScrollStringSt* const old = *i;
-		if (old)
-		{
-			MemFree(old->pString);
-			MemFree(old);
-		}
-
+		delete old;
 		*i = s;
 	}
 
@@ -683,8 +675,7 @@ void ClearTacticalMessageQueue(void)
 	{
 		ScrollStringSt* del = i;
 		i = i->pNext;
-		MemFree(del->pString);
-		MemFree(del);
+		delete del;
 	}
 
 	pStringS = NULL;
@@ -698,8 +689,7 @@ void FreeGlobalMessageList(void)
 		ScrollStringSt* const s = *i;
 		if (s != NULL)
 		{
-			MemFree(s->pString);
-			MemFree(s);
+			delete s;
 			*i = NULL;
 		}
 	}
