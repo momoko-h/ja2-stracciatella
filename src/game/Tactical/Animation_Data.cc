@@ -656,7 +656,7 @@ void LoadAnimationSurface(UINT16 const usSoldierID, UINT16 const usSurfaceIndex,
 			SLOGD(DEBUG_TAG_ANIMATIONS, "Surface Database: Loading %d", usSurfaceIndex);
 
 			AutoSGPImage   hImage(CreateImage(a->Filename, IMAGE_ALLDATA));
-			AutoSGPVObject hVObject(AddVideoObjectFromHImage(hImage));
+      auto hVObject = SP::AddVideoObjectFromHImage(hImage);
 
 			// Get aux data
 			if (hImage->uiAppDataSize != hVObject->SubregionCount() * sizeof(AuxObjectData))
@@ -682,11 +682,11 @@ void LoadAnimationSurface(UINT16 const usSoldierID, UINT16 const usSurfaceIndex,
 					sStartFrame = -1;
 				}
 
-				AddZStripInfoToVObject(hVObject, pStructureFileRef, TRUE, sStartFrame);
+				AddZStripInfoToVObject(hVObject.get(), pStructureFileRef, TRUE, sStartFrame);
 			}
 
 			// Set video object index
-			a->hVideoObject = hVObject.Release();
+			a->hVideoObject = hVObject.release();
 
 			// Determine if we have a problem with #frames + directions ( ie mismatch )
 			if (a->uiNumDirections * a->uiNumFramesPerDir != a->hVideoObject->SubregionCount())
