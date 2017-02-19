@@ -1,6 +1,7 @@
 #ifndef __VOBJECT_H
 #define __VOBJECT_H
 
+#include <memory>
 #include "AutoPtr.h"
 #include "Buffer.h"
 #include "Types.h"
@@ -98,6 +99,12 @@ void ShutdownVideoObjectManager(void);
 // Creates and adds a video object to list
 SGPVObject* AddVideoObjectFromHImage(SGPImage*);
 SGPVObject* AddVideoObjectFromFile(const char* ImageFile);
+
+
+namespace SP {
+std::unique_ptr<SGPVObject> AddVideoObjectFromFile(const char* const ImageFile);
+}
+
 
 // Removes a video object
 static inline void DeleteVideoObject(SGPVObject* const vo)

@@ -11,18 +11,8 @@
 #include "VSurface.h"
 
 
-static SGPVObject* guiUsedBackground;
-static SGPVObject* guiUsedGrid;
-
-
 void EnterBobbyRUsed()
 {
-	// load the background graphic and add it
-	guiUsedBackground = AddVideoObjectFromFile(LAPTOPDIR "/usedbackground.sti");
-
-	// load the gunsgrid graphic and add it
-	guiUsedGrid = AddVideoObjectFromFile(LAPTOPDIR "/usedgrid.sti");
-
 	InitBobbyBrTitle();
 
 	SetFirstLastPagesForUsed();
@@ -36,8 +26,6 @@ void EnterBobbyRUsed()
 
 void ExitBobbyRUsed()
 {
-	DeleteVideoObject(guiUsedBackground);
-	DeleteVideoObject(guiUsedGrid);
 	DeleteBobbyMenuBar();
 	DeleteBobbyBrTitle();
 	DeleteMouseRegionForBigImage();
@@ -49,12 +37,13 @@ void ExitBobbyRUsed()
 
 void RenderBobbyRUsed()
 {
-	WebPageTileBackground(BOBBYR_NUM_HORIZONTAL_TILES, BOBBYR_NUM_VERTICAL_TILES, BOBBYR_BACKGROUND_WIDTH, BOBBYR_BACKGROUND_HEIGHT, guiUsedBackground);
+  auto const background = SP::AddVideoObjectFromFile(LAPTOPDIR "/usedbackground.sti");
+  WebPageTileBackground(BOBBYR_NUM_HORIZONTAL_TILES, BOBBYR_NUM_VERTICAL_TILES, BOBBYR_BACKGROUND_WIDTH, BOBBYR_BACKGROUND_HEIGHT, background.get());
 
 	//Display title at top of page
 	DisplayBobbyRBrTitle();
 
-	BltVideoObject(FRAME_BUFFER, guiUsedGrid, 0, BOBBYR_GRIDLOC_X, BOBBYR_GRIDLOC_Y);
+	BltVideoObjectOnce(FRAME_BUFFER, LAPTOPDIR "/usedgrid.sti", 0, BOBBYR_GRIDLOC_X, BOBBYR_GRIDLOC_Y);
 
 	DisplayItemInfo(BOBBYR_USED_ITEMS);
 
