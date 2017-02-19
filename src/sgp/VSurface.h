@@ -64,10 +64,6 @@ class SGPVSurface
 		SGP::Buffer<SGPPaletteEntry>               palette_;
 	public:
 		UINT16*                                    p16BPPPalette; // A 16BPP palette used for 8->16 blits
-#ifdef SGP_VIDEO_DEBUGGING
-		char*                        name_;
-		char*                        code_;
-#endif
 		SGPVSurface*                 next_;
 
 	private:
@@ -125,24 +121,16 @@ class SGPVSurface
 		};
 };
 
+// Creates and adds a video Surface to list
 SGPVSurface* AddVideoSurface(UINT16 Width, UINT16 Height, UINT8 BitDepth);
 SGPVSurface* AddVideoSurfaceFromFile(const char* Filename);
+
 
 namespace SP {
 std::unique_ptr<SGPVSurface> AddVideoSurfaceFromFile(const char* const Filename);
 std::unique_ptr<SGPVSurface> AddVideoSurface(uint16_t Width, uint16_t Height, uint8_t BitDepth);
 }
 
-// Creates and adds a video Surface to list
-#ifdef SGP_VIDEO_DEBUGGING
-	void DumpVSurfaceInfoIntoFile(const char* filename, BOOLEAN fAppend);
-	extern SGPVSurface* AddAndRecordVSurface(UINT16 Width, UINT16 Height, UINT8 BitDepth, UINT32 LineNum, const char* SourceFile);
-	extern SGPVSurface* AddAndRecordVSurfaceFromFile(const char* Filename, UINT32 LineNum, const char* SourceFile);
-	#define AddVideoSurface(a, b, c) AddAndRecordVSurface(a, b, c, __LINE__, __FILE__)
-	#define AddVideoSurfaceFromFile(a) AddAndRecordVSurfaceFromFile(a, __LINE__, __FILE__)
-
-extern UINT32 guiVSurfaceSize;
-#endif
 
 /* Blits a video surface in half size to another video surface.
  * If SrcRect is NULL the entire source surface is blitted.
