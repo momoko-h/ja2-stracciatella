@@ -1055,8 +1055,9 @@ static void SynchronizeDoorStatusToStructureData(DOOR_STATUS const& d)
 
 	// Swap!
 	STRUCTURE* const base = FindBaseStructure(s);
+  GridNo gridNo = base->sGridNo;
 	SwapStructureForPartner(base);
-	RecompileLocalMovementCosts(base->sGridNo);
+	RecompileLocalMovementCosts(gridNo);
 }
 
 
