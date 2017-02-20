@@ -548,14 +548,14 @@ static ScrollStringSt* ExtractScrollStringFromFile(HWFILE const f, bool stracLin
       size_t const len = size / 4;
       SGP::Buffer<wchar_t> str(len);
       reader.readUTF32(str, len);
-      s->wString = str.Release();
+      s->wString = str;
     }
     else
     {
       size_t const len = size / 2;
       SGP::Buffer<wchar_t> str(len);
       reader.readUTF16(str, len);
-      s->wString = str.Release();
+      s->wString = str;
     }
   }
 

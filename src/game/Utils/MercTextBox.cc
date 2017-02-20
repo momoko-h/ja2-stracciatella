@@ -284,7 +284,7 @@ void RemoveMercPopupBox(MercPopUpBox* const box)
 	//Delete the background and the border
 	RemoveTextMercPopupImages(box);
 
-	MemFree(box);
+	delete box;
 }
 
 

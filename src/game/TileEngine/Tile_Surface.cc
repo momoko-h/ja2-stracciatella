@@ -99,7 +99,7 @@ void DeleteTileSurface(TILE_IMAGERY* const pTileSurf)
 	}
 
 	DeleteVideoObject(pTileSurf->vo);
-	MemFree( pTileSurf );
+  delete pTileSurf;
 }
 
 
