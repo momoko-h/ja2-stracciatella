@@ -1,3 +1,5 @@
+#include <memory>
+#include <string>
 #include "Font.h"
 #include "HImage.h"
 #include "Types.h"
@@ -34,7 +36,7 @@ struct PROGRESSBAR
 	SGPBox           pos;
 	UINT16 usPanelLeft, usPanelTop, usPanelRight, usPanelBottom;
 	UINT16 usColor, usLtColor, usDkColor;
-	wchar_t *swzTitle;
+  std::wstring swzTitle;
 	SGPFont usTitleFont;
 	UINT8 ubTitleFontForeColor, ubTitleFontShadowColor;
 	SGPFont usMsgFont;
@@ -44,7 +46,7 @@ struct PROGRESSBAR
 	double rLastActual;
 };
 
-static PROGRESSBAR* pBar[MAX_PROGRESSBARS];
+static std::unique_ptr<PROGRESSBAR> pBar[4];
 
 
 void CreateLoadingScreenProgressBar()
@@ -62,12 +64,9 @@ void RemoveLoadingScreenProgressBar()
 
 void CreateProgressBar(const UINT8 ubProgressBarID, const UINT16 x, const UINT16 y, const UINT16 w, const UINT16 h)
 {
-	PROGRESSBAR* const pNew = MALLOCZ(PROGRESSBAR);
+  pBar[ubProgressBarID].reset(new PROGRESSBAR());
+  auto &pNew = pBar[ubProgressBarID];
 
-	if( pBar[ ubProgressBarID ] )
-		RemoveProgressBar( ubProgressBarID );
-
-	pBar[ ubProgressBarID ] = pNew;
 	//Assign coordinates
 	pNew->flags                = PROGRESS_NONE;
 	pNew->pos.x                = x;
@@ -79,7 +78,7 @@ void CreateProgressBar(const UINT8 ubProgressBarID, const UINT16 x, const UINT16
 	pNew->ubMsgFontForeColor   = FONT_BLACK;
 	pNew->ubMsgFontShadowColor = 0;
 	SetRelativeStartAndEndPercentage(ubProgressBarID, 0, 100, NULL);
-	pNew->swzTitle = NULL;
+	pNew->swzTitle = L"";
 
 	//Default the progress bar's color to be red
 	pNew->fill_colour = FROMRGB(150, 0, 0);
@@ -91,9 +90,8 @@ void CreateProgressBar(const UINT8 ubProgressBarID, const UINT16 x, const UINT16
 void DefineProgressBarPanel( UINT32 ubID, UINT8 r, UINT8 g, UINT8 b,
 														 UINT16 usLeft, UINT16 usTop, UINT16 usRight, UINT16 usBottom )
 {
-	PROGRESSBAR *pCurr;
 	Assert( ubID < MAX_PROGRESSBARS );
-	pCurr = pBar[ ubID ];
+	auto &pCurr = pBar[ ubID ];
 	if( !pCurr )
 		return;
 
@@ -114,21 +112,11 @@ void DefineProgressBarPanel( UINT32 ubID, UINT8 r, UINT8 g, UINT8 b,
 //panel and vertically centered from the top of the panel, to the top of the progress bar.
 void SetProgressBarTitle(UINT32 ubID, const wchar_t* pString, SGPFont const font, UINT8 ubForeColor, UINT8 ubShadowColor)
 {
-	PROGRESSBAR *pCurr;
 	Assert( ubID < MAX_PROGRESSBARS );
-	pCurr = pBar[ ubID ];
+	auto &pCurr = pBar[ ubID ];
 	if( !pCurr )
 		return;
-	if( pCurr->swzTitle )
-	{
-		MemFree( pCurr->swzTitle );
-		pCurr->swzTitle = NULL;
-	}
-	if( pString && wcslen( pString ) )
-	{
-		pCurr->swzTitle = MALLOCN(wchar_t, wcslen(pString) + 1);
-		wcscpy(pCurr->swzTitle, pString);
-	}
+  pCurr->swzTitle = pString || L"";
 	pCurr->usTitleFont = font;
 	pCurr->ubTitleFontForeColor = ubForeColor;
 	pCurr->ubTitleFontShadowColor = ubShadowColor;
@@ -138,9 +126,8 @@ void SetProgressBarTitle(UINT32 ubID, const wchar_t* pString, SGPFont const font
 //default to FONT12POINT1 in a black color.
 void SetProgressBarMsgAttributes(UINT32 ubID, SGPFont const font, UINT8 ubForeColor, UINT8 ubShadowColor)
 {
-	PROGRESSBAR *pCurr;
 	Assert( ubID < MAX_PROGRESSBARS );
-	pCurr = pBar[ ubID ];
+	auto &pCurr = pBar[ ubID ];
 	if( !pCurr )
 		return;
 	pCurr->usMsgFont            = font;
@@ -153,14 +140,8 @@ void SetProgressBarMsgAttributes(UINT32 ubID, SGPFont const font, UINT8 ubForeCo
 void RemoveProgressBar( UINT8 ubID )
 {
 	Assert( ubID < MAX_PROGRESSBARS );
-	if( pBar[ubID] )
-	{
-		if( pBar[ubID]->swzTitle )
-			MemFree( pBar[ubID]->swzTitle );
-		MemFree( pBar[ubID] );
-		pBar[ubID] = NULL;
-		return;
-	}
+  pBar[ubID].reset(nullptr);
+  pBar[ubID] = nullptr;
 }
 
 /* An important setup function.  The best explanation is through example.  The
@@ -176,7 +157,7 @@ void RemoveProgressBar( UINT8 ubID )
 void SetRelativeStartAndEndPercentage(UINT8 const id, UINT32 const uiRelStartPerc, UINT32 const uiRelEndPerc, wchar_t const* const str)
 {
 	Assert(id < MAX_PROGRESSBARS);
-	PROGRESSBAR* const bar = pBar[id];
+	auto const &bar = pBar[id];
 	if (!bar) return;
 
 	bar->rStart = uiRelStartPerc * 0.01;
@@ -193,9 +174,9 @@ void SetRelativeStartAndEndPercentage(UINT8 const id, UINT32 const uiRelStartPer
 		ColorFillVideoSurfaceArea(FRAME_BUFFER, l + 1, t + 1, r,     b,     bar->usDkColor);
 		ColorFillVideoSurfaceArea(FRAME_BUFFER, l + 1, t + 1, r - 1, b - 1, bar->usColor);
 		InvalidateRegion(l, t, r, b);
-		wchar_t const* const title = bar->swzTitle;
-		if (title)
+		if (bar->swzTitle.length() > 0)
 		{ // Draw title
+      wchar_t const* const title = bar->swzTitle.data();
 			SGPFont  const font = bar->usTitleFont;
 			INT32 const x    = (r + l - StringPixLength(title, font)) / 2; // Center
 			SetFontAttributes(font, bar->ubTitleFontForeColor, bar->ubTitleFontShadowColor);
@@ -228,11 +209,10 @@ void RenderProgressBar( UINT8 ubID, UINT32 uiPercentage )
 	static UINT32 uiLastTime = 0;
 	UINT32 uiCurTime = GetJA2Clock();
 	double rActual;
-	PROGRESSBAR *pCurr=NULL;
 	//UINT32 r, g;
 
 	Assert( ubID < MAX_PROGRESSBARS );
-	pCurr = pBar[ubID];
+	auto &pCurr = pBar[ubID];
 
 	if( pCurr == NULL )
 		return;
@@ -286,11 +266,9 @@ void RenderProgressBar( UINT8 ubID, UINT32 uiPercentage )
 
 void SetProgressBarColor( UINT8 ubID, UINT8 ubColorFillRed, UINT8 ubColorFillGreen, UINT8 ubColorFillBlue )
 {
-	PROGRESSBAR *pCurr=NULL;
-
 	Assert( ubID < MAX_PROGRESSBARS );
 
-	pCurr = pBar[ubID];
+	auto &pCurr = pBar[ubID];
 	if( pCurr == NULL )
 		return;
 
@@ -300,12 +278,9 @@ void SetProgressBarColor( UINT8 ubID, UINT8 ubColorFillRed, UINT8 ubColorFillGre
 
 void SetProgressBarTextDisplayFlag( UINT8 ubID, BOOLEAN fDisplayText, BOOLEAN fUseSaveBuffer, BOOLEAN fSaveScreenToFrameBuffer )
 {
-	PROGRESSBAR *pCurr=NULL;
-
-
 	Assert( ubID < MAX_PROGRESSBARS );
 
-	pCurr = pBar[ubID];
+	auto &pCurr = pBar[ubID];
 	if( pCurr == NULL )
 		return;
 
