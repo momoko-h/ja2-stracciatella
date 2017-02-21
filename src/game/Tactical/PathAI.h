@@ -20,6 +20,7 @@ INT16 EstimatePlotPath(SOLDIERTYPE* pSold, INT16 sDestGridno, INT8 bCopyRoute, I
 
 void ErasePath();
 INT32 FindBestPath(SOLDIERTYPE* s, INT16 sDestination, INT8 ubLevel, INT16 usMovementMode, INT8 bCopy, UINT8 fFlags);
+int32_t FindBestPathWithDummy(int16_t sDestination, int8_t ubLevel, int16_t usMovementMode, int8_t bCopy, uint8_t fFlags, GridNo soldierGrid = 0, int8_t soldierTeam = 1);
 void GlobalReachableTest( INT16 sStartGridNo );
 void GlobalItemsReachableTest( INT16 sStartGridNo1, INT16 sStartGridNo2 );
 void RoofReachableTest( INT16 sStartGridNo, UINT8 ubBuildingID );

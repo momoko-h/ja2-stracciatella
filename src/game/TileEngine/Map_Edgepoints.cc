@@ -364,9 +364,15 @@ static void ClassifyEdgepoints(void)
 
 void GenerateMapEdgepoints()
 {
-	INT32 i=-1;
 	INT16 sGridNo=-1;
 	INT16 sVGridNo[400];
+
+  auto AllocateAndCopy = [sVGridNo] (int16_t* &dest, size_t arraySize)
+  {
+    //Allocate and copy over the valid gridnos.
+    dest = MALLOCN(int16_t, arraySize);
+    memcpy(dest, sVGridNo, arraySize * sizeof(int16_t));
+  };
 
 	//Get rid of the current edgepoint lists.
 	TrashMapEdgepoints();
@@ -426,10 +432,7 @@ void GenerateMapEdgepoints()
 		}
 		if( gus1stNorthEdgepointArraySize )
 		{
-			//Allocate and copy over the valid gridnos.
-			gps1stNorthEdgepointArray = MALLOCN(INT16, gus1stNorthEdgepointArraySize);
-			for( i = 0; i < gus1stNorthEdgepointArraySize; i++ )
-				gps1stNorthEdgepointArray[ i ] = sVGridNo[ i ];
+      AllocateAndCopy(gps1stNorthEdgepointArray, gus1stNorthEdgepointArraySize);
 		}
 	}
 	//Calculate the east edges
@@ -469,10 +472,8 @@ void GenerateMapEdgepoints()
 				sVGridNo[ gus1stEastEdgepointArraySize++ ] = sGridNo;
 		}
 		if( gus1stEastEdgepointArraySize )
-		{ //Allocate and copy over the valid gridnos.
-			gps1stEastEdgepointArray = MALLOCN(INT16, gus1stEastEdgepointArraySize);
-			for( i = 0; i < gus1stEastEdgepointArraySize; i++ )
-				gps1stEastEdgepointArray[ i ] = sVGridNo[ i ];
+		{
+      AllocateAndCopy(gps1stEastEdgepointArray, gus1stEastEdgepointArraySize);
 		}
 	}
 	//Calculate the south edges
@@ -512,10 +513,8 @@ void GenerateMapEdgepoints()
 				sVGridNo[ gus1stSouthEdgepointArraySize++ ] = sGridNo;
 		}
 		if( gus1stSouthEdgepointArraySize )
-		{ //Allocate and copy over the valid gridnos.
-			gps1stSouthEdgepointArray = MALLOCN(INT16, gus1stSouthEdgepointArraySize);
-			for( i = 0; i < gus1stSouthEdgepointArraySize; i++ )
-				gps1stSouthEdgepointArray[ i ] = sVGridNo[ i ];
+		{
+      AllocateAndCopy(gps1stSouthEdgepointArray, gus1stSouthEdgepointArraySize);
 		}
 	}
 	//Calculate the west edges
@@ -555,10 +554,8 @@ void GenerateMapEdgepoints()
 				sVGridNo[ gus1stWestEdgepointArraySize++ ] = sGridNo;
 		}
 		if( gus1stWestEdgepointArraySize )
-		{ //Allocate and copy over the valid gridnos.
-			gps1stWestEdgepointArray = MALLOCN(INT16, gus1stWestEdgepointArraySize);
-			for( i = 0; i < gus1stWestEdgepointArraySize; i++ )
-				gps1stWestEdgepointArray[ i ] = sVGridNo[ i ];
+		{
+      AllocateAndCopy(gps1stWestEdgepointArray, gus1stWestEdgepointArraySize);
 		}
 	}
 
@@ -603,10 +600,7 @@ void GenerateMapEdgepoints()
 			}
 			if( gus2ndNorthEdgepointArraySize )
 			{
-				//Allocate and copy over the valid gridnos.
-				gps2ndNorthEdgepointArray = MALLOCN(INT16, gus2ndNorthEdgepointArraySize);
-				for( i = 0; i < gus2ndNorthEdgepointArraySize; i++ )
-					gps2ndNorthEdgepointArray[ i ] = sVGridNo[ i ];
+        AllocateAndCopy(gps2ndNorthEdgepointArray, gus2ndNorthEdgepointArraySize);
 			}
 		}
 		//Calculate the east edges
@@ -646,10 +640,8 @@ void GenerateMapEdgepoints()
 					sVGridNo[ gus2ndEastEdgepointArraySize++ ] = sGridNo;
 			}
 			if( gus2ndEastEdgepointArraySize )
-			{ //Allocate and copy over the valid gridnos.
-				gps2ndEastEdgepointArray = MALLOCN(INT16, gus2ndEastEdgepointArraySize);
-				for( i = 0; i < gus2ndEastEdgepointArraySize; i++ )
-					gps2ndEastEdgepointArray[ i ] = sVGridNo[ i ];
+			{
+        AllocateAndCopy(gps2ndEastEdgepointArray, gus2ndEastEdgepointArraySize);
 			}
 		}
 		//Calculate the south edges
@@ -689,10 +681,8 @@ void GenerateMapEdgepoints()
 					sVGridNo[ gus2ndSouthEdgepointArraySize++ ] = sGridNo;
 			}
 			if( gus2ndSouthEdgepointArraySize )
-			{ //Allocate and copy over the valid gridnos.
-				gps2ndSouthEdgepointArray = MALLOCN(INT16, gus2ndSouthEdgepointArraySize);
-				for( i = 0; i < gus2ndSouthEdgepointArraySize; i++ )
-					gps2ndSouthEdgepointArray[ i ] = sVGridNo[ i ];
+			{
+        AllocateAndCopy(gps2ndSouthEdgepointArray, gus2ndSouthEdgepointArraySize);
 			}
 		}
 		//Calculate the west edges
@@ -732,10 +722,8 @@ void GenerateMapEdgepoints()
 					sVGridNo[ gus2ndWestEdgepointArraySize++ ] = sGridNo;
 			}
 			if( gus2ndWestEdgepointArraySize )
-			{ //Allocate and copy over the valid gridnos.
-				gps2ndWestEdgepointArray = MALLOCN(INT16, gus2ndWestEdgepointArraySize);
-				for( i = 0; i < gus2ndWestEdgepointArraySize; i++ )
-					gps2ndWestEdgepointArray[ i ] = sVGridNo[ i ];
+			{
+        AllocateAndCopy(gps2ndWestEdgepointArray, gus2ndWestEdgepointArraySize);
 			}
 		}
 	}

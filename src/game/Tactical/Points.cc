@@ -328,7 +328,7 @@ INT16 EstimateActionPointCost( SOLDIERTYPE *pSoldier, INT16 sGridNo, INT8 bDir, 
 			default:
 
 				// Invalid movement mode
-				SLOGW(DEBUG_TAG_POINTS, "Invalid movement mode %d used in ActionPointCost", usMovementMode);
+				SLOGW(DEBUG_TAG_POINTS, "Invalid movement mode %d used in EstimateActionPointCost", usMovementMode);
 				sPoints = 1;
 		}
 	}

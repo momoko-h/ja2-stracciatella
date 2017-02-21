@@ -397,7 +397,6 @@ void HandleNextTileWaiting(SOLDIERTYPE* const pSoldier)
 {
 	// Buddy is waiting to continue his path
 	INT8		bBlocked, bPathBlocked;
-	INT16		sCost;
 	INT16   sNewGridNo, sCheckGridNo;
 	UINT8		fFlags = 0;
 
@@ -492,7 +491,7 @@ void HandleNextTileWaiting(SOLDIERTYPE* const pSoldier)
 					gfPlotPathToExitGrid = TRUE;
 				}
 
-				sCost = (INT16) FindBestPath( pSoldier, sCheckGridNo, pSoldier->bLevel, pSoldier->usUIMovementMode, NO_COPYROUTE, fFlags );
+				int32_t sCost = FindBestPath( pSoldier, sCheckGridNo, pSoldier->bLevel, pSoldier->usUIMovementMode, NO_COPYROUTE, fFlags );
 				gfPlotPathToExitGrid = FALSE;
 
 				// Can we get there
@@ -512,7 +511,7 @@ void HandleNextTileWaiting(SOLDIERTYPE* const pSoldier)
 							gfPlotPathToExitGrid = TRUE;
 						}
 
-						sCost = (INT16) FindBestPath( pSoldier, sCheckGridNo, pSoldier->bLevel, pSoldier->usUIMovementMode, NO_COPYROUTE, PATH_IGNORE_PERSON_AT_DEST );
+						FindBestPath( pSoldier, sCheckGridNo, pSoldier->bLevel, pSoldier->usUIMovementMode, NO_COPYROUTE, PATH_IGNORE_PERSON_AT_DEST );
 
 						gfPlotPathToExitGrid = FALSE;
 

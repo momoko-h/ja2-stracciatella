@@ -25,7 +25,6 @@
 #include "WorldDef.h"
 #include "WorldMan.h"
 #include "PathAI.h"
-#include "PathAIDebug.h"
 #include "Points.h"
 #include "AI.h"
 #include "Random.h"
@@ -1900,6 +1899,14 @@ ENDOFLOOP:
 	gubNPCAPBudget = 0;
 	gubNPCDistLimit = 0;
 	return(0);
+}
+
+int32_t FindBestPathWithDummy(int16_t sDestination, int8_t ubLevel, int16_t usMovementMode, int8_t bCopy, uint8_t fFlags, GridNo soldierGrid, int8_t soldierTeam)
+{
+  SOLDIERTYPE dummy = { 0 };
+  dummy.bTeam = soldierTeam;
+  dummy.sGridNo = soldierGrid;
+  return FindBestPath(&dummy, sDestination, ubLevel, usMovementMode, bCopy, fFlags);
 }
 
 void GlobalReachableTest( INT16 sStartGridNo )

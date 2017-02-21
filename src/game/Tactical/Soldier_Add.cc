@@ -52,7 +52,6 @@ UINT16 FindGridNoFromSweetSpot(const SOLDIERTYPE* const pSoldier, const INT16 sS
 	INT16		sGridNo;
 	INT32		uiRange, uiLowestRange = 999999;
 	INT32					leftmost;
-	SOLDIERTYPE soldier;
 	UINT8 ubSaveNPCAPBudget;
 	UINT8 ubSaveNPCDistLimit;
 
@@ -62,13 +61,6 @@ UINT16 FindGridNoFromSweetSpot(const SOLDIERTYPE* const pSoldier, const INT16 sS
 	ubSaveNPCDistLimit = gubNPCDistLimit;
 	gubNPCAPBudget = 0;
 	gubNPCDistLimit = ubRadius;
-
-	//create dummy soldier, and use the pathing to determine which nearby slots are
-	//reachable.
-	memset( &soldier, 0, sizeof( SOLDIERTYPE ) );
-	soldier.bLevel = 0;
-	soldier.bTeam = 1;
-	soldier.sGridNo = sSweetGridNo;
 
 	sTop		= ubRadius;
 	sBottom = -ubRadius;
@@ -94,7 +86,7 @@ UINT16 FindGridNoFromSweetSpot(const SOLDIERTYPE* const pSoldier, const INT16 sS
 
 	//Now, find out which of these gridnos are reachable
 	//(use the fake soldier and the pathing settings)
-	FindBestPath( &soldier, NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ) );
+  FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, (PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE), sSweetGridNo);
 
 	uiLowestRange = 999999;
 
@@ -144,7 +136,6 @@ UINT16 FindGridNoFromSweetSpotThroughPeople(const SOLDIERTYPE* const pSoldier, c
 	INT16		sGridNo;
 	INT32		uiRange, uiLowestRange = 999999;
 	INT32					leftmost;
-	SOLDIERTYPE soldier;
 	UINT8 ubSaveNPCAPBudget;
 	UINT8 ubSaveNPCDistLimit;
 
@@ -154,13 +145,6 @@ UINT16 FindGridNoFromSweetSpotThroughPeople(const SOLDIERTYPE* const pSoldier, c
 	ubSaveNPCDistLimit = gubNPCDistLimit;
 	gubNPCAPBudget = 0;
 	gubNPCDistLimit = ubRadius;
-
-	//create dummy soldier, and use the pathing to determine which nearby slots are
-	//reachable.
-	memset( &soldier, 0, sizeof( SOLDIERTYPE ) );
-	soldier.bLevel = 0;
-	soldier.bTeam = pSoldier->bTeam;
-	soldier.sGridNo = sSweetGridNo;
 
 	sTop		= ubRadius;
 	sBottom = -ubRadius;
@@ -186,7 +170,7 @@ UINT16 FindGridNoFromSweetSpotThroughPeople(const SOLDIERTYPE* const pSoldier, c
 
 	//Now, find out which of these gridnos are reachable
 	//(use the fake soldier and the pathing settings)
-	FindBestPath( &soldier, NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ) );
+	FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ), sSweetGridNo, pSoldier->bTeam);
 
 	uiLowestRange = 999999;
 
@@ -235,7 +219,6 @@ UINT16 FindGridNoFromSweetSpotWithStructData( SOLDIERTYPE *pSoldier, UINT16 usAn
 	INT16		sLowestGridNo=-1;
 	INT32					leftmost;
 	BOOLEAN	fFound = FALSE;
-	SOLDIERTYPE soldier;
 	UINT8 ubSaveNPCAPBudget;
 	UINT8 ubSaveNPCDistLimit;
 	UINT8	ubBestDirection=0;
@@ -246,13 +229,6 @@ UINT16 FindGridNoFromSweetSpotWithStructData( SOLDIERTYPE *pSoldier, UINT16 usAn
 	ubSaveNPCDistLimit = gubNPCDistLimit;
 	gubNPCAPBudget = 0;
 	gubNPCDistLimit = ubRadius;
-
-	//create dummy soldier, and use the pathing to determine which nearby slots are
-	//reachable.
-	memset( &soldier, 0, sizeof( SOLDIERTYPE ) );
-	soldier.bLevel = 0;
-	soldier.bTeam = 1;
-	soldier.sGridNo = sSweetGridNo;
 
 	sTop		= ubRadius;
 	sBottom = -ubRadius;
@@ -285,7 +261,7 @@ UINT16 FindGridNoFromSweetSpotWithStructData( SOLDIERTYPE *pSoldier, UINT16 usAn
 
 	//Now, find out which of these gridnos are reachable
 	//(use the fake soldier and the pathing settings)
-	FindBestPath( &soldier, NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ) );
+  FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ), sSweetGridNo);
 
 	uiLowestRange = 999999;
 
@@ -405,13 +381,6 @@ static UINT16 FindGridNoFromSweetSpotWithStructDataUsingGivenDirectionFirst(SOLD
 	gubNPCAPBudget = 0;
 	gubNPCDistLimit = ubRadius;
 
-	//create dummy soldier, and use the pathing to determine which nearby slots are
-	//reachable.
-	memset( &soldier, 0, sizeof( SOLDIERTYPE ) );
-	soldier.bLevel = 0;
-	soldier.bTeam = 1;
-	soldier.sGridNo = sSweetGridNo;
-
 	sTop		= ubRadius;
 	sBottom = -ubRadius;
 	sLeft   = - ubRadius;
@@ -444,7 +413,7 @@ static UINT16 FindGridNoFromSweetSpotWithStructDataUsingGivenDirectionFirst(SOLD
 
 	//Now, find out which of these gridnos are reachable
 	//(use the fake soldier and the pathing settings)
-	FindBestPath( &soldier, NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ) );
+  FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ), sSweetGridNo);
 
 	uiLowestRange = 999999;
 
@@ -576,13 +545,6 @@ UINT16 FindGridNoFromSweetSpotWithStructDataFromSoldier(const SOLDIERTYPE* const
 	gubNPCAPBudget = 0;
 	gubNPCDistLimit = ubRadius;
 
-	//create dummy soldier, and use the pathing to determine which nearby slots are
-	//reachable.
-	memset( &soldier, 0, sizeof( SOLDIERTYPE ) );
-	soldier.bLevel = 0;
-	soldier.bTeam = 1;
-	soldier.sGridNo = sSweetGridNo;
-
 	sTop		= ubRadius;
 	sBottom = -ubRadius;
 	sLeft   = - ubRadius;
@@ -606,7 +568,7 @@ UINT16 FindGridNoFromSweetSpotWithStructDataFromSoldier(const SOLDIERTYPE* const
 	}
 
 	//Now, find out which of these gridnos are reachable
-	FindBestPath( &soldier, NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ) );
+  FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ), sSweetGridNo);
 
 	uiLowestRange = 999999;
 
@@ -849,7 +811,6 @@ UINT16 FindRandomGridNoFromSweetSpot(const SOLDIERTYPE* const pSoldier, const IN
 	INT32					leftmost;
 	BOOLEAN	fFound = FALSE;
 	UINT32		cnt = 0;
-	SOLDIERTYPE soldier;
 	UINT8 ubSaveNPCAPBudget;
 	UINT8 ubSaveNPCDistLimit;
 	INT16  sTop, sBottom;
@@ -862,13 +823,6 @@ UINT16 FindRandomGridNoFromSweetSpot(const SOLDIERTYPE* const pSoldier, const IN
 	ubSaveNPCDistLimit = gubNPCDistLimit;
 	gubNPCAPBudget = 0;
 	gubNPCDistLimit = ubRadius;
-
-	//create dummy soldier, and use the pathing to determine which nearby slots are
-	//reachable.
-	memset( &soldier, 0, sizeof( SOLDIERTYPE ) );
-	soldier.bLevel = 0;
-	soldier.bTeam = 1;
-	soldier.sGridNo = sSweetGridNo;
 
 	sTop		= ubRadius;
 	sBottom = -ubRadius;
@@ -892,7 +846,7 @@ UINT16 FindRandomGridNoFromSweetSpot(const SOLDIERTYPE* const pSoldier, const IN
 
 	//Now, find out which of these gridnos are reachable
 	//(use the fake soldier and the pathing settings)
-	FindBestPath( &soldier, NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ) );
+	FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, (PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE), sSweetGridNo);
 
 	do
 	{
