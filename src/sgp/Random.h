@@ -1,8 +1,11 @@
 #ifndef __RANDOM_
 #define __RANDOM_
 
+#include <random>
 #include "Types.h"
 
+// Global mersenne twister random number engine. Use freely for things like std:shuffle.
+extern std::mt19937 gMT19937;
 
 extern void InitializeRandom(void);
 extern UINT32 Random( UINT32 uiRange );
