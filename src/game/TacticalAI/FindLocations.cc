@@ -180,7 +180,7 @@ static INT8 CalcBestCTGT(SOLDIERTYPE* const pSoldier, const SOLDIERTYPE* const o
 	sSouthGridNo = NewGridNo( sCentralGridNo, DirectionInc(SOUTH) );
 
 	// look into all 8 adjacent tiles & determine where the cover is the worst
-	for (sDir = 1; sDir <= 8; sDir++)
+	for (sDir = 0; sDir < 8; sDir++)
 	{
 		// get the gridno of the adjacent spot lying in that direction
 		sAdjSpot = NewGridNo( sCentralGridNo, DirectionInc( sDir ) );
