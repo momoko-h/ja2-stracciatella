@@ -200,7 +200,7 @@ INT8 SoldierClassToMilitiaRank(UINT8 const soldier_class)
 // add militias of a certain rank
 static void StrategicAddMilitiaToSector(INT16 sMapX, INT16 sMapY, UINT8 ubRank, UINT8 ubHowMany)
 {
-  auto si = GetSectorInfo(sMapX, sMapY);
+  auto &si = GetSectorInfo(sMapX, sMapY);
   si.ubNumberOfCivsAtLevel[ubRank] += ubHowMany;
 
 	// update the screen display
@@ -211,7 +211,7 @@ static void StrategicAddMilitiaToSector(INT16 sMapX, INT16 sMapY, UINT8 ubRank, 
 // Promote militias of a certain rank
 static void StrategicPromoteMilitiaInSector(INT16 const x, INT16 const y, UINT8 const current_rank, UINT8 const n)
 {
-  auto si = GetSectorInfo(x, y);
+  auto &si = GetSectorInfo(x, y);
 
 	Assert(si.ubNumberOfCivsAtLevel[current_rank] >= n);
 	//KM : July 21, 1999 patch fix
@@ -226,7 +226,7 @@ static void StrategicPromoteMilitiaInSector(INT16 const x, INT16 const y, UINT8 
 
 void StrategicRemoveMilitiaFromSector(INT16 sMapX, INT16 sMapY, UINT8 ubRank, UINT8 ubHowMany)
 {
-  auto si = GetSectorInfo(sMapX, sMapY);
+  auto &si = GetSectorInfo(sMapX, sMapY);
 
 	//KM : July 21, 1999 patch fix
 	if(si.ubNumberOfCivsAtLevel[ ubRank ] < ubHowMany )

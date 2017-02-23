@@ -376,7 +376,7 @@ static void SortMercArray(void)
   std::sort(AimMercArray, AimMercArray + MAX_NUMBER_MERCS,
     [ascending] (uint8_t ID1, uint8_t ID2) {
       auto GetValue = [] (uint8_t id) -> int {
-        auto const profile = GetProfile(id);
+        auto const &profile = GetProfile(id);
 
         switch (gubCurrentSortMode)
         {
