@@ -335,7 +335,7 @@ UINT16 DetermineMovementMode( SOLDIERTYPE * pSoldier, INT8 bAction )
 		{
 			return( WALKING );
 		}
-		else if ( (pSoldier->ubBodyType == HATKIDCIV || pSoldier->ubBodyType == KIDCIV) && (pSoldier->bAlertStatus == STATUS_GREEN) && Random( 10 ) == 0 )
+		else if ( (pSoldier->ubBodyType == HATKIDCIV || pSoldier->ubBodyType == KIDCIV) && (pSoldier->bAlertStatus == STATUS_GREEN) && Chance( 10 ) )
 		{
 			return( KID_SKIPPING );
 		}

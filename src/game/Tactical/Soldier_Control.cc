@@ -492,7 +492,7 @@ void	DoNinjaAttack( SOLDIERTYPE *pSoldier )
 		{
 			if ( ubTargetStance != ANIM_PRONE )
 			{
-				const UINT16 state = (Random(2) == 0 ? NINJA_LOWKICK : NINJA_PUNCH);
+				const UINT16 state = (Chance(50) ? NINJA_LOWKICK : NINJA_PUNCH);
 				ChangeSoldierState(pSoldier, state, 0, FALSE);
 
 				// CHECK IF HE CAN SEE US, IF SO CHANGE DIRECTION
@@ -545,7 +545,7 @@ void	DoNinjaAttack( SOLDIERTYPE *pSoldier )
 		}
 		else
 		{
-			if ( Random( 2 ) == 0 )
+			if ( Chance(50) )
 			{
 				filename = BATTLESNDSDIR "/033_chop3.wav";
 			}
@@ -865,7 +865,7 @@ static void CheckForFreeupFromHit(SOLDIERTYPE* pSoldier, UINT32 uiOldAnimFlags, 
 		// ATE: if our guy, have 10% change of say damn, if still conscious...
 		if ( pSoldier->bTeam == OUR_TEAM && pSoldier->bLife >= OKLIFE )
 		{
-			if ( Random( 10 ) == 0 )
+			if ( Chance( 10 ) )
 			{
 				DoMercBattleSound(pSoldier, BATTLE_SOUND_CURSE1);
 			}
@@ -2709,7 +2709,7 @@ void EVENT_SoldierGotHit(SOLDIERTYPE* pSoldier, const UINT16 usWeaponIndex, INT1
 
 			uiChance = SleepDartSuccumbChance( pSoldier );
 
-			if ( PreRandom( 100 ) < uiChance )
+			if ( PreChance( uiChance ) )
 			{
 				// succumb to the drug!
 				sBreathLoss = (INT16)( pSoldier->bBreathMax * 100 );
@@ -5299,7 +5299,7 @@ void BeginSoldierGetup( SOLDIERTYPE *pSoldier )
 
 		uiChance = SleepDartSuccumbChance( pSoldier );
 
-		if ( PreRandom( 100 ) < uiChance )
+		if ( Chance( uiChance ) )
 		{
 			// succumb to the drug!
 			DeductPoints( pSoldier, 0, (INT16)( pSoldier->bBreathMax * 100 ) );
@@ -5697,7 +5697,7 @@ UINT8 SoldierTakeDamage(SOLDIERTYPE* const pSoldier, INT16 sLifeDeduct, INT16 sB
 		}
 		SLOGD(DEBUG_TAG_SOLDIER, "Chance To Drop Weapon: str: %d Dam: %d Chance: %d", sTestOne, sTestTwo, sChanceToDrop );
 
-		if ( Random( 100 ) < (UINT16) sChanceToDrop )
+		if ( Chance( sChanceToDrop) )
 		{
 			// OK, drop item in main hand...
 			if ( pSoldier->inv[ HANDPOS ].usItem != NOTHING )
@@ -5848,7 +5848,7 @@ BOOLEAN InternalDoMercBattleSound(SOLDIERTYPE* s, BattleSound battle_snd_id, INT
 				case YAF_MONSTER:
 				case YAM_MONSTER:
 				case ADULTFEMALEMONSTER:
-				case AM_MONSTER:         sub_snd = Random(2) == 0 ? ACR_DIE_PART1 : ACR_LUNGE;     break;
+				case AM_MONSTER:         sub_snd = Chance(50) ? ACR_DIE_PART1 : ACR_LUNGE;         break;
 				case INFANT_MONSTER:     sub_snd = BCR_SHRIEK;                                     break;
 				case QUEENMONSTER:       sub_snd = LQ_SHRIEK;                                      break;
 				case LARVAE_MONSTER:     sub_snd = BCR_SHRIEK;                                     break;
@@ -6678,7 +6678,7 @@ void EVENT_SoldierBeginBladeAttack( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 
 					else
 					{
 						// WE ARE SEEN
-						if ( Random( 50 ) > 25 )
+						if ( Chance( 50 ) )
 						{
 							EVENT_InitNewSoldierAnim( pSoldier, STAB, 0 , FALSE );
 						}
@@ -8929,7 +8929,7 @@ void BeginTyingToFall( SOLDIERTYPE *pSoldier )
 	pSoldier->fTryingToFall = TRUE;
 
   // Randomize direction
-  if ( Random( 50 ) < 25 )
+  if ( Chance ( 50 ) )
   {
     pSoldier->fFallClockwise = TRUE;
   }

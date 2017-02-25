@@ -1,6 +1,7 @@
 #ifndef __RANDOM_
 #define __RANDOM_
 
+#include <array>
 #include <random>
 #include "Types.h"
 
@@ -17,6 +18,9 @@ extern BOOLEAN Chance( UINT32 uiChance );
 //Used to deter Ian's tactic of shoot, miss, restore saved game :)
 extern UINT32 PreRandom( UINT32 uiRange );
 extern BOOLEAN PreChance( UINT32 uiChance );
+
+//Returns an array containing the numbers 0-7 in random order.
+std::array<uint8_t, 8> GetRandomizedDirections(void);
 
 //IMPORTANT:  Changing this define will invalidate the JA2 save.  If this
 //						is necessary, please ifdef your own value.

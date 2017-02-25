@@ -293,7 +293,7 @@ void LoadWorldItemsFromMap(HWFILE const f)
 
 		if (o.usItem == OWNERSHIP) wi.ubNonExistChance = 0;
 
-		if (!gfEditMode && PreRandom(100) < wi.ubNonExistChance) continue;
+		if (!gfEditMode && PreChance(wi.ubNonExistChance)) continue;
 
 		if (!gfEditMode)
 		{

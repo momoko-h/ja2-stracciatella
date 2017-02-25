@@ -1,3 +1,5 @@
+#include <functional>
+#include <random>
 #include "Soldier_Create.h"
 #include "Overhead.h"
 #include "Soldier_Profile.h"
@@ -97,20 +99,22 @@ UINT8 gubItemDroppableFlag[NUM_INV_SLOTS] =
 
 void RandomizeNewSoldierStats( SOLDIERCREATE_STRUCT *pCreateStruct )
 {
-	pCreateStruct->bLifeMax  							= (UINT8)Random(50)+50;
+  auto genRandom = std::bind(std::uniform_int_distribution<UINT8>(50, 99), gMT19937);
+
+	pCreateStruct->bLifeMax  							= genRandom();
 	pCreateStruct->bLife	  							= pCreateStruct->bLifeMax;
-	pCreateStruct->bAgility								= (UINT8)Random(50)+50;
-	pCreateStruct->bDexterity							= (UINT8)Random(50)+50;
+	pCreateStruct->bAgility								= genRandom();
+	pCreateStruct->bDexterity							= genRandom();
 	pCreateStruct->bExpLevel							= 1 + (UINT8)Random(4);
 
 	// Randomize skills (for now)
-	pCreateStruct->bMarksmanship					= (UINT8)Random(50)+50;
-	pCreateStruct->bMedical								= (UINT8)Random(50)+50;
-	pCreateStruct->bMechanical						= (UINT8)Random(50)+50;
-	pCreateStruct->bExplosive							= (UINT8)Random(50)+50;
-	pCreateStruct->bLeadership						= (UINT8)Random(50)+50;
-	pCreateStruct->bStrength							= (UINT8)Random(50)+50;
-	pCreateStruct->bWisdom								= (UINT8)Random(50)+50;
+	pCreateStruct->bMarksmanship					= genRandom();
+	pCreateStruct->bMedical								= genRandom();
+	pCreateStruct->bMechanical						= genRandom();
+	pCreateStruct->bExplosive							= genRandom();
+	pCreateStruct->bLeadership						= genRandom();
+	pCreateStruct->bStrength							= genRandom();
+	pCreateStruct->bWisdom								= genRandom();
 	pCreateStruct->bAttitude							= (INT8) Random( MAXATTITUDES );
 	pCreateStruct->bOrders								= FARPATROL;
 	pCreateStruct->bMorale								= 50;

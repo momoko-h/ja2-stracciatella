@@ -249,7 +249,7 @@ static void ProcessStatChange(MERCPROFILESTRUCT& p, StatKind const ubStat, UINT1
 				usChance = 99;
 			}
 
-      if (PreRandom(100) < usChance)
+      if (PreChance(usChance))
       {
         (*psStatGainPtr)++;
 				sSubPointChange++;
@@ -322,7 +322,7 @@ static void ProcessStatChange(MERCPROFILESTRUCT& p, StatKind const ubStat, UINT1
 				}
       }
 
-      if (PreRandom(100) < usChance)
+      if (PreChance(usChance))
       {
 				(*psStatGainPtr)--;
 				sSubPointChange--;
@@ -568,7 +568,7 @@ static void ChangeStat(MERCPROFILESTRUCT& p, SOLDIERTYPE* const pSoldier, StatKi
 			// ( except health; not only will it sound silly, but
 			// also we give points for health on sector traversal and this would
 			// probaby mess up battle handling too )
-			if ( (ubStat != HEALTHAMT) && ( (ubStat == EXPERAMT) || Random( 100 ) < 25 ) )
+			if ( (ubStat != HEALTHAMT) && ( (ubStat == EXPERAMT) || Chance(25) ) )
 			//if ( (ubStat != EXPERAMT) && (ubStat != HEALTHAMT) && ( Random( 100 ) < 25 ) )
 			{
 				// Pipe up with "I'm getting better at this!"
@@ -1018,7 +1018,7 @@ void HandleUnhiredMercImprovement(MERCPROFILESTRUCT& p)
 	if (p.bMercStatus == MERC_WORKING_ELSEWHERE)
 	{
 		// if he did't do anything interesting today
-		if (Random(100) < 20)
+		if (Chance(20))
 		{
 			// no chance to change today
 			return;
@@ -1039,7 +1039,7 @@ void HandleUnhiredMercImprovement(MERCPROFILESTRUCT& p)
 	else
 	{
 		// if the merc just takes it easy (high level or stupid mercs are more likely to)
-		if ((INT8)Random(10) < p.bExpLevel || (INT8)Random(100) > p.bWisdom)
+		if ((INT8)Random(10) < p.bExpLevel || Chance(100 - p.bWisdom))
 		{
 			// no chance to change today
 			return;
