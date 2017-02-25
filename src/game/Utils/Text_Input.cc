@@ -1,3 +1,4 @@
+#include <utility>
 #include <math.h>
 #include "HImage.h"
 #include "Input.h"
@@ -846,7 +847,7 @@ static void DeleteHilitedText(void)
 	UINT8 start = gubStartHilite;
 	UINT8 end   = gubCursorPos;
 	if (start == end) return;
-	if (start >  end) Swap(start, end);
+	if (start >  end) std::swap(start, end);
 	gubStartHilite = start;
 	gubCursorPos   = start;
 	RemoveChars(start, end - start);
@@ -978,7 +979,7 @@ static void RenderActiveTextField(void)
 	if (start != end)
 	{ // Some or all of the text is hilighted, so we will use a different method.
 		// Sort the hilite order.
-		if (start > end) Swap(start, end);
+		if (start > end) std::swap(start, end);
 		// Traverse the string one character at a time, and draw the highlited part differently.
 		UINT32 x = n->region.RegionTopLeftX + 3;
 		for (wchar_t const* i = str; *i != L'\0'; ++i)
