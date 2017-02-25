@@ -1,13 +1,21 @@
 #ifndef __CAMPAIGN_TYPES_H
 #define __CAMPAIGN_TYPES_H
 
+#include <stdint.h>
 #include "Debug.h"
 #include "Types.h"
 
-bool IS_VALID_SECTOR(uint8_t const x, uint8_t const y);
+constexpr bool IS_VALID_SECTOR(uint8_t const x, uint8_t const y)
+{
+  return 1 <= x && x <= 16 && 1 <= y && y <= 16;
+}
 
 //Function to convert sector coordinates (1-16,1-16) to 0-255
-uint8_t SECTOR(uint8_t const x, uint8_t const y);
+constexpr uint8_t SECTOR(uint8_t const x, uint8_t const y)
+{
+  Assert(IS_VALID_SECTOR(x, y));
+  return (y - 1) * 16 + x - 1;
+}
 
 #define SECTORX(SectorID) ((SectorID % 16) + 1)
 #define SECTORY(SectorID) ((SectorID / 16) + 1)
@@ -223,6 +231,9 @@ extern UNDERGROUND_SECTORINFO *gpUndergroundSectorInfoHead;
 
 //Get a reference to a SECTORINFO struct, shortcut for
 //SectorInfo[SECTOR(x,y)]
-SECTORINFO& GetSectorInfo(uint8_t x, uint8_t y);
+constexpr SECTORINFO& GetSectorInfo(uint8_t x, uint8_t y)
+{
+  return SectorInfo[SECTOR(x, y)];
+}
 
 #endif

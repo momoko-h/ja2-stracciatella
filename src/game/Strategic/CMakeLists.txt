@@ -6,7 +6,6 @@ set(JA2_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Assignments.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/Auto_Resolve.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/Campaign_Init.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Campaign_Types.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/Creature_Spreading.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/Game_Clock.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/Game_Event_Hook.cc
