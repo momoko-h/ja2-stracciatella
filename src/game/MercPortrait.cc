@@ -1,3 +1,4 @@
+#include <memory>
 #include "Directories.h"
 #include "MercPortrait.h"
 #include "Soldier_Profile_Type.h"
@@ -12,7 +13,7 @@ static SGPVObject* LoadPortrait(MERCPROFILESTRUCT const& p, char const* const su
 }
 
 
-SGPVObject* Load33Portrait(   MERCPROFILESTRUCT const& p) { return LoadPortrait(p, "33face/");   }
+std::unique_ptr<SGPVObject> Load33Portrait(   MERCPROFILESTRUCT const& p) { return std::unique_ptr<SGPVObject>(LoadPortrait(p, "33face/"));   }
 SGPVObject* Load65Portrait(   MERCPROFILESTRUCT const& p) { return LoadPortrait(p, "65face/");   }
 SGPVObject* LoadBigPortrait(  MERCPROFILESTRUCT const& p) { return LoadPortrait(p, "bigfaces/"); }
 SGPVObject* LoadSmallPortrait(MERCPROFILESTRUCT const& p) { return LoadPortrait(p, "");          }

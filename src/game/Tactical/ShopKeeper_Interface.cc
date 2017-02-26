@@ -1,3 +1,6 @@
+#include <bitset>
+#include <map>
+#include <memory>
 #include "Directories.h"
 #include "Font.h"
 #include "GameLoop.h"
@@ -283,9 +286,7 @@ static BOOLEAN gfRemindedPlayerToPickUpHisStuff = FALSE;
 static BOOLEAN gfDoneBusinessThisSession = FALSE;
 
 // this is used within SKI exclusively, to handle small faces
-static UINT8  gubArrayOfEmployedMercs[MAX_CHARACTER_COUNT];
-static SGPVObject* guiSmallSoldiersFace[MAX_CHARACTER_COUNT];
-static UINT8  gubNumberMercsInArray;
+static std::map<uint8_t, std::unique_ptr<SGPVObject>> gEmployedMercsFaces;
 
 static UINT16 gusPositionOfSubTitlesX = 0;
 
@@ -299,7 +300,7 @@ static BOOLEAN gfStartWithRepairsDelayedQuote = FALSE;
 
 static BOOLEAN gfPerformTransactionInProgress = FALSE;
 
-static BOOLEAN gfCommonQuoteUsedThisSession[NUM_COMMON_SK_QUOTES];
+static std::bitset<NUM_COMMON_SK_QUOTES> gfCommonQuoteUsedThisSession;
 
 
 // Enums for possible evaluation results
@@ -559,18 +560,11 @@ static void EnterShopKeeperInterface(void)
 
 	//Create an array of all mercs (anywhere!) currently in the player's employ, and load their small faces
 	// This is to support showing of repair item owner's faces even when they're not in the sector, as long as they still work for player
-	gubNumberMercsInArray = 0;
 	CFOR_EACH_IN_TEAM(pSoldier, OUR_TEAM)
 	{
 		if (pSoldier->ubProfile != NO_PROFILE && !IsMechanical(*pSoldier))
 		{
-			// remember whose face is in this slot
-			gubArrayOfEmployedMercs[ gubNumberMercsInArray ] = pSoldier->ubProfile;
-
-			//While we are at it, add their small face
-			guiSmallSoldiersFace[gubNumberMercsInArray] = Load33Portrait(GetProfile(pSoldier->ubProfile));
-
-			gubNumberMercsInArray++;
+      gEmployedMercsFaces[pSoldier->ubProfile] = Load33Portrait(GetProfile(pSoldier->ubProfile));
 		}
 	}
 
@@ -642,7 +636,7 @@ static void EnterShopKeeperInterface(void)
 
 	memset( &gMoveingItem, 0, sizeof( INVENTORY_IN_SLOT ) );
 
-	memset( &gfCommonQuoteUsedThisSession, FALSE, sizeof( gfCommonQuoteUsedThisSession ) );
+  gfCommonQuoteUsedThisSession.reset();
 
 	//Init the shopkeepers face
 	InitShopKeepersFace( ArmsDealerInfo[ gbSelectedArmsDealerID ].ubShopKeeperID );
@@ -781,11 +775,8 @@ static void ExitShopKeeperInterface(void)
 	UnloadButtonImage( guiSKI_TransactionButtonImage );
 	UnloadButtonImage( guiSKI_DoneButtonImage );
 
-	//loop through the area and delete small faces
-	for(ubCnt=0; ubCnt<gubNumberMercsInArray; ubCnt++)
-	{
-		DeleteVideoObject(guiSmallSoldiersFace[ubCnt]);
-	}
+	//delete small faces
+  gEmployedMercsFaces.clear();
 
 	RemoveButton( guiSKI_InvPageUpButton );
 	RemoveButton( guiSKI_InvPageDownButton );
@@ -1972,7 +1963,6 @@ static void DisplayArmsDealerCurrentInventoryPage(void)
 
 static void BuildDoneWhenTimeString(wchar_t sString[], size_t Length, ArmsDealerID, UINT16 usItemIndex, UINT8 ubElement);
 static UINT32 CalcShopKeeperItemPrice(BOOLEAN fDealerSelling, BOOLEAN fUnitPriceOnly, UINT16 usItemID, FLOAT dModifier, const OBJECTTYPE* pItemObject);
-static INT8 GetSlotNumberForMerc(UINT8 ubProfile);
 static bool IsGunOrAmmoOfSameTypeSelected(OBJECTTYPE const&);
 
 
@@ -2079,10 +2069,10 @@ static UINT32 DisplayInvSlot(UINT8 const slot_num, UINT16 const item_idx, UINT16
 
 	if (owner != NO_PROFILE)
 	{ // Display the face
-		INT8 const face_slot = GetSlotNumberForMerc(owner);
-		if (face_slot != -1)
+    auto face = gEmployedMercsFaces.find(owner);
+		if (face != gEmployedMercsFaces.end())
 		{ // Still in player's employ
-			BltVideoObject(FRAME_BUFFER, guiSmallSoldiersFace[face_slot], 0, x + SKI_SMALL_FACE_OFFSET_X, y);
+			BltVideoObject(FRAME_BUFFER, face->second.get(), 0, x + SKI_SMALL_FACE_OFFSET_X, y);
 		}
 	}
 
@@ -4018,7 +4008,7 @@ static void HandleShopKeeperDialog(UINT8 ubInit)
 				{
 					StartShopKeeperTalking( (UINT16) sRandomQuoteToUse );
 
-					gfCommonQuoteUsedThisSession[ sRandomQuoteToUse ] = TRUE;
+					gfCommonQuoteUsedThisSession.set(sRandomQuoteToUse);
 
 					//increase the random quote delay
 					guiRandomQuoteDelayTime += SKI_DEALERS_RANDOM_QUOTE_DELAY_INCREASE_RATE;
@@ -4241,21 +4231,6 @@ static UINT8 CountNumberOfItemsInTheArmsDealersOfferArea()
 		if (i->fActive) ++n;
 	}
 	return n;
-}
-
-
-static INT8 GetSlotNumberForMerc(UINT8 ubProfile)
-{
-	INT8	bCnt;
-
-	for( bCnt = 0; bCnt < gubNumberMercsInArray; bCnt++ )
-	{
-		if( gubArrayOfEmployedMercs[ bCnt ] == ubProfile )
-			return( bCnt );
-	}
-
-	// not found - not currently working for the player
-	return( -1 );
 }
 
 
