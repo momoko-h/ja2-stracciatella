@@ -99,7 +99,8 @@ UINT8 gubItemDroppableFlag[NUM_INV_SLOTS] =
 
 void RandomizeNewSoldierStats( SOLDIERCREATE_STRUCT *pCreateStruct )
 {
-  auto genRandom = std::bind(std::uniform_int_distribution<UINT8>(50, 99), gMT19937);
+  auto genRandom = std::bind(std::uniform_int_distribution<UINT8>(50, 99),
+     std::ref(gMT19937));
 
 	pCreateStruct->bLifeMax  							= genRandom();
 	pCreateStruct->bLife	  							= pCreateStruct->bLifeMax;
