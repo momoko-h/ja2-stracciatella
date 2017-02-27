@@ -168,8 +168,6 @@ static void deinitGameAndExit()
   ShutdownVideoObjectManager();
   SLOGD(DEBUG_TAG_SGP, "Shutting Down Video Manager");
   ShutdownVideoManager();
-  SLOGD(DEBUG_TAG_SGP, "Shutting Down Memory Manager");
-  ShutdownMemoryManager();  // must go last, for MemDebugCounter to work right...
 
   SLOGD(DEBUG_TAG_SGP, "Shutting Down SDL");
   SDL_Quit();
@@ -335,10 +333,6 @@ int main(int argc, char* argv[])
 	// Initialize the Debug Manager - success doesn't matter
 	InitializeDebugManager();
 #endif
-
-  // this one needs to go ahead of all others (except Debug), for MemDebugCounter to work right...
-	SLOGD(DEBUG_TAG_SGP, "Initializing Memory Manager");
-	InitializeMemoryManager();
 
   SLOGD(DEBUG_TAG_SGP, "Initializing Game Resources");
   char* rustConfigFolderPath = get_stracciatella_home(params);
