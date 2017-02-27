@@ -252,10 +252,9 @@ static UINT16 FindGridNoFromSweetSpotWithStructDataUsingGivenDirectionFirst(SOLD
   FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ), sSweetGridNo);
   FilterUnReachableOrNotOkGrids(gridNos, pSoldier);
 
-	int32_t uiLowestRange = 999999;
-  uint8_t ubBestDirection;
+  int32_t uiLowestRange = INT32_MAX;
+  uint8_t ubBestDirection = 0;
   GridNo sLowestGridNo = NOWHERE;
-          bool fFound = false;
 
   uint16_t usOKToAddStructID = (pSoldier->pLevelNode && pSoldier->pLevelNode->pStructureData)
                              ? pSoldier->pLevelNode->pStructureData->usStructureID
@@ -276,63 +275,25 @@ static UINT16 FindGridNoFromSweetSpotWithStructDataUsingGivenDirectionFirst(SOLD
     compareFn = std::bind(GetRangeInCellCoordsFromGridNoDiff, sSweetGridNo, std::placeholders::_1);
   }
 
-  for (auto sGridNo : gridNos) 
-			{
-					BOOLEAN fDirectionFound = FALSE;
-					UINT16	usOKToAddStructID;
-					UINT16							 usAnimSurface;
-          int8_t cnt3;
-          int32_t uiRange;
+  // OK, check the preferred given direction first
+  uint8_t directions[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+  std::swap(directions[0], directions[bGivenDirection]);
 
-          // OK, check the perfered given direction first
-					if (OkayToAddStructureToWorld(sGridNo, pSoldier->bLevel, &pStructureFileRef->pDBStructureRef[OneCDirection(bGivenDirection)], usOKToAddStructID))
-					{
-						fDirectionFound = TRUE;
-            cnt3 = bGivenDirection;
-					}
-          else
-          {
-					  // Check each struct in each direction
-					  for( cnt3 = 0; cnt3 < 8; cnt3++ )
-					  {
-              if ( cnt3 != bGivenDirection )
-              {
-						    if (OkayToAddStructureToWorld(sGridNo, pSoldier->bLevel, &pStructureFileRef->pDBStructureRef[OneCDirection(cnt3)], usOKToAddStructID))
-						    {
-							    fDirectionFound = TRUE;
-							    break;
-						    }
-              }
-					  }
-          }
+  for (auto sGridNo : gridNos) {
+    for (auto cnt3 : directions) {
+      if (OkayToAddStructureToWorld(sGridNo, pSoldier->bLevel, &pStructureFileRef->pDBStructureRef[OneCDirection(cnt3)], usOKToAddStructID)) {
+        int32_t uiRange = compareFn(sGridNo);
+        if ( uiRange < uiLowestRange ) {
+          ubBestDirection = cnt3;
+          sLowestGridNo = sGridNo;
+          uiLowestRange = uiRange;
+        }
+      }
+    }
+  }
 
-					if ( fDirectionFound )
-					{
-            uiRange = compareFn(sGridNo);
-
-						if ( uiRange < uiLowestRange )
-						{
-							ubBestDirection = (UINT8)cnt3;
-							sLowestGridNo = sGridNo;
-							uiLowestRange = uiRange;
-							fFound = TRUE;
-						}
-					}
-				
-			}
-		
-	
-	if ( fFound )
-	{
-		// Set direction we chose...
-		*pubDirection = ubBestDirection;
-
-		return( sLowestGridNo );
-	}
-	else
-	{
-		return( NOWHERE );
-	}
+  *pubDirection = ubBestDirection;
+  return( sLowestGridNo );
 }
 
 
