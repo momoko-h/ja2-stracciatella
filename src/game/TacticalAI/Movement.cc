@@ -6,6 +6,7 @@
 #include "WorldMan.h"
 #include "PathAI.h"
 #include "Points.h"
+#include "Random.h"
 #include "Smell.h"
 #include "Strategic_Pathing.h"
 #include "Soldier_Control.h"
@@ -304,7 +305,7 @@ INT16 InternalGoAsFarAsPossibleTowards(SOLDIERTYPE *pSoldier, INT16 sDesGrid, IN
 	INT16 sTempDest,sGoToGrid;
 	INT16 sOrigin;
 	UINT16 usMaxDist;
-	UINT8 ubDirection,ubDirsLeft,ubDirChecked[8],fFound = FALSE;
+	UINT8 ubDirection,fFound = FALSE;
 	INT8 fPathFlags;
 
 	INT8 bAPsLeft = -1; // XXX HACK000E
@@ -393,31 +394,9 @@ INT16 InternalGoAsFarAsPossibleTowards(SOLDIERTYPE *pSoldier, INT16 sDesGrid, IN
 		{
 			// else look at the 8 nearest gridnos to sDesGrid for a valid destination
 
-			// clear ubDirChecked flag for all 8 directions
-			for (ubDirection = 0; ubDirection < 8; ubDirection++)
-				ubDirChecked[ubDirection] = FALSE;
-
-			ubDirsLeft = 8;
-
-			// examine all 8 spots around 'sDesGrid'
-			// keep looking while directions remain and a satisfactory one not found
-			for (ubDirsLeft = 8; ubDirsLeft != 0; ubDirsLeft--)
-			{
-				if (fFound)
-				{
-					break;
-				}
-				// randomly select a direction which hasn't been 'checked' yet
-				do
-				{
-					ubDirection = (UINT8) Random(8);
-				}
-				while (ubDirChecked[ubDirection]);
-
-				ubDirChecked[ubDirection] = TRUE;
-
+      for (auto ubDirection : GetRandomizedDirections()) {
 				// determine the gridno 1 tile away from current friend in this direction
-				sTempDest = NewGridNo(sDesGrid,DirectionInc( ubDirection + 1 ));
+				sTempDest = NewGridNo(sDesGrid,DirectionInc( ubDirection ));
 
 				// if that's out of bounds, ignore it & check next direction
 				if (sTempDest == sDesGrid)

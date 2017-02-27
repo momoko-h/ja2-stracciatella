@@ -1,3 +1,5 @@
+#include <functional>
+#include <random>
 #include "Inventory_Choosing.h"
 #include "Animation_Data.h"
 #include "Items.h"
@@ -31,6 +33,9 @@
 
 
 UINT32 guiMortarsRolledByTeam = 0;
+// RNG for the common 80..100 (inclusive) range.
+static auto Random80to100 = std::bind(std::uniform_int_distribution<int8_t>(80, 100),
+   std::ref(gMT19937));
 
 
 static void MarkAllWeaponsOfSameGunClassAsDropped(UINT16 usWeapon);
@@ -694,7 +699,7 @@ static void ChooseGrenadesForSoldierCreateStruct(SOLDIERCREATE_STRUCT* pp, INT8 
 	// special mortar shell handling
 	if (bGrenadeClass == MORTAR_GRENADE_CLASS)
 	{
-		CreateItems( MORTAR_SHELL, (INT8) (80 + Random(21)), bGrenades, &Object );
+		CreateItems( MORTAR_SHELL, Random80to100(), bGrenades, &Object );
 		Object.fFlags |= OBJECT_UNDROPPABLE;
 		PlaceObjectInSoldierCreateStruct( pp, &Object );
 		return;
@@ -1287,7 +1292,7 @@ static void ChooseKitsForSoldierCreateStruct(SOLDIERCREATE_STRUCT* pp, INT8 bKit
 
 	if ( usKitItem != 0 )
 	{
-		CreateItem( usKitItem, (INT8)(80 + Random( 21 )), &Object );
+		CreateItem( usKitItem, Random80to100(), &Object );
 		Object.fFlags |= OBJECT_UNDROPPABLE;
 		PlaceObjectInSoldierCreateStruct( pp, &Object );
 	}
@@ -1346,7 +1351,7 @@ static void ChooseMiscGearForSoldierCreateStruct(SOLDIERCREATE_STRUCT* pp, INT8 
 			else
 			{
 				OBJECTTYPE Object;
-				CreateItem(*i, 80 + Random(21), &Object);
+				CreateItem(*i, Random80to100(), &Object);
 				Object.fFlags |= OBJECT_UNDROPPABLE;
 				PlaceObjectInSoldierCreateStruct(pp, &Object);
 				break;
@@ -1387,7 +1392,7 @@ static void ChooseBombsForSoldierCreateStruct(SOLDIERCREATE_STRUCT* pp, INT8 bBo
 					usRandom--;
 				else
 				{
-					CreateItem( i, (INT8)(80 + Random( 21 )), &Object );
+					CreateItem( i, Random80to100(), &Object );
 					Object.fFlags |= OBJECT_UNDROPPABLE;
 					PlaceObjectInSoldierCreateStruct( pp, &Object );
 					break;
@@ -1755,12 +1760,12 @@ void AssignCreatureInventory( SOLDIERTYPE *pSoldier )
 	// decide if the creature will drop any REAL bodyparts
 	if (Random(100) < uiChanceToDrop)
 	{
-		CreateItem( (UINT16)(fBloodcat ? BLOODCAT_CLAWS : CREATURE_PART_CLAWS), (INT8) (80 + Random(21)), &(pSoldier->inv[BIGPOCK1POS]) );
+		CreateItem( (UINT16)(fBloodcat ? BLOODCAT_CLAWS : CREATURE_PART_CLAWS), Random80to100(), &(pSoldier->inv[BIGPOCK1POS]) );
 	}
 
 	if (Random(100) < uiChanceToDrop)
 	{
-		CreateItem( (UINT16)(fBloodcat ? BLOODCAT_TEETH : CREATURE_PART_FLESH), (INT8) (80 + Random(21)), &(pSoldier->inv[BIGPOCK2POS]) );
+		CreateItem( (UINT16)(fBloodcat ? BLOODCAT_TEETH : CREATURE_PART_FLESH), Random80to100(), &(pSoldier->inv[BIGPOCK2POS]) );
 	}
 
 	// as requested by ATE, males are more likely to drop their "organs" (he actually suggested this, I'm serious!)
@@ -1772,7 +1777,7 @@ void AssignCreatureInventory( SOLDIERTYPE *pSoldier )
 
 	if (Random(100) < uiChanceToDrop)
 	{
-		CreateItem( (UINT16)(fBloodcat ? BLOODCAT_PELT : CREATURE_PART_ORGAN), (INT8) (80 + Random(21)), &(pSoldier->inv[BIGPOCK3POS]) );
+		CreateItem( (UINT16)(fBloodcat ? BLOODCAT_PELT : CREATURE_PART_ORGAN), Random80to100(), &(pSoldier->inv[BIGPOCK3POS]) );
 	}
 }
 
@@ -1879,11 +1884,11 @@ static void EquipTank(SOLDIERCREATE_STRUCT* pp)
 	// tanks get special equipment, and they drop nothing (MGs are hard-mounted & non-removable)
 
 	// main cannon
-	CreateItem( TANK_CANNON, ( INT8 )( 80 + Random( 21 ) ), &( pp->Inv[ HANDPOS ]) );
+	CreateItem( TANK_CANNON, Random80to100(), &( pp->Inv[ HANDPOS ]) );
 	pp->Inv[ HANDPOS ].fFlags |= OBJECT_UNDROPPABLE;
 
 	// machine gun
-	CreateItems( MINIMI, ( INT8 )( 80 + Random( 21 ) ), 1, &Object );
+	CreateItems( MINIMI, Random80to100(), 1, &Object );
 	Object.fFlags |= OBJECT_UNDROPPABLE;
 	PlaceObjectInSoldierCreateStruct( pp, &Object );
 
