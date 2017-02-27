@@ -13,7 +13,7 @@ UINT16 FindGridNoFromSweetSpotThroughPeople(const SOLDIERTYPE* pSoldier, INT16 s
 // Returns a good sweetspot but not the swetspot!
 UINT16 FindGridNoFromSweetSpotExcludingSweetSpot(const SOLDIERTYPE* pSoldier, INT16 sSweetGridNo, INT8 ubRadius);
 
-UINT16 FindGridNoFromSweetSpotExcludingSweetSpotInQuardent(const SOLDIERTYPE* pSoldier, INT16 sSweetGridNo, INT8 ubRadius, INT8 ubQuardentDir);
+GridNo FindGridNoFromSweetSpotExcludingSweetSpotInSEQuadrant(const SOLDIERTYPE* const pSoldier);
 
 // Finds a gridno near a sweetspot but a random one!
 UINT16 FindRandomGridNoFromSweetSpot(const SOLDIERTYPE* pSoldier, INT16 sSweetGridNo, INT8 ubRadius);

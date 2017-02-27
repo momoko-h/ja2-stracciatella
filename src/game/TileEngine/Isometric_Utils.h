@@ -75,7 +75,7 @@ BOOLEAN IsPointInScreenRectWithRelative( INT16 sXPos, INT16 sYPos, SGPRect *pRec
 
 INT16 PythSpacesAway(INT16 sOrigin, INT16 sDest);
 INT16 SpacesAway(INT16 sOrigin, INT16 sDest);
-INT16 CardinalSpacesAway(INT16 sOrigin, INT16 sDest);
+INT32 CardinalSpacesAway(INT16 sOrigin, INT16 sDest);
 bool FindHigherLevel(SOLDIERTYPE const*, UINT8* out_direction = 0);
 bool FindLowerLevel(SOLDIERTYPE const*, UINT8* out_direction = 0);
 

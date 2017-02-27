@@ -988,9 +988,7 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 					gfIngagedInDrop = FALSE;
 
 					// OK, now get a sweetspot ( not the place we are now! )
-					//sNewGridNo =  FindGridNoFromSweetSpotExcludingSweetSpot(pSoldier, pSoldier->sGridNo, 5);
-
-					sNewGridNo = FindGridNoFromSweetSpotExcludingSweetSpotInQuardent(pSoldier, pSoldier->sGridNo, 3, SOUTHEAST);
+					sNewGridNo = FindGridNoFromSweetSpotExcludingSweetSpotInSEQuadrant(pSoldier);
 
 					// Check for merc arrives quotes...
 					HandleMercArrivesQuotes(*pSoldier);
@@ -1240,15 +1238,13 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 								else
 								{
 									// OK, 50% chance here to turn...
-									uiChance = Random( 100 );
-
-									if ( uiChance < 50 )
+									if (Chance(50))
 									{
 										// OK, pick a larger direction to goto....
 										pSoldier->uiStatusFlags |= SOLDIER_TURNINGFROMHIT;
 
 										// Pick evenly between both
-										if ( Random( 50 ) < 25 )
+										if (Chance(50))
 										{
 											bNewDirection = OneCDirection(pSoldier->bDirection);
 											bNewDirection = OneCDirection(bNewDirection);
@@ -1489,7 +1485,7 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 												if ( pAnimDef->sAnimID == RANDOM_ANIM_SOUND )
 												{
 													if (pSoldier->ubBodyType != COW ||
-															(Random(2) != 0 && (!(gTacticalStatus.uiFlags & INCOMBAT) || pSoldier->bVisible != -1 || Random(100) < 10)))
+															(Chance(50) && (!(gTacticalStatus.uiFlags & INCOMBAT) || pSoldier->bVisible != -1 || Chance(10))))
 													{
 														PlayLocationJA2SampleFromFile(pSoldier->sGridNo, pAnimDef->zSoundFile, MIDVOLUME, 1);
 													}
@@ -2480,7 +2476,7 @@ no_cry:
 
         case 785:
 
-          if ( Random( 5 ) == 0 )
+          if (Chance(20))
           {
 						PlaySoldierJA2Sample(pSoldier, CROW_PECKING_AT_FLESH, MIDVOLUME, 1, TRUE);
           }
@@ -2557,7 +2553,7 @@ static BOOLEAN ShouldMercSayHappyWithGunQuote(SOLDIERTYPE* pSoldier)
 		  if ( GCM->getWeapon( pSoldier->usAttackingWeapon )->ubDeadliness > MIN_DEADLINESS_FOR_LIKE_GUN_QUOTE )
 		  {
 			  // 20 % chance?
-			  if ( Random( 100 ) < 20 )
+			  if (Chance(20))
 			  {
 				  return( TRUE );
 			  }
@@ -2646,7 +2642,7 @@ static void SayBuddyWitnessedQuoteFromKill(SOLDIERTYPE* pKillerSoldier, INT16 sG
 	if ( ubNumMercs > 0 )
 	{
     // Do random check here...
-    if ( Random( 100 ) < 20 )
+    if (Chance(20))
     {
 		  ubChosenMerc = (UINT8)Random( ubNumMercs );
 			SOLDIERTYPE* const chosen = mercs_in_sector[ubChosenMerc];
@@ -2727,7 +2723,7 @@ void HandleKilledQuote(SOLDIERTYPE* pKilledSoldier, SOLDIERTYPE* pKillerSoldier,
 		if ( pKilledSoldier->usAnimState == JFK_HITDEATH )
 		{
 			//Randomliy say it!
-			if ( Random( 100 ) < 40 )
+			if (Chance(40))
 			{
 				 TacticalCharacterDialogue( pKillerSoldier, QUOTE_HEADSHOT );
 			}
@@ -2762,7 +2758,7 @@ void HandleKilledQuote(SOLDIERTYPE* pKilledSoldier, SOLDIERTYPE* pKillerSoldier,
 					SOLDIERTYPE* const chosen = mercs_in_sector[Random(ubNumMercs)];
 
 					// We have a random chance of not saying our we killed a guy quote
-					if ( Random( 100 ) < 50 )
+					if (Chance(50))
 					{
 						// Say this guys quote but the killer's quote as well....
 						// if killed was not a plain old civ, say quote
@@ -2806,7 +2802,7 @@ void HandleKilledQuote(SOLDIERTYPE* pKilledSoldier, SOLDIERTYPE* pKillerSoldier,
 					else
 					// Randomize between laugh, quote...
 					{
-						if ( Random( 100 ) < 33 && pKilledSoldier->ubBodyType != BLOODCAT )
+						if (Chance(33) && pKilledSoldier->ubBodyType != BLOODCAT )
 						{
 	            // If it's a creature......
 	            if ( pKilledSoldier->uiStatusFlags & SOLDIER_MONSTER )
@@ -2820,7 +2816,7 @@ void HandleKilledQuote(SOLDIERTYPE* pKilledSoldier, SOLDIERTYPE* pKillerSoldier,
 						}
 						else
 						{
-							BattleSound const snd = Random(50) == 25 ?
+							BattleSound const snd = Chance(2) ?
 								BATTLE_SOUND_LAUGH1 : BATTLE_SOUND_COOL1;
 							DoMercBattleSound(pKillerSoldier, snd);
 						}
@@ -2899,7 +2895,7 @@ BOOLEAN HandleSoldierDeath( SOLDIERTYPE *pSoldier , BOOLEAN *pfMadeCorpse )
 				else if ( pSoldier->bVisible == TRUE )
 				{
 					// We were a visible enemy, say laugh!
-					if (Random(3) == 0 && !CREATURE_OR_BLOODCAT(attacker))
+					if (Chance(25) && !CREATURE_OR_BLOODCAT(attacker))
 					{
 						DoMercBattleSound(attacker, BATTLE_SOUND_LAUGH1);
 					}

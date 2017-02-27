@@ -1,3 +1,7 @@
+#include <algorithm>
+#include <functional>
+#include <random>
+#include <vector>
 #include "Soldier_Control.h"
 #include "Overhead.h"
 #include "Overhead_Types.h"
@@ -42,168 +46,123 @@
 
 
 
+static std::vector<GridNo> GenerateGridNosInRadiusAroundSweetSpot(
+    GridNo const sweetSpot, int const radius, bool const includeSweetSpot = true)
+{
+  std::vector<GridNo> result;
+
+  int const sweetSpotRow = sweetSpot / WORLD_COLS;
+  int const sweetSpotCol = sweetSpot % WORLD_COLS;
+
+  for (int row = std::max(0, sweetSpotRow - radius); row <= std::min(WORLD_ROWS, sweetSpotRow + radius); ++row) {
+    for (int col = std::max(0, sweetSpotCol - radius); col <= std::min(WORLD_COLS, sweetSpotCol + radius); ++col) {
+      GridNo gridNo = row * WORLD_COLS + col;
+      if (includeSweetSpot || (gridNo != sweetSpot)) result.push_back(gridNo);
+    }
+  }
+
+  return result;
+}
+
+
+
+//Save AI pathing vars.  changing the distlimit restricts how
+//far away the pathing will consider.
+struct ScopedSavePathingVars {
+  uint8_t NPCAPBudget;
+  uint8_t NPCDistLimit;
+
+  ScopedSavePathingVars(uint8_t radius) : NPCAPBudget(gubNPCAPBudget), NPCDistLimit(gubNPCDistLimit) {
+    gubNPCAPBudget = 0;
+    gubNPCDistLimit = radius;
+  }
+
+  ~ScopedSavePathingVars() {
+    gubNPCAPBudget = NPCAPBudget;
+    gubNPCDistLimit = NPCDistLimit;
+  }
+};
+
+
+
+//clear the mapelements of potential residue MAPELEMENT_REACHABLE flags
+//in the square region.
+static void ClearReachableFlagForGridNos(std::vector<GridNo> const &gridNos) {
+  for (auto const g : gridNos) {
+    gpWorldLevelData[g].uiFlags &= (~MAPELEMENT_REACHABLE);
+  }
+}
+
+
+// Filter out all grids that are suitable destination
+// for this soldier.
+static void FilterNotOkGrids(std::vector<GridNo> &gridNos, const SOLDIERTYPE *const pSoldier) {
+  gridNos.erase(std::remove_if(gridNos.begin(), gridNos.end(),
+    [pSoldier] (GridNo gridNo) {
+      return !NewOKDestination(pSoldier, gridNo, TRUE, pSoldier->bLevel);
+    }), gridNos.end());
+}
+
+
+// Filter out all grids that are either not reachable or not a suitable destination
+// for this soldier.
+static void FilterUnReachableOrNotOkGrids(std::vector<GridNo> &gridNos, const SOLDIERTYPE *const pSoldier) {
+  gridNos.erase(std::remove_if(gridNos.begin(), gridNos.end(),
+    [pSoldier] (GridNo gridNo) {
+      return !((gpWorldLevelData[gridNo].uiFlags & MAPELEMENT_REACHABLE) &&
+               NewOKDestination(pSoldier, gridNo, TRUE, pSoldier->bLevel));
+    }), gridNos.end());
+}
+
+
+
+static GridNo FindMinimumDistanceGridNoWithCompareFn(
+      std::vector<GridNo> const &gridNos,
+      GridNo const sweetGridNo,
+      decltype(CardinalSpacesAway) const compareFn) {
+  int32_t smallestSoFar = INT32_MAX;
+  GridNo result = NOWHERE;
+  for (auto const gn : gridNos) {
+    int32_t v = compareFn(sweetGridNo, gn);
+    if (v < smallestSoFar) {
+      result = gn;
+      smallestSoFar = v;
+    }
+  }
+  return result;
+}
+
+
+
 //Kris:  modified to actually path from sweetspot to gridno.  Previously, it only checked if the
 //destination was sittable (though it was possible that that location would be trapped.
 UINT16 FindGridNoFromSweetSpot(const SOLDIERTYPE* const pSoldier, const INT16 sSweetGridNo, const INT8 ubRadius)
 {
-	INT16  sTop, sBottom;
-	INT16  sLeft, sRight;
-	INT16  cnt1, cnt2;
-	INT16		sGridNo;
-	INT32		uiRange, uiLowestRange = 999999;
-	INT32					leftmost;
-	UINT8 ubSaveNPCAPBudget;
-	UINT8 ubSaveNPCDistLimit;
-
-	//Save AI pathing vars.  changing the distlimit restricts how
-	//far away the pathing will consider.
-	ubSaveNPCAPBudget = gubNPCAPBudget;
-	ubSaveNPCDistLimit = gubNPCDistLimit;
-	gubNPCAPBudget = 0;
-	gubNPCDistLimit = ubRadius;
-
-	sTop		= ubRadius;
-	sBottom = -ubRadius;
-	sLeft   = - ubRadius;
-	sRight  = ubRadius;
-
-	//clear the mapelements of potential residue MAPELEMENT_REACHABLE flags
-	//in the square region.
-	// ATE: CHECK FOR BOUNDARIES!!!!!!
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
-
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-			if( sGridNo >=0 && sGridNo < WORLD_MAX && sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS ) )
-			{
-				gpWorldLevelData[ sGridNo ].uiFlags &= (~MAPELEMENT_REACHABLE);
-			}
-		}
-	}
+  auto gridNos = GenerateGridNosInRadiusAroundSweetSpot(sSweetGridNo, ubRadius);
+  ScopedSavePathingVars savePathingVars(ubRadius);
+  ClearReachableFlagForGridNos(gridNos);
 
 	//Now, find out which of these gridnos are reachable
 	//(use the fake soldier and the pathing settings)
   FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, (PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE), sSweetGridNo);
+  FilterUnReachableOrNotOkGrids(gridNos, pSoldier);
 
-	uiLowestRange = 999999;
-
-	INT16 sLowestGridNo = NOWHERE;
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
-
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-			if( sGridNo >=0 && sGridNo < WORLD_MAX && sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS )
-				&& gpWorldLevelData[ sGridNo ].uiFlags & MAPELEMENT_REACHABLE )
-			{
-				// Go on sweet stop
-				if ( NewOKDestination( pSoldier, sGridNo, TRUE, pSoldier->bLevel ) )
-				{
-					// ATE: INstead of using absolute range, use the path cost!
-				  //uiRange = PlotPath(&soldier, sGridNo, NO_COPYROUTE, NO_PLOT, WALKING, 50);
-					uiRange = CardinalSpacesAway( sSweetGridNo, sGridNo );
-
-				//	if ( uiRange == 0 )
-				//	{
-				//		uiRange = 999999;
-				//	}
-
-					if ( uiRange < uiLowestRange )
-					{
-						sLowestGridNo = sGridNo;
-						uiLowestRange = uiRange;
-					}
-				}
-			}
-		}
-	}
-	gubNPCAPBudget = ubSaveNPCAPBudget;
-	gubNPCDistLimit = ubSaveNPCDistLimit;
-	return sLowestGridNo;
+  return FindMinimumDistanceGridNoWithCompareFn(gridNos, sSweetGridNo, CardinalSpacesAway);
 }
 
 
 UINT16 FindGridNoFromSweetSpotThroughPeople(const SOLDIERTYPE* const pSoldier, const INT16 sSweetGridNo, const INT8 ubRadius)
 {
-	INT16  sTop, sBottom;
-	INT16  sLeft, sRight;
-	INT16  cnt1, cnt2;
-	INT16		sGridNo;
-	INT32		uiRange, uiLowestRange = 999999;
-	INT32					leftmost;
-	UINT8 ubSaveNPCAPBudget;
-	UINT8 ubSaveNPCDistLimit;
-
-	//Save AI pathing vars.  changing the distlimit restricts how
-	//far away the pathing will consider.
-	ubSaveNPCAPBudget = gubNPCAPBudget;
-	ubSaveNPCDistLimit = gubNPCDistLimit;
-	gubNPCAPBudget = 0;
-	gubNPCDistLimit = ubRadius;
-
-	sTop		= ubRadius;
-	sBottom = -ubRadius;
-	sLeft   = - ubRadius;
-	sRight  = ubRadius;
-
-	//clear the mapelements of potential residue MAPELEMENT_REACHABLE flags
-	//in the square region.
-	// ATE: CHECK FOR BOUNDARIES!!!!!!
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
-
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-			if( sGridNo >=0 && sGridNo < WORLD_MAX && sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS ) )
-			{
-				gpWorldLevelData[ sGridNo ].uiFlags &= (~MAPELEMENT_REACHABLE);
-			}
-		}
-	}
+  auto gridNos = GenerateGridNosInRadiusAroundSweetSpot(sSweetGridNo, ubRadius);
+  ScopedSavePathingVars savePathingVars(ubRadius);
+  ClearReachableFlagForGridNos(gridNos);
 
 	//Now, find out which of these gridnos are reachable
 	//(use the fake soldier and the pathing settings)
 	FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ), sSweetGridNo, pSoldier->bTeam);
+  FilterUnReachableOrNotOkGrids(gridNos, pSoldier);
 
-	uiLowestRange = 999999;
-
-	INT16 sLowestGridNo = NOWHERE;
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
-
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-			if( sGridNo >=0 && sGridNo < WORLD_MAX && sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS )
-				&& gpWorldLevelData[ sGridNo ].uiFlags & MAPELEMENT_REACHABLE )
-			{
-				// Go on sweet stop
-				if ( NewOKDestination( pSoldier, sGridNo, TRUE, pSoldier->bLevel ) )
-				{
-					uiRange = GetRangeInCellCoordsFromGridNoDiff( sSweetGridNo, sGridNo );
-
-					{
-						if ( uiRange < uiLowestRange )
-						{
-							sLowestGridNo = sGridNo;
-							uiLowestRange = uiRange;
-						}
-					}
-				}
-			}
-		}
-	}
-	gubNPCAPBudget = ubSaveNPCAPBudget;
-	gubNPCDistLimit = ubSaveNPCDistLimit;
-	return sLowestGridNo;
+  return FindMinimumDistanceGridNoWithCompareFn(gridNos, sSweetGridNo, GetRangeInCellCoordsFromGridNoDiff);
 }
 
 
@@ -211,30 +170,6 @@ UINT16 FindGridNoFromSweetSpotThroughPeople(const SOLDIERTYPE* const pSoldier, c
 //destination was sittable (though it was possible that that location would be trapped.
 UINT16 FindGridNoFromSweetSpotWithStructData( SOLDIERTYPE *pSoldier, UINT16 usAnimState, INT16 sSweetGridNo, INT8 ubRadius, UINT8 *pubDirection, BOOLEAN fClosestToMerc )
 {
-	INT16  sTop, sBottom;
-	INT16  sLeft, sRight;
-	INT16  cnt1, cnt2, cnt3;
-	INT16		sGridNo;
-	INT32		uiRange, uiLowestRange = 999999;
-	INT16		sLowestGridNo=-1;
-	INT32					leftmost;
-	BOOLEAN	fFound = FALSE;
-	UINT8 ubSaveNPCAPBudget;
-	UINT8 ubSaveNPCDistLimit;
-	UINT8	ubBestDirection=0;
-
-	//Save AI pathing vars.  changing the distlimit restricts how
-	//far away the pathing will consider.
-	ubSaveNPCAPBudget = gubNPCAPBudget;
-	ubSaveNPCDistLimit = gubNPCDistLimit;
-	gubNPCAPBudget = 0;
-	gubNPCDistLimit = ubRadius;
-
-	sTop		= ubRadius;
-	sBottom = -ubRadius;
-	sLeft   = - ubRadius;
-	sRight  = ubRadius;
-
   // If we are already at this gridno....
   if ( pSoldier->sGridNo == sSweetGridNo && !( pSoldier->uiStatusFlags & SOLDIER_VEHICLE ) )
   {
@@ -242,150 +177,65 @@ UINT16 FindGridNoFromSweetSpotWithStructData( SOLDIERTYPE *pSoldier, UINT16 usAn
     return( sSweetGridNo );
   }
 
-	//clear the mapelements of potential residue MAPELEMENT_REACHABLE flags
-	//in the square region.
-	// ATE: CHECK FOR BOUNDARIES!!!!!!
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
-
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-			if( sGridNo >=0 && sGridNo < WORLD_MAX && sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS ) )
-			{
-				gpWorldLevelData[ sGridNo ].uiFlags &= (~MAPELEMENT_REACHABLE);
-			}
-		}
-	}
+  auto gridNos = GenerateGridNosInRadiusAroundSweetSpot(sSweetGridNo, ubRadius);
+  ScopedSavePathingVars savePathingVars(ubRadius);
+  ClearReachableFlagForGridNos(gridNos);
 
 	//Now, find out which of these gridnos are reachable
 	//(use the fake soldier and the pathing settings)
   FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ), sSweetGridNo);
+  FilterUnReachableOrNotOkGrids(gridNos, pSoldier);
 
-	uiLowestRange = 999999;
+  uint16_t usOKToAddStructID = (pSoldier->pLevelNode && pSoldier->pLevelNode->pStructureData)
+                             ? pSoldier->pLevelNode->pStructureData->usStructureID
+                             : INVALID_STRUCTURE_ID;
+  // Get animation surface...
+  uint16_t usAnimSurface = DetermineSoldierAnimationSurface( pSoldier, usAnimState );
+  // Get structure ref...
+  const STRUCTURE_FILE_REF* const pStructureFileRef = GetAnimationStructureRef(pSoldier, usAnimSurface, usAnimState);
+  Assert(pStructureFileRef);
 
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
+  GridNo sLowestGridNo = NOWHERE;
+  int32_t uiLowestRange = INT32_MAX;
+  UINT8 ubBestDirection = 0;
 
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-			if( sGridNo >=0 && sGridNo < WORLD_MAX && sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS )
-				&& gpWorldLevelData[ sGridNo ].uiFlags & MAPELEMENT_REACHABLE )
-			{
-				// Go on sweet stop
-				if ( NewOKDestination( pSoldier, sGridNo, TRUE, pSoldier->bLevel ) )
-				{
-					BOOLEAN fDirectionFound = FALSE;
-					UINT16	usOKToAddStructID;
-					UINT16							 usAnimSurface;
+  std::function<int32_t(GridNo)> compareFn;
+  if (fClosestToMerc) {
+    compareFn = [pSoldier] (GridNo sGridNo) {
+      int32_t result = FindBestPath( pSoldier, sGridNo, pSoldier->bLevel, pSoldier->usUIMovementMode, NO_COPYROUTE, 0 );
+      return result == 0 ? 999 : result;
+    };
+  } else {
+    compareFn = std::bind(GetRangeInCellCoordsFromGridNoDiff, sSweetGridNo, std::placeholders::_1);
+  }
 
-					if ( pSoldier->pLevelNode != NULL )
-					{
-						if ( pSoldier->pLevelNode->pStructureData != NULL )
-						{
-							usOKToAddStructID = pSoldier->pLevelNode->pStructureData->usStructureID;
-						}
-						else
-						{
-							usOKToAddStructID = INVALID_STRUCTURE_ID;
-						}
-					}
-					else
-					{
-						usOKToAddStructID = INVALID_STRUCTURE_ID;
-					}
+  for (auto const sGridNo : gridNos) {
+    // Check each struct in each direction
+    for (uint8_t cnt3 = 0; cnt3 < 8; ++cnt3)
+    {
+      if (OkayToAddStructureToWorld(sGridNo, pSoldier->bLevel, &pStructureFileRef->pDBStructureRef[OneCDirection(cnt3)], usOKToAddStructID))
+      {
+        int32_t uiRange = compareFn(sGridNo);
 
-					// Get animation surface...
-			 		usAnimSurface = DetermineSoldierAnimationSurface( pSoldier, usAnimState );
-					// Get structure ref...
-					const STRUCTURE_FILE_REF* const pStructureFileRef = GetAnimationStructureRef(pSoldier, usAnimSurface, usAnimState);
-					Assert(pStructureFileRef);
+        if ( uiRange < uiLowestRange )
+        {
+          ubBestDirection = cnt3;
+          sLowestGridNo = sGridNo;
+          uiLowestRange = uiRange;
+        }
 
-					// Check each struct in each direction
-					for( cnt3 = 0; cnt3 < 8; cnt3++ )
-					{
-						if (OkayToAddStructureToWorld(sGridNo, pSoldier->bLevel, &pStructureFileRef->pDBStructureRef[OneCDirection(cnt3)], usOKToAddStructID))
-						{
-							fDirectionFound = TRUE;
-							break;
-						}
+        break;
+      }
+    }
+  }
 
-					}
-
-					if ( fDirectionFound )
-					{
-						if ( fClosestToMerc )
-						{
-      				uiRange = FindBestPath( pSoldier, sGridNo, pSoldier->bLevel, pSoldier->usUIMovementMode, NO_COPYROUTE, 0 );
-
-              if (uiRange == 0 )
-              {
-                uiRange = 999;
-              }
-						}
-						else
-						{
-							uiRange = GetRangeInCellCoordsFromGridNoDiff( sSweetGridNo, sGridNo );
-						}
-
-						if ( uiRange < uiLowestRange )
-						{
-							ubBestDirection = (UINT8)cnt3;
-							sLowestGridNo = sGridNo;
-							uiLowestRange = uiRange;
-							fFound = TRUE;
-						}
-					}
-				}
-			}
-		}
-	}
-	gubNPCAPBudget = ubSaveNPCAPBudget;
-	gubNPCDistLimit = ubSaveNPCDistLimit;
-	if ( fFound )
-	{
-		// Set direction we chose...
-		*pubDirection = ubBestDirection;
-
-		return( sLowestGridNo );
-	}
-	else
-	{
-		return( NOWHERE );
-	}
+  *pubDirection = ubBestDirection;
+  return sLowestGridNo;
 }
 
 
 static UINT16 FindGridNoFromSweetSpotWithStructDataUsingGivenDirectionFirst(SOLDIERTYPE* pSoldier, UINT16 usAnimState, INT16 sSweetGridNo, INT8 ubRadius, UINT8* pubDirection, BOOLEAN fClosestToMerc, INT8 bGivenDirection)
 {
-	INT16  sTop, sBottom;
-	INT16  sLeft, sRight;
-	INT16  cnt1, cnt2, cnt3;
-	INT16		sGridNo;
-	INT32		uiRange, uiLowestRange = 999999;
-	INT16		sLowestGridNo=-1;
-	INT32					leftmost;
-	BOOLEAN	fFound = FALSE;
-	SOLDIERTYPE soldier;
-	UINT8 ubSaveNPCAPBudget;
-	UINT8 ubSaveNPCDistLimit;
-	UINT8	ubBestDirection=0;
-
-	//Save AI pathing vars.  changing the distlimit restricts how
-	//far away the pathing will consider.
-	ubSaveNPCAPBudget = gubNPCAPBudget;
-	ubSaveNPCDistLimit = gubNPCDistLimit;
-	gubNPCAPBudget = 0;
-	gubNPCDistLimit = ubRadius;
-
-	sTop		= ubRadius;
-	sBottom = -ubRadius;
-	sLeft   = - ubRadius;
-	sRight  = ubRadius;
-
   // If we are already at this gridno....
   if ( pSoldier->sGridNo == sSweetGridNo && !( pSoldier->uiStatusFlags & SOLDIER_VEHICLE ) )
   {
@@ -393,68 +243,46 @@ static UINT16 FindGridNoFromSweetSpotWithStructDataUsingGivenDirectionFirst(SOLD
     return( sSweetGridNo );
   }
 
-
-	//clear the mapelements of potential residue MAPELEMENT_REACHABLE flags
-	//in the square region.
-	// ATE: CHECK FOR BOUNDARIES!!!!!!
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
-
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-			if( sGridNo >=0 && sGridNo < WORLD_MAX && sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS ) )
-			{
-				gpWorldLevelData[ sGridNo ].uiFlags &= (~MAPELEMENT_REACHABLE);
-			}
-		}
-	}
+  auto gridNos = GenerateGridNosInRadiusAroundSweetSpot(sSweetGridNo, ubRadius);
+  ScopedSavePathingVars savePathingVars(ubRadius);
+  ClearReachableFlagForGridNos(gridNos);
 
 	//Now, find out which of these gridnos are reachable
 	//(use the fake soldier and the pathing settings)
   FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, ( PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE ), sSweetGridNo);
+  FilterUnReachableOrNotOkGrids(gridNos, pSoldier);
 
-	uiLowestRange = 999999;
+	int32_t uiLowestRange = 999999;
+  uint8_t ubBestDirection;
+  GridNo sLowestGridNo = NOWHERE;
+          bool fFound = false;
 
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
+  uint16_t usOKToAddStructID = (pSoldier->pLevelNode && pSoldier->pLevelNode->pStructureData)
+                             ? pSoldier->pLevelNode->pStructureData->usStructureID
+                             : INVALID_STRUCTURE_ID;
+  // Get animation surface...
+  uint16_t usAnimSurface = DetermineSoldierAnimationSurface( pSoldier, usAnimState );
+  // Get structure ref...
+  const STRUCTURE_FILE_REF* const pStructureFileRef = GetAnimationStructureRef(pSoldier, usAnimSurface, usAnimState);
+  Assert(pStructureFileRef);
 
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-			if( sGridNo >=0 && sGridNo < WORLD_MAX && sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS )
-				&& gpWorldLevelData[ sGridNo ].uiFlags & MAPELEMENT_REACHABLE )
+  std::function<int32_t(GridNo)> compareFn;
+  if (fClosestToMerc) {
+    compareFn = [pSoldier] (GridNo sGridNo) {
+      int32_t result = FindBestPath( pSoldier, sGridNo, pSoldier->bLevel, pSoldier->usUIMovementMode, NO_COPYROUTE, 0 );
+      return result == 0 ? 999 : result;
+    };
+  } else {
+    compareFn = std::bind(GetRangeInCellCoordsFromGridNoDiff, sSweetGridNo, std::placeholders::_1);
+  }
+
+  for (auto sGridNo : gridNos) 
 			{
-				// Go on sweet stop
-				if ( NewOKDestination( pSoldier, sGridNo, TRUE, pSoldier->bLevel ) )
-				{
 					BOOLEAN fDirectionFound = FALSE;
 					UINT16	usOKToAddStructID;
 					UINT16							 usAnimSurface;
-
-					if ( pSoldier->pLevelNode != NULL )
-					{
-						if ( pSoldier->pLevelNode->pStructureData != NULL )
-						{
-							usOKToAddStructID = pSoldier->pLevelNode->pStructureData->usStructureID;
-						}
-						else
-						{
-							usOKToAddStructID = INVALID_STRUCTURE_ID;
-						}
-					}
-					else
-					{
-						usOKToAddStructID = INVALID_STRUCTURE_ID;
-					}
-
-					// Get animation surface...
-			 		usAnimSurface = DetermineSoldierAnimationSurface( pSoldier, usAnimState );
-					// Get structure ref...
-					const STRUCTURE_FILE_REF* const pStructureFileRef = GetAnimationStructureRef(pSoldier, usAnimSurface, usAnimState);
-					Assert(pStructureFileRef);
+          int8_t cnt3;
+          int32_t uiRange;
 
           // OK, check the perfered given direction first
 					if (OkayToAddStructureToWorld(sGridNo, pSoldier->bLevel, &pStructureFileRef->pDBStructureRef[OneCDirection(bGivenDirection)], usOKToAddStructID))
@@ -480,19 +308,7 @@ static UINT16 FindGridNoFromSweetSpotWithStructDataUsingGivenDirectionFirst(SOLD
 
 					if ( fDirectionFound )
 					{
-						if ( fClosestToMerc )
-						{
-      				uiRange = FindBestPath( pSoldier, sGridNo, pSoldier->bLevel, pSoldier->usUIMovementMode, NO_COPYROUTE, 0 );
-
-              if (uiRange == 0 )
-              {
-                uiRange = 999;
-              }
-						}
-						else
-						{
-							uiRange = GetRangeInCellCoordsFromGridNoDiff( sSweetGridNo, sGridNo );
-						}
+            uiRange = compareFn(sGridNo);
 
 						if ( uiRange < uiLowestRange )
 						{
@@ -502,12 +318,10 @@ static UINT16 FindGridNoFromSweetSpotWithStructDataUsingGivenDirectionFirst(SOLD
 							fFound = TRUE;
 						}
 					}
-				}
+				
 			}
-		}
-	}
-	gubNPCAPBudget = ubSaveNPCAPBudget;
-	gubNPCDistLimit = ubSaveNPCDistLimit;
+		
+	
 	if ( fFound )
 	{
 		// Set direction we chose...
@@ -530,20 +344,14 @@ UINT16 FindGridNoFromSweetSpotWithStructDataFromSoldier(const SOLDIERTYPE* const
 	INT16		sGridNo;
 	INT32		uiRange, uiLowestRange = 999999;
 	INT32					leftmost;
-	UINT8 ubSaveNPCAPBudget;
-	UINT8 ubSaveNPCDistLimit;
 	INT16 sSweetGridNo;
-	SOLDIERTYPE soldier;
 
 	sSweetGridNo = pSrcSoldier->sGridNo;
 
 
 	//Save AI pathing vars.  changing the distlimit restricts how
 	//far away the pathing will consider.
-	ubSaveNPCAPBudget = gubNPCAPBudget;
-	ubSaveNPCDistLimit = gubNPCDistLimit;
-	gubNPCAPBudget = 0;
-	gubNPCDistLimit = ubRadius;
+  ScopedSavePathingVars savePathingVars(ubRadius);
 
 	sTop		= ubRadius;
 	sBottom = -ubRadius;
@@ -650,122 +458,38 @@ UINT16 FindGridNoFromSweetSpotWithStructDataFromSoldier(const SOLDIERTYPE* const
 			}
 		}
 	}
-	gubNPCAPBudget = ubSaveNPCAPBudget;
-	gubNPCDistLimit = ubSaveNPCDistLimit;
 	return sLowestGridNo;
 }
 
 
 UINT16 FindGridNoFromSweetSpotExcludingSweetSpot(const SOLDIERTYPE* const pSoldier, const INT16 sSweetGridNo, const INT8 ubRadius)
 {
-	INT16  sTop, sBottom;
-	INT16  sLeft, sRight;
-	INT16  cnt1, cnt2;
-	INT16		sGridNo;
-	INT32		uiRange, uiLowestRange = 999999;
-	INT32					leftmost;
+  auto gridNos = GenerateGridNosInRadiusAroundSweetSpot(sSweetGridNo, ubRadius, false);
+  FilterNotOkGrids(gridNos, pSoldier);
 
-	sTop		= ubRadius;
-	sBottom = -ubRadius;
-	sLeft   = - ubRadius;
-	sRight  = ubRadius;
-
-	uiLowestRange = 999999;
-
-	INT16 sLowestGridNo = NOWHERE;
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
-
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-
-			if ( sSweetGridNo == sGridNo )
-			{
-				continue;
-			}
-
-			if ( sGridNo >=0 && sGridNo < WORLD_MAX &&
-					 sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS ) )
-			{
-
-					// Go on sweet stop
-					if ( NewOKDestination( pSoldier, sGridNo, TRUE, pSoldier->bLevel ) )
-					{
-						uiRange = GetRangeInCellCoordsFromGridNoDiff( sSweetGridNo, sGridNo );
-
-						if ( uiRange < uiLowestRange )
-						{
-							sLowestGridNo = sGridNo;
-							uiLowestRange = uiRange;
-						}
-					}
-			}
-		}
-	}
-
-	return sLowestGridNo;
+  return FindMinimumDistanceGridNoWithCompareFn(gridNos, sSweetGridNo, GetRangeInCellCoordsFromGridNoDiff);
 }
 
 
-UINT16 FindGridNoFromSweetSpotExcludingSweetSpotInQuardent(const SOLDIERTYPE* const pSoldier, const INT16 sSweetGridNo, const INT8 ubRadius, const INT8 ubQuardentDir)
+// Specific function just for the helidrop animation code 467 (see Soldier_Ani.cc)
+GridNo FindGridNoFromSweetSpotExcludingSweetSpotInSEQuadrant(const SOLDIERTYPE* const pSoldier)
 {
-	INT16  sTop, sBottom;
-	INT16  sLeft, sRight;
-	INT16  cnt1, cnt2;
-	INT16		sGridNo;
-	INT32		uiRange, uiLowestRange = 999999;
-	INT32					leftmost;
+  std::vector<GridNo> gridNos;
+  GridNo const sSweetGridNo = pSoldier->sGridNo;
+  constexpr uint8_t radius = 3;
 
-	sTop		= ubRadius;
-	sBottom = -ubRadius;
-	sLeft   = - ubRadius;
-	sRight  = ubRadius;
+  int const sweetSpotRow = sSweetGridNo / WORLD_COLS;
+  int const sweetSpotCol = sSweetGridNo % WORLD_COLS;
 
-	// Switch on quadrent
-	if ( ubQuardentDir == SOUTHEAST )
-	{
-		sBottom = 0;
-		sLeft = 0;
-	}
+  for (int row = sweetSpotRow; row <= std::min(WORLD_ROWS, sweetSpotRow + radius); ++row) {
+    for (int col = sweetSpotCol; col <= std::min(WORLD_COLS, sweetSpotCol + radius); ++col) {
+      GridNo gridNo = row * WORLD_COLS + col;
+      if (gridNo != sSweetGridNo) gridNos.push_back(gridNo);
+    }
+  }
 
-	uiLowestRange = 999999;
-
-	INT16 sLowestGridNo = NOWHERE;
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
-
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-
-			if ( sSweetGridNo == sGridNo )
-			{
-				continue;
-			}
-
-			if ( sGridNo >=0 && sGridNo < WORLD_MAX &&
-					 sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS ) )
-			{
-
-					// Go on sweet stop
-					if ( NewOKDestination( pSoldier, sGridNo, TRUE, pSoldier->bLevel ) )
-					{
-						uiRange = GetRangeInCellCoordsFromGridNoDiff( sSweetGridNo, sGridNo );
-
-						if ( uiRange < uiLowestRange )
-						{
-							sLowestGridNo = sGridNo;
-							uiLowestRange = uiRange;
-						}
-					}
-			}
-		}
-	}
-
-	return sLowestGridNo;
+  FilterNotOkGrids(gridNos, pSoldier);
+  return FindMinimumDistanceGridNoWithCompareFn(gridNos, sSweetGridNo, GetRangeInCellCoordsFromGridNoDiff);
 }
 
 
@@ -806,92 +530,24 @@ BOOLEAN CanSoldierReachGridNoInGivenTileLimit( SOLDIERTYPE *pSoldier, INT16 sGri
 
 UINT16 FindRandomGridNoFromSweetSpot(const SOLDIERTYPE* const pSoldier, const INT16 sSweetGridNo, const INT8 ubRadius)
 {
-	INT16		sX, sY;
-	INT16		sGridNo;
-	INT32					leftmost;
-	BOOLEAN	fFound = FALSE;
-	UINT32		cnt = 0;
-	UINT8 ubSaveNPCAPBudget;
-	UINT8 ubSaveNPCDistLimit;
-	INT16  sTop, sBottom;
-	INT16  sLeft, sRight;
-	INT16  cnt1, cnt2;
-
-	//Save AI pathing vars.  changing the distlimit restricts how
-	//far away the pathing will consider.
-	ubSaveNPCAPBudget = gubNPCAPBudget;
-	ubSaveNPCDistLimit = gubNPCDistLimit;
-	gubNPCAPBudget = 0;
-	gubNPCDistLimit = ubRadius;
-
-	sTop		= ubRadius;
-	sBottom = -ubRadius;
-	sLeft   = - ubRadius;
-	sRight  = ubRadius;
-
-	// ATE: CHECK FOR BOUNDARIES!!!!!!
-	for( cnt1 = sBottom; cnt1 <= sTop; cnt1++ )
-	{
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * cnt1 ) )/ WORLD_COLS ) * WORLD_COLS;
-
-		for( cnt2 = sLeft; cnt2 <= sRight; cnt2++ )
-		{
-			sGridNo = sSweetGridNo + ( WORLD_COLS * cnt1 ) + cnt2;
-			if( sGridNo >=0 && sGridNo < WORLD_MAX && sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS ) )
-			{
-				gpWorldLevelData[ sGridNo ].uiFlags &= (~MAPELEMENT_REACHABLE);
-			}
-		}
-	}
+  auto gridNos = GenerateGridNosInRadiusAroundSweetSpot(sSweetGridNo, ubRadius);
+  ScopedSavePathingVars savePathingVars(ubRadius);
+  ClearReachableFlagForGridNos(gridNos);
 
 	//Now, find out which of these gridnos are reachable
 	//(use the fake soldier and the pathing settings)
-	FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, (PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE), sSweetGridNo);
+  FindBestPathWithDummy(NOWHERE, 0, WALKING, COPYREACHABLE, (PATH_IGNORE_PERSON_AT_DEST | PATH_THROUGH_PEOPLE), sSweetGridNo);
+  FilterUnReachableOrNotOkGrids(gridNos, pSoldier);
 
-	do
-	{
-		sX = (UINT16)Random( ubRadius );
-		sY = (UINT16)Random( ubRadius );
+  std::shuffle(gridNos.begin(), gridNos.end(), gMT19937);
 
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * sY ) )/ WORLD_COLS ) * WORLD_COLS;
+  for (auto gridNo : gridNos) {
+    // Don't place crows inside rooms.
+    if (pSoldier->ubBodyType != CROW || GetRoom(gridNo) == NO_ROOM)
+      return gridNo;
+  }
 
-		sGridNo = sSweetGridNo + ( WORLD_COLS * sY ) + sX;
-
-		if ( sGridNo >=0 && sGridNo < WORLD_MAX &&
-				 sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS )
-				&& gpWorldLevelData[ sGridNo ].uiFlags & MAPELEMENT_REACHABLE )
-		{
-			// Go on sweet stop
-			if ( NewOKDestination( pSoldier, sGridNo, TRUE , pSoldier->bLevel) )
-			{
-				// If we are a crow, we need this additional check
-				if ( pSoldier->ubBodyType == CROW )
-				{
-					if (GetRoom(sGridNo) == NO_ROOM)
-					{
-						fFound = TRUE;
-					}
-				}
-				else
-				{
-					fFound = TRUE;
-				}
-			}
-		}
-
-		cnt++;
-
-		if ( cnt > 2000 )
-		{
-			return( NOWHERE );
-		}
-
-	} while( !fFound );
-
-	gubNPCAPBudget = ubSaveNPCAPBudget;
-	gubNPCDistLimit = ubSaveNPCDistLimit;
-
-	return( sGridNo );
+  return NOWHERE;
 }
 
 

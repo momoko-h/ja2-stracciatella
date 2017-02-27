@@ -481,7 +481,7 @@ INT16 SpacesAway(INT16 sOrigin, INT16 sDest)
 	return( __max( sRows, sCols ) );
 }
 
-INT16 CardinalSpacesAway(INT16 sOrigin, INT16 sDest)
+INT32 CardinalSpacesAway(INT16 sOrigin, INT16 sDest)
 // distance away, ignoring diagonals!
 {
  INT16 sRows,sCols;
@@ -489,7 +489,7 @@ INT16 CardinalSpacesAway(INT16 sOrigin, INT16 sDest)
  sRows = ABS((sOrigin / MAXCOL) - (sDest / MAXCOL));
  sCols = ABS((sOrigin % MAXROW) - (sDest % MAXROW));
 
-	return( (INT16)( sRows + sCols ) );
+	return sRows + sCols;
 }
 
 
