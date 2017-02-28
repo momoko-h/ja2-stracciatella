@@ -206,6 +206,7 @@ void MusicPoll(void)
 
 		if ( gfMusicEnded )
 		{
+      fMusicPlaying = false;
 			// OK, based on our music mode, play another!
 			SLOGD(DEBUG_TAG_MUSICCTL, "Music End Loop %d %d", uiMusicHandle, gubMusicMode);
 
@@ -344,7 +345,7 @@ static void StartMusicBasedOnMode(void)
 
 static void MusicStopCallback(void* pData)
 {
-	SLOGD(DEBUG_TAG_MUSICCTL, "Music EndCallback %d %d", uiMusicHandle, gubMusicMode);
+	SLOGD(DEBUG_TAG_MUSICCTL, "MusicStopCallback %d %d", uiMusicHandle, gubMusicMode);
 
 	gfMusicEnded  = TRUE;
 	uiMusicHandle = NO_SAMPLE;
