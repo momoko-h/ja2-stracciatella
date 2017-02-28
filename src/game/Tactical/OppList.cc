@@ -2470,7 +2470,7 @@ void RadioSightings(SOLDIERTYPE* const pSoldier, SOLDIERTYPE* const about, UINT8
  BOOLEAN fSawCreatureForFirstTime = FALSE;
 
 	SLOGD(DEBUG_TAG_OPPLIST, "RADIO SIGHTINGS: for %d about %d",
-				pSoldier->ubID, SOLDIER2ID(about));
+				pSoldier->ubID, Soldier2ID(about));
 
 	gTacticalStatus.Team[pSoldier->bTeam].last_merc_to_radio = pSoldier;
 
@@ -2949,7 +2949,7 @@ void DebugSoldierPage3()
 		}
 
 		MPrintStat(DEBUG_PAGE_FIRST_COLUMN, y += h, L"Suppress pts:",       s->ubSuppressionPoints);
-		MPrintStat(DEBUG_PAGE_FIRST_COLUMN, y += h, L"Attacker ID:",        SOLDIER2ID(s->attacker));
+		MPrintStat(DEBUG_PAGE_FIRST_COLUMN, y += h, L"Attacker ID:",        Soldier2ID(s->attacker));
 		MPrintStat(DEBUG_PAGE_FIRST_COLUMN, y += h, L"EndAINotCalled:",     s->fTurnInProgress);
 
     y = DEBUG_PAGE_START_Y;
@@ -3375,7 +3375,7 @@ void MakeNoise(SOLDIERTYPE* const noise_maker, INT16 const sGridNo, INT8 const b
 	{
 		// delay these events until the attack is over!
 		EV_S_NOISE SNoise;
-		SNoise.ubNoiseMaker = SOLDIER2ID(noise_maker);
+		SNoise.ubNoiseMaker = Soldier2ID(noise_maker);
 		SNoise.sGridNo      = sGridNo;
 		SNoise.bLevel       = bLevel;
 		SNoise.ubVolume     = ubVolume;
@@ -3902,7 +3902,7 @@ static void HearNoise(SOLDIERTYPE* const pSoldier, SOLDIERTYPE* const noise_make
 	BOOLEAN fMuzzleFlash = FALSE;
 
 	SLOGD(DEBUG_TAG_OPPLIST, "%d hears noise from %d (%d/%d) volume %d",
-				pSoldier->ubID, SOLDIER2ID(noise_maker), sGridNo, bLevel, ubVolume);
+				pSoldier->ubID, Soldier2ID(noise_maker), sGridNo, bLevel, ubVolume);
 
 
 	if ( pSoldier->ubBodyType == CROW )

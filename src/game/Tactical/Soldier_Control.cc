@@ -6489,7 +6489,7 @@ void ReleaseSoldiersAttacker( SOLDIERTYPE *pSoldier )
 			{
 				SLOGD(DEBUG_TAG_SOLDIER, "Freeing up attacker of %d (attacker is %d)\n\
 																		releasesoldierattacker num to free is %d",
-							pSoldier->ubID, SOLDIER2ID(pSoldier->attacker), ubNumToFree);
+							pSoldier->ubID, Soldier2ID(pSoldier->attacker), ubNumToFree);
 				ReduceAttackBusyCount(pSoldier->attacker, FALSE);
 			}
 

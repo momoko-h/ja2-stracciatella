@@ -119,7 +119,7 @@ struct TacticalStatusType
 };
 
 
-static inline bool IsOnOurTeam(SOLDIERTYPE const& s)
+constexpr bool IsOnOurTeam(SOLDIERTYPE const& s)
 {
 	return s.bTeam == OUR_TEAM;
 }
@@ -131,7 +131,7 @@ extern const char* const gzActionStr[];
 // Soldier List used for all soldier overhead interaction
 extern SOLDIERTYPE Menptr[TOTAL_SOLDIERS];
 
-static inline SOLDIERTYPE& GetMan(UINT const idx)
+constexpr SOLDIERTYPE& GetMan(UINT const idx)
 {
 	Assert(idx < lengthof(Menptr));
 	return Menptr[idx];
@@ -139,19 +139,15 @@ static inline SOLDIERTYPE& GetMan(UINT const idx)
 
 typedef UINT8 SoldierID;
 
-static inline SoldierID Soldier2ID(const SOLDIERTYPE* const s)
+constexpr SoldierID Soldier2ID(const SOLDIERTYPE* const s)
 {
 	return s != NULL ? s->ubID : NOBODY;
 }
 
-static inline SOLDIERTYPE* ID2Soldier(const SoldierID id)
+constexpr SOLDIERTYPE* ID2Soldier(const SoldierID id)
 {
 	return id != NOBODY ? &GetMan(id) : 0;
 }
-
-// For temporary use
-#define SOLDIER2ID(s) (Soldier2ID((s)))
-#define ID2SOLDIER(i) (ID2Soldier((i)))
 
 static inline SOLDIERTYPE* GetSelectedMan(void)
 {
@@ -180,7 +176,7 @@ extern UINT32       guiNumMercSlots;
 
 extern TacticalStatusType gTacticalStatus;
 
-static inline BOOLEAN IsTeamActive(const UINT team)
+inline bool IsTeamActive(const UINT team)
 {
 	return gTacticalStatus.Team[team].bMenInSector > 0;
 }

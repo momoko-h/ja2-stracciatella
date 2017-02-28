@@ -2261,7 +2261,7 @@ void HandleExplosionQueue()
 			flags &= ~MAPELEMENT_ENEMY_MINE_PRESENT;
 
 			// Bomb objects only store the side who placed the bomb.
-			SOLDIERTYPE* const owner = o.ubBombOwner > 1 ? ID2SOLDIER(o.ubBombOwner - 2) : 0;
+			SOLDIERTYPE* const owner = o.ubBombOwner > 1 ? ID2Soldier(o.ubBombOwner - 2) : 0;
 			IgniteExplosion(owner, 0, gridno, o.usBombItem, level);
 		}
 

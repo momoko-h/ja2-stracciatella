@@ -1412,7 +1412,7 @@ static ScreenID UIHandleAOnTerrain(UI_EVENT* pUIEvent)
 			if (tgt != NULL)
 			{
 				// No, ok display message IF this is the first time at this gridno
-				if (gsOutOfRangeGridNo != tgt->sGridNo || gubOutOfRangeMerc != SOLDIER2ID(sel))
+				if (gsOutOfRangeGridNo != tgt->sGridNo || gubOutOfRangeMerc != Soldier2ID(sel))
 				{
 					// Display
 					ScreenMsg(FONT_MCOLOR_LTYELLOW, MSG_INTERFACE, TacticalStr[OUT_OF_RANGE_STRING]);
@@ -1421,7 +1421,7 @@ static ScreenID UIHandleAOnTerrain(UI_EVENT* pUIEvent)
 
 					// Set
 					gsOutOfRangeGridNo = tgt->sGridNo;
-					gubOutOfRangeMerc  = SOLDIER2ID(sel);
+					gubOutOfRangeMerc  = Soldier2ID(sel);
 				}
 			}
 		}

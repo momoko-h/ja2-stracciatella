@@ -669,7 +669,7 @@ void LoadAnimationSurface(UINT16 const usSoldierID, UINT16 const usSurfaceIndex,
 			a->uiNumFramesPerDir = pAuxData->ubNumberOfFrames;
 
 			// get structure data if any
-			const STRUCTURE_FILE_REF* const pStructureFileRef = InternalGetAnimationStructureRef(ID2SOLDIER(usSoldierID), usSurfaceIndex, usAnimState, TRUE);
+			const STRUCTURE_FILE_REF* const pStructureFileRef = InternalGetAnimationStructureRef(ID2Soldier(usSoldierID), usSurfaceIndex, usAnimState, TRUE);
 			if (pStructureFileRef != NULL)
 			{
 				INT16 sStartFrame = 0;
