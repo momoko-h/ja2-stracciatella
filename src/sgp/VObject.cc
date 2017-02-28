@@ -40,23 +40,22 @@ SGPVObject::SGPVObject(SGPImage const* const img, bool takeOwnership) :
 		throw std::runtime_error("Image for video object creation must be TRLE compressed");
 	}
 
-	ETRLEData TempETRLEData;
-	GetETRLEImageData(img, &TempETRLEData);
+  {
+    ETRLEData const TempETRLEData(img);
+    subregion_count_ = TempETRLEData.usNumberOfObjects;
+    etrle_object_    = TempETRLEData.pETRLEObject;
+    pix_data_        = static_cast<UINT8*>(TempETRLEData.pPixData);
+    pix_data_size_   = TempETRLEData.uiSizePixData;
+  }
 
-	subregion_count_ = TempETRLEData.usNumberOfObjects;
-	etrle_object_    = TempETRLEData.pETRLEObject;
-	pix_data_        = static_cast<UINT8*>(TempETRLEData.pPixData);
-	pix_data_size_   = TempETRLEData.uiSizePixData;
-	bit_depth_       = img->ubBitDepth;
-
-	if (img->ubBitDepth == 8)
+  bit_depth_ = img->ubBitDepth;
+	if (bit_depth_ == 8)
 	{
 		// create palette
-		const SGPPaletteEntry* const src_pal = img->pPalette;
-		Assert(src_pal != NULL);
+		Assert(img->pPalette);
 
 		SGPPaletteEntry* const pal = palette_.Allocate(256);
-		memcpy(pal, src_pal, sizeof(*pal) * 256);
+		memcpy(pal, img->pPalette, sizeof(*pal) * 256);
 
 		palette16_     = Create16BPPPalette(pal);
 		current_shade_ = palette16_;
@@ -229,6 +228,22 @@ void SGPVObject::ShareShadetables(SGPVObject* const other)
 }
 
 
+void SGPVObject::Blit(SGPVSurface* const dst, uint16_t const usRegionIndex, int32_t iDestX, int32_t iDestY) const {
+  Assert(BPP() ==  8);
+  Assert(dst->BPP() == 16);
+
+  SGPVSurface::Lock l(dst);
+  UINT16* const pBuffer = l.Buffer<UINT16>();
+  UINT32  const uiPitch = l.Pitch();
+
+  if (BltIsClipped(this, iDestX, iDestY, usRegionIndex, &ClippingRect)) {
+    Blt8BPPDataTo16BPPBufferTransparentClip(pBuffer, uiPitch, this, iDestX, iDestY, usRegionIndex, &ClippingRect);
+  } else {
+    Blt8BPPDataTo16BPPBufferTransparent(pBuffer, uiPitch, this, iDestX, iDestY, usRegionIndex);
+  }
+}
+
+
 void InitializeVideoObjectManager(void)
 {
 	//Shouldn't be calling this if the video object manager already exists.
@@ -256,7 +271,7 @@ SGPVObject* AddVideoObjectFromHImage(SGPImage* const img)
 SGPVObject* AddVideoObjectFromFile(const char* const ImageFile)
 {
 	AutoSGPImage hImage(CreateImage(ImageFile, IMAGE_ALLIMAGEDATA));
-	return AddVideoObjectFromHImage(hImage);
+	return new SGPVObject(hImage);
 }
 
 
@@ -272,25 +287,6 @@ std::unique_ptr<SGPVObject> AddVideoObjectFromFile(const char* const ImageFile)
   std::unique_ptr<SGPImage> hImage(CreateImage(ImageFile, IMAGE_ALLIMAGEDATA));
   return std::make_unique<SGPVObject>(hImage.get(), false);
 }
-}
-
-void BltVideoObject(SGPVSurface* const dst, SGPVObject const* const src, UINT16 const usRegionIndex, INT32 const iDestX, INT32 const iDestY)
-{
-	Assert(src->BPP() ==  8);
-	Assert(dst->BPP() == 16);
-
-	SGPVSurface::Lock l(dst);
-	UINT16* const pBuffer = l.Buffer<UINT16>();
-	UINT32  const uiPitch = l.Pitch();
-
-	if (BltIsClipped(src, iDestX, iDestY, usRegionIndex, &ClippingRect))
-	{
-		Blt8BPPDataTo16BPPBufferTransparentClip(pBuffer, uiPitch, src, iDestX, iDestY, usRegionIndex, &ClippingRect);
-	}
-	else
-	{
-		Blt8BPPDataTo16BPPBufferTransparent(pBuffer, uiPitch, src, iDestX, iDestY, usRegionIndex);
-	}
 }
 
 
@@ -330,5 +326,5 @@ void BltVideoObjectOutlineShadow(SGPVSurface* const dst, const SGPVObject* const
 
 void BltVideoObjectOnce(SGPVSurface* const dst, char const* const filename, UINT16 const region, INT32 const x, INT32 const y)
 {
-  BltVideoObject(dst, SP::AddVideoObjectFromFile(filename).get(), region, x, y);
+  SP::AddVideoObjectFromFile(filename)->Blit(dst, region, x, y);
 }

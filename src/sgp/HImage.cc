@@ -284,10 +284,8 @@ UINT32 GetRGBColor(UINT16 Value16BPP)
 }
 
 
-void GetETRLEImageData(SGPImage const* const img, ETRLEData* const buf)
-{
+ETRLEData::ETRLEData(const SGPImage * const img) {
 	Assert(img);
-	Assert(buf);
 
 	SGP::Buffer<ETRLEObject> etrle_objs(img->usNumberOfObjects);
 	memcpy(etrle_objs, img->pETRLEObject, sizeof(*etrle_objs) * img->usNumberOfObjects);
@@ -295,10 +293,10 @@ void GetETRLEImageData(SGPImage const* const img, ETRLEData* const buf)
 	SGP::Buffer<UINT8> pix_data(img->uiSizePixData);
 	memcpy(pix_data, img->pImageData, sizeof(*pix_data) * img->uiSizePixData);
 
-	buf->pPixData          = pix_data.Release();
-	buf->uiSizePixData     = img->uiSizePixData;
-	buf->pETRLEObject      = etrle_objs.Release();
-	buf->usNumberOfObjects = img->usNumberOfObjects;
+	pPixData          = pix_data.Release();
+	uiSizePixData     = img->uiSizePixData;
+	pETRLEObject      = etrle_objs.Release();
+	usNumberOfObjects = img->usNumberOfObjects;
 }
 
 

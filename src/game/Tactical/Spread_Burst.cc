@@ -30,8 +30,6 @@ struct BURST_LOCATIONS
 static BURST_LOCATIONS gsBurstLocations[MAX_BURST_LOCATIONS];
 static INT8            gbNumBurstLocations = 0;
 
-static SGPVObject* guiBURSTACCUM;
-
 
 void ResetBurstLocations( )
 {
@@ -133,8 +131,7 @@ void AIPickBurstLocations( SOLDIERTYPE *pSoldier, INT8 bTargets, SOLDIERTYPE *pT
 
 void RenderAccumulatedBurstLocations( )
 {
-	INT32			cnt;
-	INT16			sGridNo;
+  static auto const burstVO = SP::AddVideoObjectFromFile(INTERFACEDIR "/burst1.sti");
 
 	if ( !gfBeginBurstSpreadTracking )
 	{
@@ -151,9 +148,9 @@ void RenderAccumulatedBurstLocations( )
 	// If on screen, render
 
 	// Check if it already exists!
-	for ( cnt = 0; cnt < gbNumBurstLocations; cnt++ )
+	for (int cnt = 0; cnt < gbNumBurstLocations; cnt++)
 	{
-		sGridNo = gsBurstLocations[ cnt ].sGridNo;
+		GridNo const sGridNo = gsBurstLocations[ cnt ].sGridNo;
 
 		if ( GridNoOnScreen( sGridNo ) )
 		{
@@ -185,19 +182,7 @@ void RenderAccumulatedBurstLocations( )
 
 			RegisterBackgroundRectSingleFilled(sXPos, sYPos, 40, 40);
 
-			BltVideoObject(FRAME_BUFFER, guiBURSTACCUM, 1, sXPos, sYPos);
+      burstVO->Blit(FRAME_BUFFER, 1, sXPos, sYPos);
 		}
 	}
-}
-
-
-void LoadSpreadBurstGraphics()
-{
-	guiBURSTACCUM = AddVideoObjectFromFile(INTERFACEDIR "/burst1.sti");
-}
-
-
-void DeleteSpreadBurstGraphics()
-{
-	DeleteVideoObject(guiBURSTACCUM);
 }

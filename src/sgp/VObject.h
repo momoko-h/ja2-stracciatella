@@ -59,6 +59,8 @@ class SGPVObject
 
 		void ShareShadetables(SGPVObject*);
 
+    void Blit(SGPVSurface* const dst, uint16_t const usRegionIndex, int32_t iDestX, int32_t iDestY) const;
+
 		enum Flags
 		{
 			NONE              = 0,
@@ -114,8 +116,9 @@ static inline void DeleteVideoObject(SGPVObject* const vo)
 }
 
 // Blits a video object to another video object
-void BltVideoObject(SGPVSurface* dst, SGPVObject const* src, UINT16 usRegionIndex, INT32 iDestX, INT32 iDestY);
-
+inline void BltVideoObject(SGPVSurface* dst, SGPVObject const* src, UINT16 usRegionIndex, INT32 iDestX, INT32 iDestY) {
+  src->Blit(dst, usRegionIndex, iDestX, iDestY);
+}
 
 void BltVideoObjectOutline(SGPVSurface* dst, SGPVObject const* src, UINT16 usIndex, INT32 iDestX, INT32 iDestY, INT16 s16BPPColor);
 void BltVideoObjectOutlineShadow(SGPVSurface* dst, SGPVObject const* src, UINT16 usIndex, INT32 iDestX, INT32 iDestY);

@@ -2072,7 +2072,7 @@ static UINT32 DisplayInvSlot(UINT8 const slot_num, UINT16 const item_idx, UINT16
     auto face = gEmployedMercsFaces.find(owner);
 		if (face != gEmployedMercsFaces.end())
 		{ // Still in player's employ
-			BltVideoObject(FRAME_BUFFER, face->second.get(), 0, x + SKI_SMALL_FACE_OFFSET_X, y);
+      face->second->Blit(FRAME_BUFFER, 0, x + SKI_SMALL_FACE_OFFSET_X, y);
 		}
 	}
 
