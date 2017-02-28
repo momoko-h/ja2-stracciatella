@@ -38,6 +38,8 @@ struct BACKGROUND_SAVE
 	INT16           sHeight;
 	BOOLEAN         fPendingDelete;
 	BOOLEAN         fDisabled;
+
+  BACKGROUND_SAVE() { memset(this, 0, sizeof(*this)); }
 };
 
 
@@ -349,11 +351,11 @@ void InvalidateBackgroundRects(void)
 
 void ShutdownBackgroundRects(void)
 {
-	for (UINT32 i = 0; i < guiNumBackSaves; ++i)
-	{
-		BACKGROUND_SAVE* const b = gBackSaves[i];
-		if (b->fAllocated) FreeBackgroundRectNow(b);
-	}
+  for (auto &bsp : gBackSaves) {
+    if (bsp->fAllocated) FreeBackgroundRectNow(bsp);
+    delete bsp;
+  }
+  gBackSaves.clear();
 }
 
 

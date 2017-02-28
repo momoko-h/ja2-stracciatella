@@ -318,6 +318,10 @@ void GameInitBobbyRMailOrder()
 {
 	gubSelectedLight = 0;
 
+  // This function might be called if the user quits to the main
+  // menu in which case we could have alloc'ed shipments.
+  free(gpNewBobbyrShipments);
+
 	gpNewBobbyrShipments = NULL;
 	giNumberOfNewBobbyRShipment = 0;
 }

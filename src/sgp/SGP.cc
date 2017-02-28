@@ -393,8 +393,7 @@ int main(int argc, char* argv[])
 
     free_engine_options(params);
 
-  std::vector<std::string> libraries = cm->getListOfGameResources();
-  cm->initGameResouces(configFolderPath, libraries);
+  cm->initGameResouces(configFolderPath, cm->getListOfGameResources());
 
   if(!cm->loadGameData())
   {

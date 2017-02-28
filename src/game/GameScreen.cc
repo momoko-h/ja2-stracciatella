@@ -144,9 +144,9 @@ void MainGameScreenInit(void)
 void MainGameScreenShutdown(void)
 {
 	ShutdownZBuffer(gpZBuffer);
-	ShutdownBackgroundRects();
 	RemoveVideoOverlay(g_fps_overlay);
 	RemoveVideoOverlay(g_counter_period_overlay);
+	ShutdownBackgroundRects();
 }
 
 
