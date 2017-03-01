@@ -78,8 +78,6 @@
 #include "GameInstance.h"
 #include "Soldier.h"
 
-#define MAX_ON_DUTY_SOLDIERS 6
-
 /////////////////////////////////////////////////////////////////////////////////////
 //											UI SYSTEM DESCRIPTION
 //
@@ -109,9 +107,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define GO_MOVE_ONE				40
-#define GO_MOVE_TWO				80
-#define GO_MOVE_THREE			100
+constexpr int MAX_ON_DUTY_SOLDIERS = 6;
+
+constexpr int GO_MOVE_ONE   = 40;
+constexpr int GO_MOVE_TWO   = 80;
+constexpr int GO_MOVE_THREE = 100;
 
 
 // CALLBACKS FOR EVENTS
@@ -792,7 +792,7 @@ static void SetUIMouseCursor(void)
 					{
 						if ( sOldExitGridNo != usMapPos )
 						{
-							fOkForExit		 = OKForSectorExit((INT8)-1, usMapPos);
+							fOkForExit		 = OKForSectorExit(-1, usMapPos);
 							sOldExitGridNo = usMapPos;
 						}
 
@@ -1167,7 +1167,7 @@ static ScreenID UIHandleMOnTerrain(UI_EVENT* pUIEvent)
 			  if ( fOverItems )
 				{
 					// Is this the same level & gridno...
-					if ( gsInterfaceLevel == (INT16)bLevelForItemsOver && usMapPos == sGridNoForItemsOver )
+					if ( gsInterfaceLevel == bLevelForItemsOver && usMapPos == sGridNoForItemsOver )
 					{
 						// Check timer...
 						if ( ( GetJA2Clock( ) - uiItemsOverTimer ) > 1500 )
@@ -1870,7 +1870,7 @@ static ScreenID UIHandleMAdjustStanceMode(UI_EVENT* pUIEvent)
 	}
 
 	// Check if delta X has changed alot since last time
-	iPosDiff = ABS( (INT32)( usOldMouseY - gusMouseYPos) );
+	iPosDiff = ABS(usOldMouseY - gusMouseYPos);
 
 	//guiShowUPDownArrows = ARROWS_SHOW_DOWN_BESIDE | ARROWS_SHOW_UP_BESIDE;
 	guiShowUPDownArrows = uiOldShowUPDownArrows;
@@ -3984,8 +3984,8 @@ static void GetGridNoScreenXY(INT16 sGridNo, INT16* pScreenX, INT16* pScreenY)
 
 	FromCellToScreenCoordinates( sOffsetX, sOffsetY, &sTempX_S, &sTempY_S );
 
-	sScreenX = ( g_ui.m_tacticalMapCenterX ) + (INT16)sTempX_S;
-	sScreenY = ( g_ui.m_tacticalMapCenterY ) + (INT16)sTempY_S;
+	sScreenX = ( g_ui.m_tacticalMapCenterX ) + sTempX_S;
+	sScreenY = ( g_ui.m_tacticalMapCenterY ) + sTempY_S;
 
 	// Adjust for offset position on screen
 	sScreenX -= gsRenderWorldOffsetX;
