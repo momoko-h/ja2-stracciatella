@@ -1,3 +1,5 @@
+#include <memory>
+#include <vector>
 #include "Directories.h"
 #include "Font.h"
 #include "HImage.h"
@@ -58,20 +60,15 @@ extern SOLDIERINITNODE *gpSelected;
 #define FASTMAPROWCOLTOPOS( r, c )									( (r) * WORLD_COLS + (c) )
 
 
-struct SMALL_TILE_SURF
-{
-	HVOBJECT vo;
-};
-
 struct SMALL_TILE_DB
 {
-	HVOBJECT	vo;
-	UINT16		usSubIndex;
+  std::shared_ptr<SGPVObject> vo;
+	UINT16 usSubIndex;
 };
 
 
-static SMALL_TILE_SURF gSmTileSurf[NUMBEROFTILETYPES];
-static SMALL_TILE_DB   gSmTileDB[NUMBEROFTILES];
+static std::vector<std::shared_ptr<SGPVObject>> gSmTileSurf;
+static std::vector<SMALL_TILE_DB> gSmTileDB;
 static TileSetID       gubSmTileNum                   = TILESET_INVALID;
 static BOOLEAN         gfInOverheadMap = FALSE;
 static MOUSE_REGION    OverheadRegion;
@@ -82,7 +79,7 @@ BOOLEAN                gfOverheadMapDirty             = FALSE;
 extern BOOLEAN		gfRadarCurrentGuyFlash;
 static INT16           gsStartRestrictedX;
 static INT16           gsStartRestrictedY;
-static INT16           gsOveritemPoolGridNo           = NOWHERE;
+static GridNo          gsOveritemPoolGridNo           = NOWHERE;
 
 
 static void CopyOverheadDBShadetablesFromTileset(void);
@@ -104,26 +101,23 @@ void InitNewOverheadDB(TileSetID const ubTilesetID)
 			use_tileset = GENERIC_1;
 		}
 
-		std::string adjusted_file(GCM->getTilesetResourceName(use_tileset, std::string("t/") + filename));
-		SGPVObject* vo;
-		try
-		{
-			vo = AddVideoObjectFromFile(adjusted_file.c_str());
-		}
-		catch (...)
-		{
-			// Load one we know about
-			vo = AddVideoObjectFromFile(GCM->getTilesetResourceName(0, std::string("t/") + "grass.sti").c_str());
-		}
-
-		gSmTileSurf[i].vo = vo;
+    gSmTileSurf.push_back([] (std::string const adjusted_file) {
+      try {
+        return SP::AddVideoObjectFromFile(adjusted_file.c_str());
+      }
+      catch (...) {
+        // Load one we know about
+        return SP::AddVideoObjectFromFile(GCM->getTilesetResourceName(0, "t/grass.sti").c_str());
+      }
+    }(GCM->getTilesetResourceName(use_tileset, std::string("t/") + filename)));
 	}
 
 	// Create database
 	UINT32 dbSize = 0;
+  gSmTileDB.resize(NUMBEROFTILES);
 	for (UINT32 i = 0; i < NUMBEROFTILETYPES; ++i)
 	{
-		SGPVObject* const vo = gSmTileSurf[i].vo;
+    auto const & vo = gSmTileSurf[i];
 
 		// Get number of regions and check for overflow
 		UINT32 const NumRegions = MIN(vo->SubregionCount(), gNumTilesPerType[i]);
@@ -151,12 +145,8 @@ void InitNewOverheadDB(TileSetID const ubTilesetID)
 	// Calculate Scale factors because of restricted map scroll regions
 	if (gMapInformation.ubRestrictedScrollID != 0)
 	{
-		INT16 sX1;
-		INT16 sY1;
-		INT16 sX2;
-		INT16 sY2;
-		CalculateRestrictedMapCoords(NORTH, &sX1, &sY1, &sX2, &gsStartRestrictedY, SCREEN_WIDTH, 320);
-		CalculateRestrictedMapCoords(WEST,  &sX1, &sY1, &gsStartRestrictedX, &sY2, SCREEN_WIDTH, 320);
+		CalculateRestrictedMapCoords(NORTH, nullptr, nullptr, nullptr, &gsStartRestrictedY, SCREEN_WIDTH, 320);
+		CalculateRestrictedMapCoords(WEST,  nullptr, nullptr, &gsStartRestrictedX, nullptr, SCREEN_WIDTH, 320);
 	}
 
 	// Copy over shade tables from main tileset
@@ -382,7 +372,6 @@ void GoIntoOverheadMap( )
 	gfInOverheadMap = TRUE;
 
 	MSYS_DefineRegion(&OverheadBackgroundRegion, STD_SCREEN_X, STD_SCREEN_Y, STD_SCREEN_X + 640, STD_SCREEN_Y + 360, MSYS_PRIORITY_HIGH, CURSOR_NORMAL, MSYS_NO_CALLBACK, MSYS_NO_CALLBACK);
-
 	MSYS_DefineRegion(&OverheadRegion, STD_SCREEN_X, STD_SCREEN_Y, STD_SCREEN_X + 640, STD_SCREEN_Y + 320, MSYS_PRIORITY_HIGH, CURSOR_NORMAL, MSYS_NO_CALLBACK, ClickOverheadRegionCallback);
 
 	// LOAD CLOSE ANIM
@@ -486,6 +475,13 @@ void RenderOverheadMap(INT16 const sStartPointX_M, INT16 const sStartPointY_M, I
 		UINT16* const pDestBuf         = l.Buffer<UINT16>();
 		UINT32  const uiDestPitchBYTES = l.Pitch();
 
+    auto BltTile = [pDestBuf, uiDestPitchBYTES] (SMALL_TILE_DB const tile, LEVELNODE const * const n,
+                                                 int16_t const sx, int16_t sy) {
+      tile.vo->CurrentShade(n->ubShadeLevel);
+      sy += gsRenderHeight / 5;
+      Blt8BPPDataTo16BPPBufferTransparent(pDestBuf, uiDestPitchBYTES, tile.vo.get(), sx, sy, tile.usSubIndex);
+    };
+
 		{ // Begin Render Loop
 			INT16 sAnchorPosX_M = sStartPointX_M;
 			INT16 sAnchorPosY_M = sStartPointY_M;
@@ -509,9 +505,8 @@ void RenderOverheadMap(INT16 const sStartPointX_M, INT16 const sStartPointY_M, I
 						{
 							SMALL_TILE_DB const& pTile = gSmTileDB[n->usIndex];
 							INT16         const  sX    = sTempPosX_S;
-							INT16         const  sY    = sTempPosY_S - sHeight + gsRenderHeight / 5;
-							pTile.vo->CurrentShade(n->ubShadeLevel);
-							Blt8BPPDataTo16BPPBufferTransparent(pDestBuf, uiDestPitchBYTES, pTile.vo, sX, sY, pTile.usSubIndex);
+							INT16         const  sY    = sTempPosY_S - sHeight;
+              BltTile(pTile, n, sX, sY);
 						}
 					}
 
@@ -576,10 +571,8 @@ void RenderOverheadMap(INT16 const sStartPointX_M, INT16 const sStartPointY_M, I
 								sY -= sHeight;
 							}
 
-							sY += gsRenderHeight / 5;
-
 							pTile.vo->CurrentShade(n->ubShadeLevel);
-							Blt8BPPDataTo16BPPBufferTransparent(pDestBuf, uiDestPitchBYTES, pTile.vo, sX, sY, pTile.usSubIndex);
+              BltTile(pTile, n, sX, sY);
 						}
 
 						for (LEVELNODE const* n = gpWorldLevelData[usTileIndex].pShadowHead; n; n = n->pNext)
@@ -590,10 +583,7 @@ void RenderOverheadMap(INT16 const sStartPointX_M, INT16 const sStartPointY_M, I
 							INT16         const  sX    = sTempPosX_S;
 							INT16                sY    = sTempPosY_S - sHeight;
 
-							sY += gsRenderHeight / 5;
-
-							pTile.vo->CurrentShade(n->ubShadeLevel);
-							Blt8BPPDataTo16BPPBufferShadow(pDestBuf, uiDestPitchBYTES, pTile.vo, sX, sY, pTile.usSubIndex);
+              BltTile(pTile, n, sX, sY);
 						}
 
 						for (LEVELNODE const* n = gpWorldLevelData[usTileIndex].pStructHead; n; n = n->pNext)
@@ -615,10 +605,7 @@ void RenderOverheadMap(INT16 const sStartPointX_M, INT16 const sStartPointY_M, I
 								sY -= sHeight;
 							}
 
-							sY += gsRenderHeight / 5;
-
-							pTile.vo->CurrentShade(n->ubShadeLevel);
-							Blt8BPPDataTo16BPPBufferTransparent(pDestBuf, uiDestPitchBYTES, pTile.vo, sX, sY, pTile.usSubIndex);
+              BltTile(pTile, n, sX, sY);
 						}
 					}
 
@@ -674,12 +661,9 @@ void RenderOverheadMap(INT16 const sStartPointX_M, INT16 const sStartPointY_M, I
 							INT16                sY    = sTempPosY_S - sHeight;
 
 							sY -= WALL_HEIGHT / 5;
-							sY += gsRenderHeight / 5;
-
-							pTile.vo->CurrentShade(n->ubShadeLevel);
 
 							// RENDER!
-							Blt8BPPDataTo16BPPBufferTransparent(pDestBuf, uiDestPitchBYTES, pTile.vo, sX, sY, pTile.usSubIndex);
+              BltTile(pTile, n, sX, sY);
 						}
 					}
 
@@ -709,23 +693,13 @@ void RenderOverheadMap(INT16 const sStartPointX_M, INT16 const sStartPointY_M, I
 	if (gMapInformation.ubRestrictedScrollID != 0)
 	{
 		UINT16 const black = Get16BPPColor(FROMRGB(0, 0, 0));
-		INT16 sX1;
-		INT16 sX2;
-		INT16 sY1;
-		INT16 sY2;
 
-		CalculateRestrictedMapCoords(NORTH, &sX1, &sY1, &sX2, &sY2, sEndXS, sEndYS);
-		ColorFillVideoSurfaceArea(FRAME_BUFFER, sX1, sY1, sX2, sY2, black);
+    for (int8_t dir : { NORTH, WEST, SOUTH, EAST }) {
+      int16_t sX1, sX2, sY1, sY2;
 
-		CalculateRestrictedMapCoords(WEST, &sX1, &sY1, &sX2, &sY2, sEndXS, sEndYS);
-		ColorFillVideoSurfaceArea(FRAME_BUFFER, sX1, sY1, sX2, sY2, black);
-
-		CalculateRestrictedMapCoords(SOUTH, &sX1, &sY1, &sX2, &sY2, sEndXS, sEndYS);
-		ColorFillVideoSurfaceArea(FRAME_BUFFER, sX1, sY1, sX2, sY2, black);
-
-		CalculateRestrictedMapCoords(EAST, &sX1, &sY1, &sX2, &sY2, sEndXS, sEndYS);
-		ColorFillVideoSurfaceArea(FRAME_BUFFER, sX1, sY1, sX2, sY2, black);
-
+      CalculateRestrictedMapCoords(dir, &sX1, &sY1, &sX2, &sY2, sEndXS, sEndYS);
+      ColorFillVideoSurfaceArea(FRAME_BUFFER, sX1, sY1, sX2, sY2, black);
+    }
 	}
 
 	if (!fFromMapUtility)
@@ -909,41 +883,47 @@ static GridNo GetOverheadMouseGridNoForFullSoldiersGridNo(void)
 
 void CalculateRestrictedMapCoords( INT8 bDirection, INT16 *psX1, INT16 *psY1, INT16 *psX2, INT16 *psY2, INT16 sEndXS, INT16 sEndYS )
 {
+  int16_t x1, x2, y1, y2;
+
 	switch( bDirection )
 	{
 		case NORTH:
 
-			*psX1 = 0;
-			*psX2 = sEndXS;
-			*psY1 = 0;
-			*psY2 = ( ABS( NORMAL_MAP_SCREEN_TY - gsTLY ) / 5 );
+			x1 = 0;
+			x2 = sEndXS;
+			y1 = 0;
+			y2 = ( ABS( NORMAL_MAP_SCREEN_TY - gsTLY ) / 5 );
 			break;
 
 		case WEST:
 
-			*psX1 = 0;
-			*psX2 = ( ABS( -NORMAL_MAP_SCREEN_X - gsTLX ) / 5 );
-			*psY1 = 0;
-			*psY2 = sEndYS;
+			x1 = 0;
+			x2 = ( ABS( -NORMAL_MAP_SCREEN_X - gsTLX ) / 5 );
+			y1 = 0;
+			y2 = sEndYS;
 			break;
 
 		case SOUTH:
 
-			*psX1 = 0;
-			*psX2 = sEndXS;
-			*psY1 = ( NORMAL_MAP_SCREEN_HEIGHT - ABS( NORMAL_MAP_SCREEN_BY - gsBLY ) ) / 5;
-			*psY2 = sEndYS;
+			x1 = 0;
+			x2 = sEndXS;
+			y1 = ( NORMAL_MAP_SCREEN_HEIGHT - ABS( NORMAL_MAP_SCREEN_BY - gsBLY ) ) / 5;
+			y2 = sEndYS;
 			break;
 
 		case EAST:
 
-			*psX1 = ( NORMAL_MAP_SCREEN_WIDTH - ABS( NORMAL_MAP_SCREEN_X - gsTRX ) ) / 5;
-			*psX2 = sEndXS;
-			*psY1 = 0;
-			*psY2 = sEndYS;
+			x1 = ( NORMAL_MAP_SCREEN_WIDTH - ABS( NORMAL_MAP_SCREEN_X - gsTRX ) ) / 5;
+			x2 = sEndXS;
+			y1 = 0;
+			y2 = sEndYS;
 			break;
-
 	}
+
+  if (psX1) *psX1 = x1;
+  if (psX2) *psX2 = x2;
+  if (psY1) *psY1 = y1;
+  if (psY2) *psY2 = y2;
 }
 
 
@@ -952,7 +932,7 @@ static void CopyOverheadDBShadetablesFromTileset(void)
 	// Loop through tileset
 	for (size_t i = 0; i < NUMBEROFTILETYPES; ++i)
 	{
-		gSmTileSurf[i].vo->ShareShadetables(gTileSurfaceArray[i]->vo);
+		gSmTileSurf[i]->ShareShadetables(gTileSurfaceArray[i]->vo);
 	}
 }
 
@@ -962,8 +942,6 @@ void TrashOverheadMap(void)
 	if (gubSmTileNum == TILESET_INVALID) return;
 	gubSmTileNum = TILESET_INVALID;
 
-	FOR_EACH(SMALL_TILE_SURF, i, gSmTileSurf)
-	{
-		DeleteVideoObject(i->vo);
-	}
+  gSmTileSurf.clear();
+  gSmTileDB.clear();
 }

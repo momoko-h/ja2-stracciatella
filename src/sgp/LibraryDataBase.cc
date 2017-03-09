@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdlib>
 #include <stdexcept>
 
@@ -87,9 +88,9 @@ static int CompareFileHeader(const void* a, const void* b)
 // Replace all \ in a string by /
 static char* Slashify(const char* s)
 {
-	char* const res = MALLOCN(char, strlen(s) + 1);
-	char* d = res;
-	do { *d++ = (*s == '\\' ? '/' : *s); } while (*s++ != '\0');
+  int const sLen = strlen(s) + 1;  // length including the trailing \0.
+	char* const res = MALLOCN(char, sLen);
+  std::replace_copy(s, s + sLen, res, '\\', '/');
 	return res;
 }
 
@@ -100,7 +101,7 @@ try
   FILE* hFile = FileMan::openForReadingCaseInsensitive(dataDir, lib_name);
   if (hFile == NULL)
   {
-      fprintf(stderr, "ERROR: Failed to open library \"%s\"\n", lib_name);
+      SLOGE(DEBUG_TAG_LIBDB, "ERROR: Failed to open library \"%s\"\n", lib_name);
 			return FALSE;
 	}
 

@@ -179,7 +179,7 @@ static INT8 TileIsClear(SOLDIERTYPE* pSoldier, INT8 bDirection, INT16 sGridNo, I
 							pSoldier->fBlockedByAnotherMerc = FALSE;
 
 							// Is the next tile blocked too?
-							sNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( guiPathingData[ 0 ] ) );
+							sNewGridNo = AdjacentGridNo(pSoldier->sGridNo, guiPathingData[0]);
 
 							return( TileIsClear( pSoldier, guiPathingData[ 0 ], sNewGridNo, pSoldier->bLevel ) );
 						}
@@ -498,7 +498,7 @@ void HandleNextTileWaiting(SOLDIERTYPE* const pSoldier)
 				if ( sCost > 0 )
 				{
 					// Is the next tile blocked too?
-					sNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( guiPathingData[ 0 ] ) );
+					sNewGridNo = AdjacentGridNo(pSoldier->sGridNo, guiPathingData[0]);
 
 					bPathBlocked = TileIsClear( pSoldier, guiPathingData[ 0 ], sNewGridNo, pSoldier->bLevel );
 
@@ -516,7 +516,7 @@ void HandleNextTileWaiting(SOLDIERTYPE* const pSoldier)
 						gfPlotPathToExitGrid = FALSE;
 
 						// Is the next tile in this new path blocked too?
-						sNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( guiPathingData[ 0 ] ) );
+						sNewGridNo = AdjacentGridNo(pSoldier->sGridNo, guiPathingData[0]);
 
 						bPathBlocked = TileIsClear( pSoldier, guiPathingData[ 0 ], sNewGridNo, pSoldier->bLevel );
 

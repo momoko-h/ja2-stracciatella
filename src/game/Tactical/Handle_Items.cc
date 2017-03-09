@@ -450,7 +450,7 @@ ItemHandleResult HandleItem(SOLDIERTYPE* const s, INT16 usGridNo, const INT8 bLe
 		INT16 sAdjustedGridNo;
 		for (INT16 i = 0; i < NUM_WORLD_DIRECTIONS; ++i)
 		{
-			const INT16 sSpot = NewGridNo(s->sGridNo, DirectionInc(i));
+			const INT16 sSpot = AdjacentGridNo(s->sGridNo, i);
 
 			// Make sure movement costs are OK....
 			if (gubWorldMovementCosts[sSpot][i][bLevel] >= TRAVELCOST_BLOCKED)
@@ -888,7 +888,7 @@ ItemHandleResult HandleItem(SOLDIERTYPE* const s, INT16 usGridNo, const INT8 bLe
 		if (usHandItem == MORTAR)
 		{
 			const UINT8 ubDirection  = (UINT8)GetDirectionFromGridNo(sTargetGridNo, s);
-			const INT16 sCheckGridNo = NewGridNo((UINT16)s->sGridNo, DirectionInc(ubDirection));
+			const INT16 sCheckGridNo = AdjacentGridNo(s->sGridNo, ubDirection);
 			if (!OKFallDirection(s, sCheckGridNo, s->bLevel, ubDirection, s->usAnimState))
 			{
 				return ITEM_HANDLE_NOROOM;
@@ -3067,7 +3067,7 @@ BOOLEAN NearbyGroundSeemsWrong(SOLDIERTYPE* const s, const INT16 sGridNo, const 
 		if (fCheckAroundGridno)
 		{
 			// get the gridno of the next spot adjacent to lastGridno in that direction
-			sNextGridNo = NewGridNo(sGridNo, DirectionInc(ubDirection));
+			sNextGridNo = AdjacentGridNo(sGridNo, ubDirection);
 
 			// don't check directions that are impassable!
 			UINT8 ubMovementCost = gubWorldMovementCosts[sNextGridNo][ubDirection][s->bLevel];

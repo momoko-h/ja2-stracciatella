@@ -1,3 +1,5 @@
+#include <memory>
+#include <vector>
 #include "Directories.h"
 #include "FileMan.h"
 #include "Font.h"
@@ -413,9 +415,10 @@ static MOUSE_REGION gSMInvCamoRegion;
 static INT8 gbCompatibleAmmo[NUM_INV_SLOTS];
 INT8						gbInvalidPlacementSlot[ NUM_INV_SLOTS ];
 static UINT16 us16BPPItemCyclePlacedItemColors[20];
-static SGPVObject* guiBodyInvVO[4][2];
+//static SGPVObject* guiBodyInvVO[4][2];
+static std::vector<std::unique_ptr<SGPVObject>> guiBodyInvVO;
 static SGPVObject* guiGoldKeyVO;
-INT8						gbCompatibleApplyItem = FALSE;
+INT8						gbCompatibleApplyItem = 0;
 
 
 static SGPVObject* guiMapInvSecondHandBlockout;
@@ -664,14 +667,14 @@ static void GenerateConsString(wchar_t* const zItemCons, OBJECTTYPE const& o, UI
 void InitInvSlotInterface(INV_REGION_DESC const* const pRegionDesc, INV_REGION_DESC const* const pCamoRegion, MOUSE_CALLBACK const INVMoveCallback, MOUSE_CALLBACK const INVClickCallback, MOUSE_CALLBACK const INVMoveCamoCallback, MOUSE_CALLBACK const INVClickCamoCallback)
 {
 	// Load all four body type images
-	guiBodyInvVO[0][0] = AddVideoObjectFromFile(INTERFACEDIR "/inventory_normal_male.sti");
-	guiBodyInvVO[0][1] = AddVideoObjectFromFile(INTERFACEDIR "/inventory_normal_male_h.sti");
-	guiBodyInvVO[1][0] = AddVideoObjectFromFile(INTERFACEDIR "/inventory_figure_large_male.sti");
-	guiBodyInvVO[1][1] = AddVideoObjectFromFile(INTERFACEDIR "/inventory_figure_large_male_h.sti");
-	guiBodyInvVO[2][0] = AddVideoObjectFromFile(INTERFACEDIR "/inventory_normal_male.sti");
-	guiBodyInvVO[2][1] = AddVideoObjectFromFile(INTERFACEDIR "/inventory_normal_male.sti");
-	guiBodyInvVO[3][0] = AddVideoObjectFromFile(INTERFACEDIR "/inventory_figure_female.sti");
-	guiBodyInvVO[3][1] = AddVideoObjectFromFile(INTERFACEDIR "/inventory_figure_female_h.sti");
+	guiBodyInvVO.push_back(SP::AddVideoObjectFromFile(INTERFACEDIR "/inventory_normal_male.sti"));
+	guiBodyInvVO.push_back(SP::AddVideoObjectFromFile(INTERFACEDIR "/inventory_normal_male_h.sti"));
+	guiBodyInvVO.push_back(SP::AddVideoObjectFromFile(INTERFACEDIR "/inventory_figure_large_male.sti"));
+	guiBodyInvVO.push_back(SP::AddVideoObjectFromFile(INTERFACEDIR "/inventory_figure_large_male_h.sti"));
+	guiBodyInvVO.push_back(SP::AddVideoObjectFromFile(INTERFACEDIR "/inventory_normal_male.sti"));
+	guiBodyInvVO.push_back(SP::AddVideoObjectFromFile(INTERFACEDIR "/inventory_normal_male.sti"));
+	guiBodyInvVO.push_back(SP::AddVideoObjectFromFile(INTERFACEDIR "/inventory_figure_female.sti"));
+	guiBodyInvVO.push_back(SP::AddVideoObjectFromFile(INTERFACEDIR "/inventory_figure_female_h.sti"));
 
 	// Add gold key graphic
 	guiGoldKeyVO = AddVideoObjectFromFile(INTERFACEDIR "/gold_key_button.sti");
@@ -763,10 +766,7 @@ void DisableInvRegions( BOOLEAN fDisable )
 void ShutdownInvSlotInterface()
 {
 	// Remove all body type panels
-	for (SGPVObject* (*i)[2] = guiBodyInvVO; i != endof(guiBodyInvVO); ++i)
-	{
-		FOR_EACH(SGPVObject*, k, *i) DeleteVideoObject(*k);
-	}
+  guiBodyInvVO.clear();
 
 	DeleteVideoObject(guiGoldKeyVO);
 
@@ -782,9 +782,7 @@ void ShutdownInvSlotInterface()
 void RenderInvBodyPanel(const SOLDIERTYPE* pSoldier, INT16 sX, INT16 sY)
 {
 	// Blit body inv, based on body type
-	INT8 bSubImageIndex = gbCompatibleApplyItem;
-
-	BltVideoObject(guiSAVEBUFFER, guiBodyInvVO[pSoldier->ubBodyType][bSubImageIndex], 0, sX, sY);
+  guiBodyInvVO[pSoldier->ubBodyType * 2 + gbCompatibleApplyItem]->Blit(guiSAVEBUFFER, 0, sX, sY);
 }
 
 
@@ -1038,11 +1036,11 @@ BOOLEAN HandleCompatibleAmmoUIForMapScreen(const SOLDIERTYPE* pSoldier, INT32 bI
 				// OK, Light up portrait as well.....
 				if ( fOn )
 				{
-					gbCompatibleApplyItem = TRUE;
+					gbCompatibleApplyItem = 1;
 				}
 				else
 				{
-					gbCompatibleApplyItem = FALSE;
+					gbCompatibleApplyItem = 0;
 				}
 
 				fFound = TRUE;
@@ -1260,11 +1258,11 @@ BOOLEAN InternalHandleCompatibleAmmoUI(const SOLDIERTYPE* pSoldier, const OBJECT
 				// OK, Light up portrait as well.....
 				if ( fOn )
 				{
-					gbCompatibleApplyItem = TRUE;
+					gbCompatibleApplyItem = 1;
 				}
 				else
 				{
-					gbCompatibleApplyItem = FALSE;
+					gbCompatibleApplyItem = 0;
 				}
 
 				fFound = TRUE;
@@ -1373,7 +1371,7 @@ BOOLEAN InternalHandleCompatibleAmmoUI(const SOLDIERTYPE* pSoldier, const OBJECT
 			if ( gbCompatibleApplyItem )
 			{
 				fFound = TRUE;
-				gbCompatibleApplyItem = FALSE;
+				gbCompatibleApplyItem = 0;
 			}
 		}
 	}

@@ -331,7 +331,7 @@ static BOOLEAN CloseEnoughForGrenadeToss(INT16 sGridNo, INT16 sGridNo2)
 		// (could be the player closed a door on us)
 		for (INT8 bDirection = 0; bDirection < NUM_WORLD_DIRECTIONS; ++bDirection)
 		{
-			sTempGridNo = NewGridNo( sGridNo, DirectionInc( bDirection ) );
+			sTempGridNo = AdjacentGridNo(sGridNo, bDirection);
 			ubMovementCost = gubWorldMovementCosts[ sTempGridNo ][ bDirection ][ 0 ];
 			if ( IS_TRAVELCOST_DOOR( ubMovementCost ) )
 			{
@@ -361,7 +361,7 @@ static BOOLEAN CloseEnoughForGrenadeToss(INT16 sGridNo, INT16 sGridNo2)
 		// find we're blocked, then this is no good for grenade tossing!
 		do
 		{
-			sTempGridNo = NewGridNo( sTempGridNo, DirectionInc( bDirection ) );
+			sTempGridNo = AdjacentGridNo(sTempGridNo, bDirection);
 			ubMovementCost = gubWorldMovementCosts[ sTempGridNo ][ bDirection ][ 0 ];
 			if ( IS_TRAVELCOST_DOOR( ubMovementCost ) )
 			{

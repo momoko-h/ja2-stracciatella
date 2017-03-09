@@ -925,7 +925,7 @@ static void DoBombing(void)
 						}
 
 						// Drop bombs...
-						InternalIgniteExplosion(NULL, CenterX(sBombGridNo), CenterY(sBombGridNo), 0, sBombGridNo, usItem, fLocate, IsRoofPresentAtGridno(sBombGridNo));
+						InternalIgniteExplosion(NULL, CenterX(sBombGridNo), CenterY(sBombGridNo), 0, sBombGridNo, usItem, fLocate, IsRoofPresentAtGridNo(sBombGridNo));
 					}
 
 				}

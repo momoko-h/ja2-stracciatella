@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <vector>
 
 #include "Font.h"
 #include "Font_Control.h"
@@ -382,6 +383,20 @@ static const GARRISON_GROUP gOrigGarrisonGroup[] =
 
 extern INT16 sWorldSectorLocationOfFirstBattle;
 
+// Returns a reference to the ARMY_COMPOSITION for a garrison ID.
+static ARMY_COMPOSITION& GetComposition(int32_t const garrisonID) {
+  return gArmyComp[gGarrisonGroup[garrisonID].ubComposition];
+}
+
+static uint8_t EnemiesInSector(SECTORINFO const * const pSector) {
+  return pSector->ubNumAdmins + pSector->ubNumTroops + pSector->ubNumElites;
+}
+
+static uint8_t EnemiesInSector(uint8_t const ubSectorID) {
+  auto & sector = SectorInfo[ubSectorID];
+  return sector.ubNumAdmins + sector.ubNumTroops + sector.ubNumElites;
+}
+
 //returns the number of reinforcements permitted to be sent.  Will increased if the denied counter is non-zero.
 static INT32 GarrisonReinforcementsRequested(INT32 iGarrisonID, UINT8* pubExtraReinforcements)
 {
@@ -390,8 +405,8 @@ static INT32 GarrisonReinforcementsRequested(INT32 iGarrisonID, UINT8* pubExtraR
 	SECTORINFO *pSector;
 
 	pSector = &SectorInfo[ gGarrisonGroup[ iGarrisonID ].ubSectorID ];
-	iExistingForces = pSector->ubNumAdmins + pSector->ubNumTroops + pSector->ubNumElites;
-	iReinforcementsRequested = gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bDesiredPopulation - iExistingForces;
+	iExistingForces = EnemiesInSector(pSector);
+	iReinforcementsRequested = GetComposition(iGarrisonID).bDesiredPopulation - iExistingForces;
 
 	//Record how many of the reinforcements are additionally provided due to being denied in the past.  This will grow
 	//until it is finally excepted or an absolute max is made.
@@ -416,12 +431,8 @@ static INT32 PatrolReinforcementsRequested(PATROL_GROUP const* const pg)
 
 static INT32 ReinforcementsAvailable(INT32 iGarrisonID)
 {
-	SECTORINFO *pSector;
-	INT32 iReinforcementsAvailable;
-
-	pSector = &SectorInfo[ gGarrisonGroup[ iGarrisonID ].ubSectorID ];
-	iReinforcementsAvailable = pSector->ubNumTroops + pSector->ubNumElites + pSector->ubNumAdmins;
-	iReinforcementsAvailable -= gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bDesiredPopulation;
+	int32_t iReinforcementsAvailable = EnemiesInSector(gGarrisonGroup[iGarrisonID].ubSectorID);
+	iReinforcementsAvailable - GetComposition(iGarrisonID).bDesiredPopulation;
 
 	switch( gGarrisonGroup[ iGarrisonID ].ubComposition )
 	{
@@ -493,9 +504,7 @@ static bool AdjacentSectorIsImportantAndUndefended(UINT8 const sector_id)
 	}
 	SECTORINFO const& si = SectorInfo[sector_id];
 	return
-		si.ubNumTroops == 0                                 &&
-		si.ubNumElites == 0                                 &&
-		si.ubNumAdmins == 0                                 &&
+    EnemiesInSector(&si) == 0                           &&
 		si.ubTraversability[THROUGH_STRATEGIC_MOVE] == TOWN &&
 		!PlayerSectorDefended(sector_id);
 }
@@ -1020,7 +1029,7 @@ static void HandlePlayerGroupNoticedByGarrison(const GROUP* const pPlayerGroup, 
 	if( pSector->ubGarrisonID != NO_GARRISON )
 	{
 		//Decide whether or not they will attack them with some of the troops.
-		ubEnemies = (UINT8)(pSector->ubNumAdmins + pSector->ubNumTroops + pSector->ubNumElites);
+		ubEnemies = EnemiesInSector(pSector);
 		iReinforcementsApproved = (ubEnemies - gArmyComp[ gGarrisonGroup[ pSector->ubGarrisonID ].ubComposition ].bDesiredPopulation / 2);
 		if( iReinforcementsApproved*2 > pPlayerGroup->ubGroupSize*3 && iReinforcementsApproved > gubMinEnemyGroupSize )
 		{ //Then enemy's available outnumber the player by at least 3:2, so attack them.
@@ -1032,11 +1041,11 @@ static void HandlePlayerGroupNoticedByGarrison(const GROUP* const pPlayerGroup, 
 
 			RemoveSoldiersFromGarrisonBasedOnComposition( pSector->ubGarrisonID, pGroup->ubGroupSize );
 
-			if( pSector->ubNumTroops + pSector->ubNumElites + pSector->ubNumAdmins > MAX_STRATEGIC_TEAM_SIZE )
+			if (EnemiesInSector(pSector) > MAX_STRATEGIC_TEAM_SIZE )
 			{
 				SLOGE(DEBUG_TAG_SAI, "Sector %c%d now has %d enemies (max %d).",
 						gGarrisonGroup[ pSector->ubGarrisonID ].ubSectorID / 16 + 'A' , gGarrisonGroup[ pSector->ubGarrisonID ].ubSectorID % 16,
-						pSector->ubNumTroops + pSector->ubNumElites + pSector->ubNumAdmins, MAX_STRATEGIC_TEAM_SIZE );
+						EnemiesInSector(pSector), MAX_STRATEGIC_TEAM_SIZE );
 			}
 
 			SLOGD(DEBUG_TAG_SAI, "Enemy garrison at %c%d detected stopped player group at %c%d and is sending %d troops to attack.",
@@ -1198,8 +1207,7 @@ static void HandleEmptySectorNoticedByGarrison(UINT8 ubGarrisonSectorID, UINT8 u
 	}
 
 	//An opportunity has arisen, where the enemy has noticed an important sector that is undefended.
-	pSector = &SectorInfo[ ubGarrisonSectorID ];
-	ubAvailableTroops = pSector->ubNumTroops + pSector->ubNumElites + pSector->ubNumAdmins;
+	ubAvailableTroops = EnemiesInSector(ubGarrisonSectorID);
 
 	if( ubAvailableTroops >= gubMinEnemyGroupSize * 2 )
 	{ //split group into two groups, and move one of the groups to the next sector.
@@ -1226,11 +1234,12 @@ static BOOLEAN ReinforcementsApproved(INT32 iGarrisonID, UINT16* pusDefencePoint
 										pSector->ubNumberOfCivsAtLevel[ REGULAR_MILITIA ] * 2 +
 										pSector->ubNumberOfCivsAtLevel[ ELITE_MILITIA ]		* 3 +
 										PlayerMercsInSector( ubSectorX, ubSectorY, 0 )		* 4;
-	usOffensePoints = gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bAdminPercentage * 2 +
-										gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bTroopPercentage * 3 +
-										gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bElitePercentage * 4 +
+  auto &army_comp = GetComposition(iGarrisonID);
+	usOffensePoints = army_comp.bAdminPercentage * 2 +
+										army_comp.bTroopPercentage * 3 +
+										army_comp.bElitePercentage * 4 +
 										gubGarrisonReinforcementsDenied[ iGarrisonID ];
-	usOffensePoints = usOffensePoints * gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bDesiredPopulation / 100;
+	usOffensePoints = usOffensePoints * army_comp.bDesiredPopulation / 100;
 
 	if( usOffensePoints > *pusDefencePoints )
 	{
@@ -1246,7 +1255,7 @@ static BOOLEAN ReinforcementsApproved(INT32 iGarrisonID, UINT16* pusDefencePoint
 	}
 	//Reinforcements will have to wait.  For now, increase the reinforcements denied.  The amount increase is 20 percent
 	//of the garrison's priority.
-	gubGarrisonReinforcementsDenied[ iGarrisonID ] += (UINT8)(gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bPriority / 2);
+	gubGarrisonReinforcementsDenied[ iGarrisonID ] += (UINT8)(army_comp.bPriority / 2);
 
 	return FALSE;
 }
@@ -1439,8 +1448,7 @@ static bool EnemyNoticesPlayerArrival(GROUP const& pg, UINT8 const x, UINT8 cons
 	}
 
 	SECTORINFO const& s         = SectorInfo[SECTOR(x, y)];
-	UINT8      const  n_enemies = s.ubNumAdmins + s.ubNumTroops + s.ubNumElites;
-	if (n_enemies && s.ubGarrisonID != NO_GARRISON && AttemptToNoticeAdjacentGroupSucceeds())
+	if (EnemiesInSector(&s) > 0 && s.ubGarrisonID != NO_GARRISON && AttemptToNoticeAdjacentGroupSucceeds())
 	{
 		HandlePlayerGroupNoticedByGarrison(&pg, SECTOR(x, y));
 		return true;
@@ -1641,7 +1649,7 @@ void CheckEnemyControlledSector( UINT8 ubSectorID )
 			}
 		}
 	}
-	if( pSector->ubNumAdmins + pSector->ubNumTroops + pSector->ubNumElites )
+	if (EnemiesInSector(pSector) > 0)
 	{
 
 		//The sector is still controlled, so look around to see if there are any players nearby.
@@ -1790,9 +1798,9 @@ static void RecalculateGarrisonWeight(INT32 iGarrisonID)
 	INT32 iDesiredPop, iCurrentPop, iPriority;
 
 	pSector = &SectorInfo[ gGarrisonGroup[ iGarrisonID ].ubSectorID ];
-	iDesiredPop = gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bDesiredPopulation;
-	iCurrentPop = pSector->ubNumAdmins + pSector->ubNumTroops + pSector->ubNumElites;
-	iPriority = gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bPriority;
+	iDesiredPop = GetComposition(iGarrisonID).bDesiredPopulation;
+	iCurrentPop = EnemiesInSector(pSector);
+	iPriority = GetComposition(iGarrisonID).bPriority;
 
 	//First, remove the previous weight from the applicable field.
 	iPrevWeight = gGarrisonGroup[ iGarrisonID ].bWeight;
@@ -2502,7 +2510,6 @@ void LoadStrategicAI(HWFILE const hFile)
 	if( gubPatrolReinforcementsDenied )
 	{
 		MemFree( gubPatrolReinforcementsDenied );
-		gubPatrolReinforcementsDenied = NULL;
 	}
 	gubPatrolReinforcementsDenied = MALLOCN(UINT8, giPatrolArraySize);
 	FileRead(hFile, gubPatrolReinforcementsDenied, giPatrolArraySize);
@@ -2511,7 +2518,6 @@ void LoadStrategicAI(HWFILE const hFile)
 	if( gubGarrisonReinforcementsDenied )
 	{
 		MemFree( gubGarrisonReinforcementsDenied );
-		gubGarrisonReinforcementsDenied = NULL;
 	}
 	gubGarrisonReinforcementsDenied = MALLOCN(UINT8, giGarrisonArraySize);
 	FileRead(hFile, gubGarrisonReinforcementsDenied, giGarrisonArraySize);
@@ -3000,7 +3006,7 @@ static void EvolveQueenPriorityPhase(BOOLEAN fForceChange)
 						gWorldSectorX != SECTORX( gGarrisonGroup[ i ].ubSectorID ) ||
 						gWorldSectorY != SECTORY( gGarrisonGroup[ i ].ubSectorID ) )
 				{ //Also make sure the sector isn't currently loaded!
-					iNumSoldiers = pSector->ubNumAdmins + pSector->ubNumTroops + pSector->ubNumElites;
+					iNumSoldiers = EnemiesInSector(pSector);
 					iNumPromotions = gArmyComp[ index ].bElitePercentage * iNumSoldiers / 100 - pSector->ubNumElites;
 
 					if( iNumPromotions > 0 )
@@ -3427,8 +3433,7 @@ static void MassFortifyTowns(void)
 	UINT8 ubNumTroops, ubDesiredTroops;
 	for( i = 0; i < giGarrisonArraySize; i++ )
 	{
-		pSector = &SectorInfo[ gGarrisonGroup[ i ].ubSectorID ];
-		ubNumTroops = pSector->ubNumAdmins + pSector->ubNumTroops + pSector->ubNumElites;
+		ubNumTroops = EnemiesInSector(gGarrisonGroup[i].ubSectorID);
 		ubDesiredTroops = (UINT8)gArmyComp[ gGarrisonGroup[ i ].ubComposition ].bDesiredPopulation;
 		if( ubNumTroops < ubDesiredTroops  )
 		{
@@ -3456,29 +3461,25 @@ static void MassFortifyTowns(void)
 
 void StrategicHandleMineThatRanOut( UINT8 ubSectorID )
 {
+  auto lowerPriority = [] (std::vector<uint8_t> const &sectors) {
+    for (uint8_t sid : sectors) {
+      GetComposition(SectorInfo[sid].ubGarrisonID).bPriority /= 4;
+    }
+  };
+
 	switch( ubSectorID )
 	{
 		case SEC_B2:
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_A2 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_B2 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
+      lowerPriority(std::vector<uint8_t> { SEC_A2, SEC_B2 });
 			break;
 		case SEC_D13:
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_B13 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_C13 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_D13 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
+      lowerPriority(std::vector<uint8_t> { SEC_B13, SEC_C13, SEC_D13 });
 			break;
 		case SEC_H8:
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_F8 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_F9 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_G8 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_G9 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_H8 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
+      lowerPriority(std::vector<uint8_t> { SEC_F8, SEC_F9, SEC_G8, SEC_G9, SEC_H8 });
 			break;
 		case SEC_I14:
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_H13 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_H14 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_I13 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
-			gArmyComp[ gGarrisonGroup[ SectorInfo[ SEC_I14 ].ubGarrisonID ].ubComposition ].bPriority /= 4;
+      lowerPriority(std::vector<uint8_t> { SEC_H13, SEC_H14, SEC_I13, SEC_I14 });
 			break;
 	}
 }
@@ -3486,20 +3487,14 @@ void StrategicHandleMineThatRanOut( UINT8 ubSectorID )
 
 static BOOLEAN GarrisonCanProvideMinimumReinforcements(INT32 iGarrisonID)
 {
-	INT32 iAvailable;
-	INT32 iDesired;
-	SECTORINFO *pSector;
-	UINT8 ubSectorX, ubSectorY;
-
-	pSector = &SectorInfo[ gGarrisonGroup[ iGarrisonID ].ubSectorID ];
-
-	iAvailable = pSector->ubNumAdmins + pSector->ubNumTroops + pSector->ubNumElites;
-	iDesired = gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bDesiredPopulation;
+	int iAvailable = EnemiesInSector(gGarrisonGroup[iGarrisonID].ubSectorID);
+	int iDesired = GetComposition(iGarrisonID).bDesiredPopulation;
 
 	if( iAvailable - iDesired >= gubMinEnemyGroupSize )
 	{
 		//Do a more expensive check first to determine if there is a player presence here (combat in progress)
 		//If so, do not provide reinforcements from here.
+    UINT8 ubSectorX, ubSectorY;
 		ubSectorX = (UINT8)SECTORX( gGarrisonGroup[ iGarrisonID ].ubSectorID );
 		ubSectorY = (UINT8)SECTORY( gGarrisonGroup[ iGarrisonID ].ubSectorID );
 		if( PlayerMercsInSector( ubSectorX, ubSectorY, 0 ) || CountAllMilitiaInSector( ubSectorX, ubSectorY ) )
@@ -3514,24 +3509,15 @@ static BOOLEAN GarrisonCanProvideMinimumReinforcements(INT32 iGarrisonID)
 
 static BOOLEAN GarrisonRequestingMinimumReinforcements(INT32 iGarrisonID)
 {
-	INT32 iAvailable;
-	INT32 iDesired;
-	SECTORINFO *pSector;
-
 	if( gGarrisonGroup[ iGarrisonID ].ubPendingGroupID )
 	{
 		return FALSE;
 	}
 
-	pSector = &SectorInfo[ gGarrisonGroup[ iGarrisonID ].ubSectorID ];
-	iAvailable = pSector->ubNumAdmins + pSector->ubNumTroops + pSector->ubNumElites;
-	iDesired = gArmyComp[ gGarrisonGroup[ iGarrisonID ].ubComposition ].bDesiredPopulation;
+	int iAvailable = EnemiesInSector(gGarrisonGroup[iGarrisonID].ubSectorID);
+	int iDesired = GetComposition(iGarrisonID).bDesiredPopulation;
 
-	if( iDesired - iAvailable >= gubMinEnemyGroupSize )
-	{
-		return TRUE;
-	}
-	return FALSE;
+	return iDesired - iAvailable >= gubMinEnemyGroupSize;
 }
 
 
@@ -3566,7 +3552,7 @@ static void EliminateSurplusTroopsForGarrison(GROUP* pGroup, SECTORINFO* pSector
 {
 	INT32 iTotal;
 	iTotal = pGroup->pEnemyGroup->ubNumTroops + pGroup->pEnemyGroup->ubNumElites + pGroup->pEnemyGroup->ubNumAdmins +
-					 pSector->ubNumTroops + pSector->ubNumElites + pSector->ubNumAdmins;
+           EnemiesInSector(pSector);
 	if( iTotal <= MAX_STRATEGIC_TEAM_SIZE )
 	{
 		return;
@@ -4024,7 +4010,6 @@ static void CalcNumTroopsBasedOnComposition(UINT8* pubNumTroops, UINT8* pubNumEl
 			(*pubNumElites)++;
 		}
 	}
-	Assert( *pubNumTroops + *pubNumElites == ubTotal );
 }
 
 

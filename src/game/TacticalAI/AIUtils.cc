@@ -586,29 +586,10 @@ INT16 RandomFriendWithin(SOLDIERTYPE* const s)
 		{
 			// should be close enough, try to find a legal ->sDestination within 1 tile
 
-			BOOLEAN fDirChecked[8];
-			// clear dirChecked flag for all 8 directions
-			for (UINT16 usDirection = 0; usDirection < 8; ++usDirection)
-			{
-				fDirChecked[usDirection] = FALSE;
-			}
-
 			// examine all 8 spots around friend
-			// keep looking while directions remain and a satisfactory one not found
-			for (UINT8 ubDirsLeft = 8; ubDirsLeft--;)
-			{
-				// randomly select a direction which hasn't been 'checked' yet
-				UINT16 usDirection;
-				do
-				{
-					usDirection = Random(8);
-				}
-				while (fDirChecked[usDirection]);
-
-				fDirChecked[usDirection] = TRUE;
-
+      for (auto usDirection : GetRandomizedDirections()) {
 				// determine the gridno 1 tile away from current friend in this direction
-				const UINT16 usDest = NewGridNo(chosen->sGridNo, DirectionInc( usDirection + 1 ));
+				const GridNo usDest = AdjacentGridNo(chosen->sGridNo, usDirection);
 
 				// if that's out of bounds, ignore it & check next direction
 				if (usDest == chosen->sGridNo) continue;

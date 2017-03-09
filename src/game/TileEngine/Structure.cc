@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <stdexcept>
 
 #include "Buffer.h"
@@ -56,8 +57,6 @@
 UINT8 AtHeight[PROFILE_Z_SIZE] = { 0x01, 0x02, 0x04, 0x08 };
 
 #define FIRST_AVAILABLE_STRUCTURE_ID (INVALID_STRUCTURE_ID + 2)
-
-static UINT16 gusNextAvailableStructureID = FIRST_AVAILABLE_STRUCTURE_ID;
 
 static STRUCTURE_FILE_REF* gpStructureFileRefs;
 
@@ -176,12 +175,7 @@ namespace
 	{
 		if (DB_STRUCTURE_REF* const sr = f->pDBStructureRef)
 		{
-			DB_STRUCTURE_REF const* const end = sr + f->usNumberOfStructures;
-			for (DB_STRUCTURE_REF* i = sr; i != end; ++i)
-			{
-				if (i->ppTile) MemFree(i->ppTile);
-			}
-			MemFree(sr);
+      delete [] sr;
 		}
 		if (f->pubStructureData) MemFree(f->pubStructureData);
 		if (f->pAuxData)
@@ -298,7 +292,7 @@ static void CreateFileStructureArrays(STRUCTURE_FILE_REF* const pFileRef, UINT32
 { /* Based on a file chunk, creates all the dynamic arrays for the structure
 	 * definitions contained within */
 	UINT8*                  pCurrent        = pFileRef->pubStructureData;
-	DB_STRUCTURE_REF* const pDBStructureRef = MALLOCNZ(DB_STRUCTURE_REF, pFileRef->usNumberOfStructures);
+	DB_STRUCTURE_REF* const pDBStructureRef = new DB_STRUCTURE_REF[pFileRef->usNumberOfStructures];
 	pFileRef->pDBStructureRef = pDBStructureRef;
 	for (UINT16 usLoop = 0; usLoop < pFileRef->usNumberOfStructuresStored; ++usLoop)
 	{
@@ -311,10 +305,9 @@ static void CreateFileStructureArrays(STRUCTURE_FILE_REF* const pFileRef, UINT32
 		pCurrent   += sizeof(DB_STRUCTURE);
 		uiDataSize -= sizeof(DB_STRUCTURE);
 
-		DB_STRUCTURE_TILE** const tiles       = MALLOCN(DB_STRUCTURE_TILE*, dbs->ubNumberOfTiles);
 		UINT16              const usIndex     = dbs->usStructureNumber;
 		pDBStructureRef[usIndex].pDBStructure = dbs;
-		pDBStructureRef[usIndex].ppTile       = tiles;
+		pDBStructureRef[usIndex].ppTile.resize(dbs->ubNumberOfTiles);
 
 		// Set things up to calculate hit points
 		UINT32 uiHitPoints = 0;
@@ -329,7 +322,7 @@ static void CreateFileStructureArrays(STRUCTURE_FILE_REF* const pFileRef, UINT32
 			pCurrent   += sizeof(DB_STRUCTURE_TILE);
 			uiDataSize -= sizeof(DB_STRUCTURE_TILE);
 
-			tiles[usTileLoop] = tile;
+			pDBStructureRef[usIndex].ppTile[usTileLoop] = tile;
 			// set the single-value relative position between this tile and the base tile
 			tile->sPosRelToBase = tile->bXPosRelToBase + tile->bYPosRelToBase * WORLD_COLS;
 			uiHitPoints += FilledTilePositions(tile);
@@ -393,9 +386,9 @@ static STRUCTURE* CreateStructureFromDB(DB_STRUCTURE_REF const* const pDBStructu
 
 static BOOLEAN OkayToAddStructureToTile(INT16 const sBaseGridNo, INT16 const sCubeOffset, DB_STRUCTURE_REF const* const pDBStructureRef, UINT8 ubTileIndex, INT16 const sExclusionID, BOOLEAN const fIgnorePeople)
 { // Verifies whether a structure is blocked from being added to the map at a particular point
-	DB_STRUCTURE_TILE const* const* const ppTile = pDBStructureRef->ppTile;
+	auto const &ppTile = pDBStructureRef->ppTile;
 	INT16 const sGridNo = sBaseGridNo + ppTile[ubTileIndex]->sPosRelToBase;
-	if (sGridNo < 0 || WORLD_MAX < sGridNo) return FALSE;
+  if (!IsValidGridNo(sGridNo)) return false;
 
 	if (gpWorldLevelData[sBaseGridNo].sHeight != gpWorldLevelData[sGridNo].sHeight)
 	{
@@ -447,7 +440,7 @@ static BOOLEAN OkayToAddStructureToTile(INT16 const sBaseGridNo, INT16 const sCu
 					return FALSE;
 				}
 			}
-			else if (pDBStructure->ubNumberOfTiles > 1 && pExistingStructure->fFlags & STRUCTURE_WALLSTUFF)
+			else if (pDBStructureRef->TileCount() > 1 && pExistingStructure->fFlags & STRUCTURE_WALLSTUFF)
 			{
 				// if not an open door...
 				if (!(pExistingStructure->fFlags & STRUCTURE_ANYDOOR) ||
@@ -475,9 +468,9 @@ static BOOLEAN OkayToAddStructureToTile(INT16 const sBaseGridNo, INT16 const sCu
 								sOtherGridNo = NewGridNo(sGridNo, DirectionInc(SOUTHEAST));
 								break;
 						}
-						for (INT8 bLoop2 = 0; bLoop2 < pDBStructure->ubNumberOfTiles; ++bLoop2)
+            for (auto pTile : ppTile)
 						{
-							if (sBaseGridNo + ppTile[bLoop2]->sPosRelToBase != sOtherGridNo) continue;
+							if (sBaseGridNo + pTile->sPosRelToBase != sOtherGridNo) continue;
 
 							// obstacle will straddle wall!
 							return FALSE;
@@ -517,10 +510,12 @@ static BOOLEAN OkayToAddStructureToTile(INT16 const sBaseGridNo, INT16 const sCu
 							sOtherGridNo = NewGridNo(sGridNo, DirectionInc(SOUTHEAST));
 							break;
 					}
-					for (ubTileIndex = 0; ubTileIndex < pDBStructure->ubNumberOfTiles; ++ubTileIndex)
+					for (ubTileIndex = 0; ubTileIndex < ppTile.size(); ++ubTileIndex)
 					{
-						STRUCTURE const* const pOtherExistingStructure = FindStructureByID(sOtherGridNo, pExistingStructure->usStructureID);
-						if (pOtherExistingStructure) return FALSE;
+            // TODO: This loop does not make sense because it just calls the same
+            // side-effect free function # of tiles times with the same arguments.
+            // Verify if we should add the tile's sPosRelToBase to sOtherGridNo.
+						if (FindStructureByID(sOtherGridNo, pExistingStructure->usStructureID)) return false;
 					}
 				}
 			}
@@ -583,12 +578,10 @@ BOOLEAN InternalOkayToAddStructureToWorld(INT16 const sBaseGridNo, INT8 const bL
 {
 	CHECKF(pDBStructureRef);
 	CHECKF(pDBStructureRef->pDBStructure);
-	UINT8 const n_tiles = pDBStructureRef->pDBStructure->ubNumberOfTiles;
-	CHECKF(n_tiles > 0);
-	DB_STRUCTURE_TILE const* const* const tiles = pDBStructureRef->ppTile;
-	CHECKF(tiles);
+	auto const &tiles = pDBStructureRef->ppTile;
+	CHECKF(tiles.size() > 0);
 
-	for (UINT8 i = 0; i < n_tiles; ++i)
+	for (UINT8 i = 0; i < tiles.size(); ++i)
 	{
 		INT16 cube_offset;
 		if (!(tiles[i]->fFlags & TILE_ON_ROOF))
@@ -642,10 +635,8 @@ try
 	DB_STRUCTURE const* const pDBStructure = pDBStructureRef->pDBStructure;
 	CHECKN(pDBStructure);
 
-	DB_STRUCTURE_TILE const* const* const ppTile = pDBStructureRef->ppTile;
-	CHECKN(ppTile);
-
-	CHECKN(pDBStructure->ubNumberOfTiles > 0);
+	auto const &ppTile = pDBStructureRef->ppTile;
+	CHECKN(ppTile.size() > 0);
 
 	// first check to see if the structure will be blocked
 	if (!OkayToAddStructureToWorld(sBaseGridNo, bLevel, pDBStructureRef, INVALID_STRUCTURE_ID))
@@ -659,9 +650,9 @@ try
 	 * STRUCTURE elements created in the first stage.  This array gets given to
 	 * the base tile so there is an easy way to remove an entire object from the
 	 * world quickly */
-	SGP::Buffer<STRUCTURE*> structures(pDBStructure->ubNumberOfTiles);
+	SGP::Buffer<STRUCTURE*> structures(ppTile.size());
 
-	for (UINT8 i = BASE_TILE; i < pDBStructure->ubNumberOfTiles; ++i)
+	for (UINT8 i = BASE_TILE; i < ppTile.size(); ++i)
 	{ // for each tile, create the appropriate STRUCTURE struct
 		STRUCTURE* s;
 		try
@@ -706,7 +697,7 @@ try
 		{
 			s->fFlags |= STRUCTURE_CORPSE;
 			// attempted check to screen this out for queen creature or vehicle
-			if (pDBStructure->ubNumberOfTiles < 10)
+			if (pDBStructureRef->TileCount() < 10)
 			{
 				s->fFlags |= STRUCTURE_PASSABLE;
 				s->fFlags &= ~STRUCTURE_BLOCKSMOVES;
@@ -732,17 +723,19 @@ try
 	}
 	else
 	{
-		gusNextAvailableStructureID++;
-		if (gusNextAvailableStructureID == 0)
+    static uint16_t usNextAvailableStructureID = FIRST_AVAILABLE_STRUCTURE_ID;
+
+		usNextAvailableStructureID++;
+		if (usNextAvailableStructureID == 0)
 		{
 			// skip past the #s for soldiers' structures and the invalid structure #
-			gusNextAvailableStructureID = FIRST_AVAILABLE_STRUCTURE_ID;
+			usNextAvailableStructureID = FIRST_AVAILABLE_STRUCTURE_ID;
 		}
-		usStructureID = gusNextAvailableStructureID;
+		usStructureID = usNextAvailableStructureID;
 	}
 	// now add all these to the world!
 	INT16 sBaseTileHeight = -1;
-	for (UINT8 i = BASE_TILE; i < pDBStructure->ubNumberOfTiles; ++i)
+	for (UINT8 i = BASE_TILE; i < pDBStructureRef->TileCount(); ++i)
 	{
 		STRUCTURE*   const s  = structures[i];
 		MAP_ELEMENT* const me = &gpWorldLevelData[s->sGridNo];
@@ -802,12 +795,10 @@ BOOLEAN DeleteStructureFromWorld(STRUCTURE* const structure)
 	bool                const recompile_mps          = gsRecompileAreaLeft != 0 && !(base->fFlags & STRUCTURE_MOBILE);
 	bool                const recompile_extra_radius = recompile_mps && base->fFlags & STRUCTURE_WALLSTUFF; // For doors, yuck
 	GridNo              const base_grid_no           = base->sGridNo;
-	DB_STRUCTURE_TILE** const tile                   = base->pDBStructureRef->ppTile;
-	DB_STRUCTURE_TILE** const end_tile               = tile + base->pDBStructureRef->pDBStructure->ubNumberOfTiles;
 	// Free all the tiles
-	for (DB_STRUCTURE_TILE* const* i = tile; i != end_tile; ++i)
+  for (auto &i : base->pDBStructureRef->ppTile)
 	{
-		GridNo const grid_no = base_grid_no + (*i)->sPosRelToBase;
+		GridNo const grid_no = base_grid_no + i->sPosRelToBase;
 		/* There might be two structures in this tile, one on each level, but we
 		 * just want to delete one on each pass */
 		if (STRUCTURE* const current = FindStructureByID(grid_no, structure_id))
@@ -1464,9 +1455,9 @@ void AddZStripInfoToVObject(HVOBJECT const hVObject, STRUCTURE_FILE_REF const* c
 		const DB_STRUCTURE_REF* const pDBStructureRef = &pStructureFileRef->pDBStructureRef[uiLoop];
 		pDBStructure = pDBStructureRef->pDBStructure;
 		//if (pDBStructure != NULL && pDBStructure->ubNumberOfTiles > 1 && !(pDBStructure->fFlags & STRUCTURE_WALLSTUFF) )
-		if (pDBStructure != NULL && pDBStructure->ubNumberOfTiles > 1)
+		if (pDBStructure && pDBStructureRef->TileCount() > 1)
 		{
-			for (UINT8 ubLoop2 = 1; ubLoop2 < pDBStructure->ubNumberOfTiles; ++ubLoop2)
+			for (UINT8 ubLoop2 = 1; ubLoop2 < pDBStructureRef->TileCount(); ++ubLoop2)
 			{
 				if (pDBStructureRef->ppTile[ubLoop2]->sPosRelToBase != 0)
 				{
@@ -1479,7 +1470,7 @@ void AddZStripInfoToVObject(HVOBJECT const hVObject, STRUCTURE_FILE_REF const* c
 	}
 
 	// ATE: Make all corpses use z-strip info..
-	if (pDBStructure != NULL && pDBStructure->fFlags & STRUCTURE_CORPSE)
+	if (pDBStructure && pDBStructure->fFlags & STRUCTURE_CORPSE)
 	{
 		fFound = TRUE;
 	}
@@ -1670,21 +1661,17 @@ void AddZStripInfoToVObject(HVOBJECT const hVObject, STRUCTURE_FILE_REF const* c
 
 					// now create the array!
 					pCurr->ubNumberOfZChanges = ubNumIncreasing + ubNumStable + ubNumDecreasing;
-					pCurr->pbZChange = MALLOCN(INT8, pCurr->ubNumberOfZChanges);
+          // TODO: Figure out whether there is a bug in this function or if we are getting
+          // invalid input. For now, add two extra bytes to the ZChange array to prevent an
+          // illegal read in Blt8BPPDataTo16BPPBufferTransZTransShadowInc{Obscure}Clip.
+					pCurr->pbZChange = MALLOCN(INT8, pCurr->ubNumberOfZChanges + 2);
 
-					UINT8 ubLoop2;
-					for (ubLoop2 = 0; ubLoop2 < ubNumIncreasing; ubLoop2++)
-					{
-						pCurr->pbZChange[ubLoop2] = 1;
-					}
-					for (; ubLoop2 < ubNumIncreasing + ubNumStable; ubLoop2++)
-					{
-						pCurr->pbZChange[ubLoop2] = 0;
-					}
-					for (; ubLoop2 < pCurr->ubNumberOfZChanges; ubLoop2++)
-					{
-						pCurr->pbZChange[ubLoop2] = -1;
-					}
+          auto pZC = &pCurr->pbZChange[0];
+          pZC = std::fill_n(pZC, ubNumIncreasing, 1);
+          pZC = std::fill_n(pZC, ubNumStable, 0);
+          pZC = std::fill_n(pZC, ubNumDecreasing, -1);
+          *pZC++ = 0; *pZC = 0; // XXX: hack, see above
+
 					if (ubNumIncreasing > 0)
 					{
 						pCurr->bInitialZChange = -ubNumIncreasing;

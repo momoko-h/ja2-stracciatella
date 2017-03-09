@@ -142,6 +142,14 @@ ScreenID InitScreenHandle(void)
   static UINT32 splashDisplayedMoment = 0;
 	static UINT8					ubCurrentScreen = 255;
 
+  // XXX: the splash screen makes debugging more annoying,
+  // so here is a hack to suppress it.
+  if (getenv("JA2NOSPLASH")) {
+    InitializeJA2();
+    InitMainMenu();
+    return MAINMENU_SCREEN;
+  }
+
 	if ( ubCurrentScreen == 255 )
 	{
     if(isEnglishVersion())

@@ -334,15 +334,10 @@ static BUILDING* GenerateBuilding(INT16 sDesiredSpot)
 
 BUILDING * FindBuilding( INT16 sGridNo )
 {
-	UINT8					ubBuildingID;
-
-	if (sGridNo <= 0 || sGridNo >= WORLD_MAX)
-	{
-		return( NULL );
-	}
+  if (!IsValidGridNo(sGridNo)) return nullptr;
 
 	// id 0 indicates no building
-	ubBuildingID = gubBuildingInfo[ sGridNo ];
+	UINT8 ubBuildingID = gubBuildingInfo[ sGridNo ];
 	if ( ubBuildingID == NO_BUILDING )
 	{
 		return( NULL );

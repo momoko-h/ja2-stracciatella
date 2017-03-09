@@ -963,7 +963,7 @@ static BOOLEAN UseGun(SOLDIERTYPE* pSoldier, INT16 sTargetGridNo)
 
 		// Direction to center of explosion
 	  ubDirection = OppositeDirection(pSoldier->bDirection);
-		sNewGridNo  = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( ubDirection ) );
+		sNewGridNo  = AdjacentGridNo(pSoldier->sGridNo, ubDirection);
 
 		// Check if a person exists here and is not prone....
 		SOLDIERTYPE* const tgt = WhoIsThere2(sNewGridNo, pSoldier->bLevel);
@@ -1391,10 +1391,8 @@ void UseHandToHand(SOLDIERTYPE* const pSoldier, INT16 const sTargetGridNo, BOOLE
 static void UseThrown(SOLDIERTYPE* const pSoldier, INT16 const sTargetGridNo)
 {
 	UINT32		uiHitChance, uiDiceRoll;
-	INT8			bLoop;
 
 	uiHitChance = CalcThrownChanceToHit( pSoldier, sTargetGridNo, pSoldier->bAimTime, AIM_SHOT_TORSO );
-
 	uiDiceRoll = PreRandom( 100 );
 
 	if ( pSoldier->bTeam == OUR_TEAM && gTacticalStatus.uiFlags & INCOMBAT )
@@ -1410,9 +1408,9 @@ static void UseThrown(SOLDIERTYPE* const pSoldier, INT16 const sTargetGridNo)
 		if ( pTargetSoldier == NULL )
 		{
 			// search for an opponent near the target gridno
-			for ( bLoop = 0; bLoop < NUM_WORLD_DIRECTIONS; bLoop++ )
+			for (uint8_t bLoop = 0; bLoop < NUM_WORLD_DIRECTIONS; bLoop++ )
 			{
-				pTargetSoldier = WhoIsThere2(NewGridNo(pSoldier->sTargetGridNo, DirectionInc(bLoop)), pSoldier->bTargetLevel);
+				pTargetSoldier = WhoIsThere2(AdjacentGridNo(pSoldier->sTargetGridNo, bLoop), pSoldier->bTargetLevel);
 				if (pTargetSoldier != NULL && pTargetSoldier->bTeam != pSoldier->bTeam) break;
 			}
 		}

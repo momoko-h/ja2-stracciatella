@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "Font.h"
 #include "AI.h"
 #include "Debug_Pages.h"
@@ -243,14 +244,6 @@ INT16 AdjustMaxSightRangeForEnvEffects(INT8 bLightLevel, INT16 sDistVisible)
 }
 
 
-static void SwapBestSightingPositions(INT8 bPos1, INT8 bPos2)
-{
-	SOLDIERTYPE* const temp = gBestToMakeSighting[bPos1];
-	gBestToMakeSighting[bPos1] = gBestToMakeSighting[bPos2];
-	gBestToMakeSighting[bPos2] = temp;
-}
-
-
 static void ReevaluateBestSightingPosition(SOLDIERTYPE* pSoldier, INT8 bInterruptDuelPts)
 {
 	UINT8			ubLoop, ubLoop2;
@@ -297,7 +290,7 @@ static void ReevaluateBestSightingPosition(SOLDIERTYPE* pSoldier, INT8 bInterrup
 			{
 				if (gBestToMakeSighting[ubLoop2] != NULL && gBestToMakeSighting[ubLoop2 - 1]->bInterruptDuelPts < gBestToMakeSighting[ubLoop2]->bInterruptDuelPts)
 				{
-					SwapBestSightingPositions( (UINT8) (ubLoop2 - 1), ubLoop2 );
+          std::swap(gBestToMakeSighting[ubLoop2 -1], gBestToMakeSighting[ubLoop2]);
 				}
 				else
 				{
@@ -316,14 +309,7 @@ static void ReevaluateBestSightingPosition(SOLDIERTYPE* pSoldier, INT8 bInterrup
 	else
 	{
 		// loop through whole array
-		for ( ubLoop = 0; ubLoop < gubBestToMakeSightingSize; ubLoop++ )
-		{
-			if (pSoldier == gBestToMakeSighting[ubLoop])
-			{
-				fFound = TRUE;
-				break;
-			}
-		}
+    fFound = std::count(gBestToMakeSighting, gBestToMakeSighting + gubBestToMakeSightingSize, pSoldier) > 0;
 
 		if (!fFound)
 		{
@@ -2208,37 +2194,22 @@ HandleSight(pSoldier,SIGHT_LOOK);
 
 void InitOpponentKnowledgeSystem(void)
 {
-	INT32	iTeam, cnt, cnt2;
+  using std::fill_n;
 
-	memset(gbSeenOpponents,0,sizeof(gbSeenOpponents));
-	memset(gbPublicOpplist,NOT_HEARD_OR_SEEN,sizeof(gbPublicOpplist));
+  fill_n(&gbSeenOpponents[0][0], TOTAL_SOLDIERS * TOTAL_SOLDIERS, 0);
+  fill_n(&gbPublicOpplist[0][0], MAXTEAMS * TOTAL_SOLDIERS, NOT_HEARD_OR_SEEN);
 
-	for (iTeam=0; iTeam < MAXTEAMS; iTeam++)
-	{
-		gubPublicNoiseVolume[iTeam] = 0;
-		gsPublicNoiseGridno[iTeam] = NOWHERE;
-		gbPublicNoiseLevel[iTeam] = 0;
-		for (cnt = 0; cnt < MAX_NUM_SOLDIERS; cnt++)
-		{
-			gsPublicLastKnownOppLoc[ iTeam ][ cnt ] = NOWHERE;
-		}
-	}
+  fill_n(gubPublicNoiseVolume, MAXTEAMS, 0);
+  fill_n(gsPublicNoiseGridno,  MAXTEAMS, NOWHERE);
+  fill_n(gbPublicNoiseLevel,   MAXTEAMS, 0);
+  fill_n(&gsPublicLastKnownOppLoc[0][0], MAXTEAMS * TOTAL_SOLDIERS, NOWHERE);
 
 	// initialize public last known locations for all teams
-	for (cnt = 0; cnt < MAX_NUM_SOLDIERS; cnt++)
-	{
-		for (cnt2 = 0; cnt2 < NUM_WATCHED_LOCS; cnt2++ )
-		{
-			gsWatchedLoc[ cnt ][ cnt2 ] = NOWHERE;
-			gubWatchedLocPoints[ cnt ][ cnt2 ] = 0;
-			gfWatchedLocReset[ cnt ][ cnt2 ] = FALSE;
-		}
-	}
+  fill_n(&gsWatchedLoc[0][0],        TOTAL_SOLDIERS * NUM_WATCHED_LOCS, NOWHERE);
+  fill_n(&gubWatchedLocPoints[0][0], TOTAL_SOLDIERS * NUM_WATCHED_LOCS, 0);
+  fill_n(&gfWatchedLocReset[0][0],   TOTAL_SOLDIERS * NUM_WATCHED_LOCS, false);
 
-	for ( cnt = 0; cnt < SHOULD_BECOME_HOSTILE_SIZE; cnt++ )
-	{
-		gShouldBecomeHostileOrSayQuote[cnt] = NULL;
-	}
+  fill_n(gShouldBecomeHostileOrSayQuote, SHOULD_BECOME_HOSTILE_SIZE, nullptr);
 
 	gubNumShouldBecomeHostileOrSayQuote = 0;
 }

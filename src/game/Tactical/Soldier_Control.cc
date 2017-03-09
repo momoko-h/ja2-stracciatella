@@ -1601,8 +1601,7 @@ void EVENT_InitNewSoldierAnim(SOLDIERTYPE* const pSoldier, UINT16 usNewState, UI
 
 				DeductPoints( pSoldier, AP_JUMP_OVER, BP_JUMP_OVER );
 
-				usNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( pSoldier->bDirection ) );
-				usNewGridNo = NewGridNo( (UINT16)usNewGridNo, DirectionInc( pSoldier->bDirection ) );
+				usNewGridNo = NewGridNo(pSoldier->sGridNo, 2 * DirectionInc( pSoldier->bDirection ) );
 
 				pSoldier->ubPathDataSize = 0;
 				pSoldier->ubPathIndex    = 0;
@@ -6123,36 +6122,23 @@ BOOLEAN CheckSoldierHitRoof( SOLDIERTYPE *pSoldier )
 				fDoForwards = FALSE;
 			}
 
+      pSoldier->sTempNewGridNo = NewGridNo(pSoldier->sGridNo, 2 * DirectionInc(OppositeDirection(bNewDirection)));
+      pSoldier->fTurningUntilDone = TRUE;
+      // Deduct hitpoints/breath for falling!
+      SoldierTakeDamage(pSoldier, 100, 5000, TAKE_DAMAGE_FALLROOF, NULL);
+      fReturnVal = TRUE;
+
 			// If we are facing the opposite direction, fall backwards
 			// ATE: Make this more usefull...
 			if ( fDoForwards )
 			{
-				pSoldier->sTempNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( OppositeDirection( bNewDirection ) ) );
-				pSoldier->sTempNewGridNo = NewGridNo( (UINT16)pSoldier->sTempNewGridNo, DirectionInc( OppositeDirection( bNewDirection ) ) );
 				EVENT_SetSoldierDesiredDirection(pSoldier, OppositeDirection(bNewDirection));
-				pSoldier->fTurningUntilDone = TRUE;
 				pSoldier->usPendingAnimation = FALLFORWARD_ROOF;
-				//EVENT_InitNewSoldierAnim( pSoldier, FALLFORWARD_ROOF, 0 , FALSE );
-
-				// Deduct hitpoints/breath for falling!
-				SoldierTakeDamage(pSoldier, 100, 5000, TAKE_DAMAGE_FALLROOF, NULL);
-
-				fReturnVal = TRUE;
-
 			}
 			else
 			{
-
-				pSoldier->sTempNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( OppositeDirection( bNewDirection ) ) );
-				pSoldier->sTempNewGridNo = NewGridNo( (UINT16)pSoldier->sTempNewGridNo, DirectionInc( OppositeDirection( bNewDirection ) ) );
 				EVENT_SetSoldierDesiredDirection( pSoldier, bNewDirection );
-				pSoldier->fTurningUntilDone = TRUE;
 				pSoldier->usPendingAnimation = FALLOFF;
-
-				// Deduct hitpoints/breath for falling!
-				SoldierTakeDamage(pSoldier, 100, 5000, TAKE_DAMAGE_FALLROOF, NULL);
-
-				fReturnVal = TRUE;
 			}
 		}
 	}
@@ -6170,7 +6156,7 @@ void BeginSoldierClimbDownRoof(SOLDIERTYPE* const s)
 
 	if (s->bTeam == OUR_TEAM) SetUIBusy(s);
 
-	s->sTempNewGridNo     = NewGridNo(s->sGridNo, DirectionInc(direction));
+	s->sTempNewGridNo     = AdjacentGridNo(s->sGridNo, direction);
 	s->ubPendingDirection = TwoCDirection(direction);
 	EVENT_InitNewSoldierAnim(s, CLIMBDOWNROOF, 0, FALSE);
 	InternalReceivingSoldierCancelServices(s, FALSE);
@@ -8424,24 +8410,20 @@ void EVENT_SoldierBeginReloadRobot( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 
 
 static void ChangeToFlybackAnimation(SOLDIERTYPE* pSoldier, INT8 bDirection)
 {
-	UINT16 usNewGridNo;
   SoldierSP soldier = GetSoldier(pSoldier);
 
 	// Get dest gridno, convert to center coords
-	usNewGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(OppositeDirection(bDirection)));
-	usNewGridNo = NewGridNo(usNewGridNo,       DirectionInc(OppositeDirection(bDirection)));
+	GridNo usNewGridNo = NewGridNo(pSoldier->sGridNo, 2 * DirectionInc(OppositeDirection(bDirection)));
 
   soldier->removePendingAction();
 
 	// Set path....
-	pSoldier->ubPathDataSize = 0;
-	pSoldier->ubPathIndex    = 0;
-	pSoldier->ubPathingData[pSoldier->ubPathDataSize] = OppositeDirection(pSoldier->bDirection);
-	pSoldier->ubPathDataSize++;
-	pSoldier->ubPathingData[pSoldier->ubPathDataSize] = OppositeDirection(pSoldier->bDirection);
-	pSoldier->ubPathDataSize++;
+	pSoldier->ubPathIndex = 0;
+	pSoldier->ubPathingData[0] = OppositeDirection(pSoldier->bDirection);
+	pSoldier->ubPathingData[1] = OppositeDirection(pSoldier->bDirection);
+	pSoldier->ubPathDataSize = 2;
 	pSoldier->sFinalDestination = usNewGridNo;
-	EVENT_InternalSetSoldierDestination( pSoldier, pSoldier->ubPathingData[ pSoldier->ubPathIndex ], FALSE, FLYBACK_HIT );
+	EVENT_InternalSetSoldierDestination( pSoldier, pSoldier->ubPathingData[0], FALSE, FLYBACK_HIT );
 
 	// Get a new direction based on direction
 	EVENT_InitNewSoldierAnim( pSoldier, FLYBACK_HIT, 0 , FALSE );
@@ -8449,22 +8431,19 @@ static void ChangeToFlybackAnimation(SOLDIERTYPE* pSoldier, INT8 bDirection)
 
 void ChangeToFallbackAnimation( SOLDIERTYPE *pSoldier, INT8 bDirection )
 {
-	UINT16 usNewGridNo;
   SoldierSP soldier = GetSoldier(pSoldier);
 
 	// Get dest gridno, convert to center coords
-	usNewGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(OppositeDirection(bDirection)));
-	//usNewGridNo = NewGridNo( (UINT16)usNewGridNo, (UINT16)(-1 * DirectionInc( bDirection ) ) );
+	GridNo usNewGridNo = AdjacentGridNo(pSoldier->sGridNo, OppositeDirection(bDirection));
 
   soldier->removePendingAction();
 
 	// Set path....
-	pSoldier->ubPathDataSize = 0;
-	pSoldier->ubPathIndex    = 0;
-	pSoldier->ubPathingData[pSoldier->ubPathDataSize] = OppositeDirection(pSoldier->bDirection);
-	pSoldier->ubPathDataSize++;
+	pSoldier->ubPathIndex = 0;
+	pSoldier->ubPathingData[0] = OppositeDirection(pSoldier->bDirection);
+	pSoldier->ubPathDataSize = 1;
 	pSoldier->sFinalDestination = usNewGridNo;
-	EVENT_InternalSetSoldierDestination( pSoldier, pSoldier->ubPathingData[ pSoldier->ubPathIndex ], FALSE, FALLBACK_HIT_STAND );
+	EVENT_InternalSetSoldierDestination( pSoldier, pSoldier->ubPathingData[0], FALSE, FALLBACK_HIT_STAND );
 
 	// Get a new direction based on direction
 	EVENT_InitNewSoldierAnim( pSoldier, FALLBACK_HIT_STAND, 0 , FALSE );

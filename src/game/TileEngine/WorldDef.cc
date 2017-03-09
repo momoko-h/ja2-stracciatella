@@ -687,7 +687,7 @@ static void CompileTileMovementCosts(UINT16 usGridNo)
 								break;
 						}
 					}
-					else if (pStructure->fFlags & STRUCTURE_SLIDINGDOOR && pStructure->pDBStructureRef->pDBStructure->ubNumberOfTiles > 1)
+					else if (pStructure->fFlags & STRUCTURE_SLIDINGDOOR && pStructure->pDBStructureRef->TileCount() > 1)
 					{
 						switch( pStructure->ubWallOrientation )
 						{
@@ -1614,7 +1614,7 @@ static void OptimizeMapForShadows()
 
 	for (INT32 cnt = 0; cnt != WORLD_MAX; ++cnt)
 	{
-		if (!IsTreePresentAtGridno(cnt)) continue;
+		if (!IsTreePresentAtGridNo(cnt)) continue;
 
 		// Check for a structure a footprint away
 		for (UINT8 const* dir = bDirectionsForShadowSearch;; ++dir)

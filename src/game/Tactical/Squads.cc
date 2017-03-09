@@ -1,4 +1,7 @@
+#include <algorithm>
+#include <functional>
 #include <stdexcept>
+#include <vector>
 
 #include "Interface_Panels.h"
 #include "LoadSaveData.h"
@@ -35,6 +38,18 @@ BOOLEAN fExitingVehicleToSquad = FALSE;
 
 INT32 iCurrentTacticalSquad = FIRST_SQUAD;
 
+constexpr bool NotNullptr(void *p) {
+  return p != nullptr;
+}
+
+static std::vector<SOLDIERTYPE *> GetMercsInSquad(int squadNo) {
+  std::vector<SOLDIERTYPE *> result;
+  std::copy_if(Squad[squadNo], Squad[squadNo] + NUMBER_OF_SOLDIERS_PER_SQUAD,
+      std::back_inserter(result), NotNullptr);
+  return result;
+}
+
+
 void InitSquads( void )
 {
 	// init the squad lists to NULL ptrs.
@@ -59,12 +74,8 @@ void InitSquads( void )
 
 BOOLEAN IsThisSquadFull( INT8 bSquadValue )
 {
-	// run through entries in the squad list, make sure there is a free entry
-	FOR_EACH_SLOT_IN_SQUAD(i, bSquadValue)
-	{
-		if (!*i) return FALSE;
-	}
-	return TRUE;
+  auto & sq = Squad[bSquadValue];
+  return std::all_of(sq, sq + NUMBER_OF_SOLDIERS_PER_SQUAD, NotNullptr);
 }
 
 INT8 GetFirstEmptySquad( void )
@@ -269,12 +280,9 @@ INT8 AddCharacterToUniqueSquad(SOLDIERTYPE* const s)
 
 BOOLEAN SquadIsEmpty( INT8 bSquadValue )
 {
-	// run through this squad's slots and find if they ALL are empty
-	FOR_EACH_IN_SQUAD(i, bSquadValue)
-	{
-		return FALSE;
-	}
-	return TRUE;
+  // run through this squad's slots and find if they ALL are empty
+  auto & sq = Squad[bSquadValue];
+  return std::none_of(sq, sq + NUMBER_OF_SOLDIERS_PER_SQUAD, NotNullptr);
 }
 
 
@@ -330,41 +338,25 @@ BOOLEAN RemoveCharacterFromSquads(SOLDIERTYPE* const s)
 
 INT8 NumberOfPeopleInSquad( INT8 bSquadValue )
 {
-	INT8 bSquadCount = 0;
-
 	if( bSquadValue == NO_CURRENT_SQUAD )
 	{
 		return( 0 );
 	}
 
-	// find number of characters in particular squad.
-	FOR_EACH_IN_SQUAD(i, bSquadValue)
-	{
-		++bSquadCount;
-	}
-
-	// return number found
-	return( bSquadCount );
+  auto & sq = Squad[bSquadValue];
+  return std::count_if(sq, sq + NUMBER_OF_SOLDIERS_PER_SQUAD, NotNullptr);
 }
 
 INT8 NumberOfNonEPCsInSquad( INT8 bSquadValue )
 {
-	INT8 bSquadCount = 0;
-
 	if( bSquadValue == NO_CURRENT_SQUAD )
 	{
 		return( 0 );
 	}
 
-	// find number of characters in particular squad.
-	FOR_EACH_IN_SQUAD(i, bSquadValue)
-	{
-		// valid slot?
-		if (!AM_AN_EPC(*i)) ++bSquadCount;
-	}
-
-	// return number found
-	return( bSquadCount );
+  auto sq = GetMercsInSquad(bSquadValue);
+  return   NumberOfPeopleInSquad(bSquadValue)
+         - std::count_if(sq.cbegin(), sq.cend(), AM_AN_EPC);
 }
 
 BOOLEAN IsRobotControllerInSquad( INT8 bSquadValue )
@@ -374,15 +366,8 @@ BOOLEAN IsRobotControllerInSquad( INT8 bSquadValue )
 		return( 0 );
 	}
 
-	// find number of characters in particular squad.
-	FOR_EACH_IN_SQUAD(i, bSquadValue)
-	{
-		// valid slot?
-		if (ControllingRobot(*i)) return TRUE;
-	}
-
-	// return number found
-	return( FALSE );
+  auto sq = GetMercsInSquad(bSquadValue);
+  return std::any_of(sq.cbegin(), sq.cend(), ControllingRobot);
 }
 
 
@@ -748,11 +733,8 @@ static void UpdateCurrentlySelectedMerc(SOLDIERTYPE* pSoldier, INT8 bSquadValue)
 
 static BOOLEAN IsDeadGuyOnSquad(const ProfileID pid, const INT8 squad)
 {
-	for (INT32 i = 0; i < NUMBER_OF_SOLDIERS_PER_SQUAD; ++i)
-	{
-		if (sDeadMercs[squad][i] == pid) return TRUE;
-	}
-	return FALSE;
+  auto & sq = sDeadMercs[squad];
+  return std::count(sq, sq + NUMBER_OF_SOLDIERS_PER_SQUAD, pid) != 0;
 }
 
 
@@ -829,27 +811,16 @@ BOOLEAN IsMercOnCurrentSquad(const SOLDIERTYPE* pSoldier)
 
 INT8 NumberOfPlayerControllableMercsInSquad( INT8 bSquadValue )
 {
-	INT8 bSquadCount = 0;
-
 	if( bSquadValue == NO_CURRENT_SQUAD )
 	{
 		return( 0 );
 	}
 
-	// find number of characters in particular squad.
-	FOR_EACH_IN_SQUAD(i, bSquadValue)
-	{
-		SOLDIERTYPE const* const pSoldier = *i;
-		//Kris:  This breaks the CLIENT of this function, tactical traversal.  Do NOT check for EPCS or ROBOT here.
-		//if ( !AM_AN_EPC( pSoldier ) && !AM_A_ROBOT( pSoldier ) &&
-		if( !( pSoldier->uiStatusFlags & SOLDIER_VEHICLE ) )
-		{
-			bSquadCount++;
-		}
-	}
-
-	// return number found
-	return( bSquadCount );
+  //Kris:  This breaks the CLIENT of this function, tactical traversal.  Do NOT check for EPCS or ROBOT here.
+  //if ( !AM_AN_EPC( pSoldier ) && !AM_A_ROBOT( pSoldier ) &&
+  auto sq = GetMercsInSquad(bSquadValue);
+  return std::count_if(sq.cbegin(), sq.cend(),
+      [](SOLDIERTYPE const * const s) { return !(s->uiStatusFlags & SOLDIER_VEHICLE); });
 }
 
 
@@ -861,12 +832,9 @@ BOOLEAN DoesVehicleExistInSquad( INT8 bSquadValue )
 	}
 
 	// find number of characters in particular squad.
-	FOR_EACH_IN_SQUAD(i, bSquadValue)
-	{
-		if ((*i)->uiStatusFlags & SOLDIER_VEHICLE) return TRUE;
-	}
-
-	return(FALSE );
+  auto sq = GetMercsInSquad(bSquadValue);
+  return std::any_of(sq.cbegin(), sq.cend(),
+      [](SOLDIERTYPE const * const s) { return s->uiStatusFlags & SOLDIER_VEHICLE; });
 }
 
 

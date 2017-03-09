@@ -1,3 +1,4 @@
+#include <boost/algorithm/clamp.hpp>
 #include "Font_Control.h"
 #include "Morale.h"
 #include "Overhead.h"
@@ -280,8 +281,6 @@ void RefreshSoldierMorale( SOLDIERTYPE * pSoldier )
 
 static void UpdateSoldierMorale(SOLDIERTYPE* pSoldier, UINT8 ubType, INT8 bMoraleMod)
 {
-	INT32									iMoraleModTotal;
-
 	if (!pSoldier->bActive)              return;
 	if (pSoldier->bLife < CONSCIOUSNESS) return;
 	if (IsMechanical(*pSoldier))         return;
@@ -352,26 +351,22 @@ static void UpdateSoldierMorale(SOLDIERTYPE* pSoldier, UINT8 ubType, INT8 bMoral
 		}
 	}
 	// apply change!
+  auto apply = [bMoraleMod] (decltype(pSoldier->bTacticalMoraleMod) &soldierMoraleMod) {
+    soldierMoraleMod = static_cast<decltype(pSoldier->bTacticalMoraleMod)>(
+        boost::algorithm::clamp<int>(soldierMoraleMod + bMoraleMod, -MORALE_MOD_MAX, +MORALE_MOD_MAX));
+  };
+
 	if (ubType == TACTICAL_MORALE_EVENT)
 	{
-		iMoraleModTotal = (INT32) pSoldier->bTacticalMoraleMod + (INT32) bMoraleMod;
-		iMoraleModTotal = __min( iMoraleModTotal, MORALE_MOD_MAX );
-		iMoraleModTotal = __max( iMoraleModTotal, -MORALE_MOD_MAX );
-		pSoldier->bTacticalMoraleMod = (INT8) iMoraleModTotal;
+    apply(pSoldier->bTacticalMoraleMod);
 	}
 	else if ( gTacticalStatus.fEnemyInSector && !pSoldier->bInSector ) // delayed strategic
 	{
-		iMoraleModTotal = (INT32) pSoldier->bDelayedStrategicMoraleMod + (INT32) bMoraleMod;
-		iMoraleModTotal = __min( iMoraleModTotal, MORALE_MOD_MAX );
-		iMoraleModTotal = __max( iMoraleModTotal, -MORALE_MOD_MAX );
-		pSoldier->bDelayedStrategicMoraleMod = (INT8) iMoraleModTotal;
+    apply(pSoldier->bDelayedStrategicMoraleMod);
 	}
 	else // strategic
 	{
-		iMoraleModTotal = (INT32) pSoldier->bStrategicMoraleMod + (INT32) bMoraleMod;
-		iMoraleModTotal = __min( iMoraleModTotal, MORALE_MOD_MAX );
-		iMoraleModTotal = __max( iMoraleModTotal, -MORALE_MOD_MAX );
-		pSoldier->bStrategicMoraleMod = (INT8) iMoraleModTotal;
+    apply(pSoldier->bStrategicMoraleMod);
 	}
 
 	RefreshSoldierMorale( pSoldier );

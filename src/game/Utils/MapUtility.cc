@@ -59,7 +59,7 @@ ScreenID MapUtilScreenHandle()
 	UINT32					bR, bG, bB, bAvR, bAvG, bAvB;
 	INT16						s16BPPSrc, sDest16BPPColor;
 
-	INT16 sX1, sX2, sY1, sY2, sTop, sBottom, sLeft, sRight;
+	INT16 sTop, sBottom, sLeft, sRight;
 
 
 	FLOAT		dX, dY, dStartX, dStartY;
@@ -131,10 +131,10 @@ ScreenID MapUtilScreenHandle()
 	if ( gMapInformation.ubRestrictedScrollID != 0 )
 	{
 
-		CalculateRestrictedMapCoords(NORTH, &sX1,    &sY1,     &sX2,   &sTop, SCREEN_WIDTH, 320);
-		CalculateRestrictedMapCoords(SOUTH, &sX1,    &sBottom, &sX2,   &sY2,  SCREEN_WIDTH, 320);
-		CalculateRestrictedMapCoords(WEST,  &sX1,    &sY1,     &sLeft, &sY2,  SCREEN_WIDTH, 320);
-		CalculateRestrictedMapCoords(EAST,  &sRight, &sY1,     &sX2,   &sY2,  SCREEN_WIDTH, 320);
+		CalculateRestrictedMapCoords(NORTH, nullptr, nullptr,  nullptr, &sTop, SCREEN_WIDTH, 320);
+		CalculateRestrictedMapCoords(SOUTH, nullptr, &sBottom, nullptr, nullptr,  SCREEN_WIDTH, 320);
+		CalculateRestrictedMapCoords(WEST,  nullptr, nullptr,  &sLeft,  nullptr,  SCREEN_WIDTH, 320);
+		CalculateRestrictedMapCoords(EAST,  &sRight, nullptr,  nullptr, nullptr,  SCREEN_WIDTH, 320);
 
 		gdXStep	= (float)( sRight - sLeft )/(float)88;
 		gdYStep	= (float)( sBottom - sTop )/(float)44;

@@ -28,6 +28,21 @@ template<typename T, typename U> static inline void FileWriteArray(SGPFile* cons
 	if (n != 0) FileWrite(f, data, sizeof(*data) * n);
 }
 
+template<typename T, typename U>
+inline void FileWriteVector(SGPFile * const f, std::vector<U> const &v) {
+  const T vecSize = v.size();
+  FileWrite(f, &vecSize, sizeof(vecSize));
+  if (vecSize != 0) FileWrite(f, v.data(), sizeof(U) * vecSize);
+}
+
+template<typename T, typename U>
+inline void FileReadVector(SGPFile * const f, std::vector<U> &v) {
+  T vecSize;
+  FileRead(f, &vecSize, sizeof(T));
+  v.resize(vecSize);
+  if (vecSize != 0) FileRead(f, v.data(), sizeof(U) * vecSize);
+}
+
 void  FileSeek(SGPFile*, INT32 distance, FileSeekMode);
 INT32 FileGetPos(const SGPFile*);
 

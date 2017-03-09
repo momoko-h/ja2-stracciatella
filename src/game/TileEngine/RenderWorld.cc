@@ -1291,7 +1291,7 @@ zlevel_topmost:
 								{
 									if (fObscuredBlitter)
 									{
-										Blt8BPPDataTo16BPPBufferTransZTransShadowIncObscureClip(pDestBuf, uiDestPitchBYTES, gpZBuffer, sZLevel, hVObject, sXPos, sYPos, usImageIndex, &gClippingRect, sMultiTransShadowZBlitterIndex, pShadeTable);
+										Blt8BPPDataTo16BPPBufferTransZTransShadowIncClip(pDestBuf, uiDestPitchBYTES, gpZBuffer, sZLevel, hVObject, sXPos, sYPos, usImageIndex, &gClippingRect, sMultiTransShadowZBlitterIndex, pShadeTable);
 									}
 									else
 									{
@@ -3350,29 +3350,15 @@ static void Blt8BPPDataTo16BPPBufferTransZTransShadowIncObscureClip(UINT16* pBuf
 
 	const INT8* const pZArray = pZInfo->pbZChange;
 
-	UINT16 usZStartIndex;
-	if (LeftSkip >= usZColsToGo)
-	{
+	UINT16 usZStartIndex = 0;
+	if (LeftSkip >= usZColsToGo) {
 		// Index into array after doing left clipping
 		usZStartIndex = 1 + (LeftSkip - pZInfo->ubFirstZStripWidth) / 20;
 
 		//calculates the Z-value after left-side clipping
-		if (usZStartIndex)
-		{
-			for (UINT16 i = 0; i < usZStartIndex; i++)
-			{
-				switch (pZArray[i])
-				{
-					case -1: usZStartLevel -= Z_SUBLAYERS; break;
-					case  0: /* no change */               break;
-					case  1: usZStartLevel += Z_SUBLAYERS; break;
-				}
-			}
-		}
-	}
-	else
-	{
-		usZStartIndex = 0;
+    for (UINT16 i = 0; i < usZStartIndex; i++) {
+      usZStartLevel += Z_SUBLAYERS * pZArray[i];
+    }
 	}
 
 	usZLevel = usZStartLevel;
@@ -3495,16 +3481,7 @@ BlitNonTransLoop: // blit non-transparent pixels
 					if (--usZColsToGo == 0)
 					{
 						usZColsToGo = 20;
-
-						INT8 delta = pZArray[usZIndex++];
-						if (delta < 0)
-						{
-							usZLevel -= Z_STRIP_DELTA_Y;
-						}
-						else if (delta > 0)
-						{
-							usZLevel += Z_STRIP_DELTA_Y;
-						}
+            usZLevel += Z_STRIP_DELTA_Y * pZArray[usZIndex++];
 					}
 				}
 				while (--PxCount > 0);

@@ -6,6 +6,7 @@
 // structure_extern.h, not structure.h!
 //
 
+#include <vector>
 #include "Types.h"
 
 // A few words about the overall structure scheme:
@@ -156,9 +157,11 @@ struct DB_STRUCTURE
 
 struct DB_STRUCTURE_REF
 {
-	DB_STRUCTURE * 												pDBStructure;
-	DB_STRUCTURE_TILE **									ppTile; // dynamic array
-}; // 8 bytes
+	DB_STRUCTURE * 												pDBStructure = 0;
+  std::vector<DB_STRUCTURE_TILE *>      ppTile;
+
+  inline int TileCount() const { return ppTile.size(); }
+};
 
 struct STRUCTURE
 {

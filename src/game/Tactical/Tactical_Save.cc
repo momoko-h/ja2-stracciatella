@@ -1,3 +1,4 @@
+#include <vector>
 #include "Buffer.h"
 #include "Directories.h"
 #include "Font_Control.h"
@@ -93,7 +94,7 @@ void SaveMapTempFilesToSavedGameFile(HWFILE const f)
 	{
 		for (INT16 x = 1; x <= 16; ++x)
 		{
-			UINT32 const flags = SectorInfo[SECTOR(x, y)].uiFlags;
+			UINT32 const flags = GetSectorInfo(x, y).uiFlags;
 			AddTempFilesToSavedGame(f, flags, x, y, 0);
 		}
 	}
@@ -263,40 +264,37 @@ void AddItemsToUnLoadedSector(INT16 const sMapX, INT16 const sMapY, INT8 const b
 	WORLDITEM* wis;
 	LoadWorldItemsFromTempItemFile(sMapX, sMapY, bMapZ, &uiNumberOfItems, &wis);
 
-	//loop through all the objects to add
-	for (UINT32 uiLoop1 = 0; uiLoop1 < uiNumberOfItemsToAdd; ++uiLoop1)
-	{
-		// Loop through the array to see if there is a free spot to add an item to it
-		UINT32 cnt;
-		for (cnt = 0;; ++cnt)
-		{
-			if (cnt == uiNumberOfItems)
-			{
-				//Error, there wasnt a free spot.  Reallocate memory for the array
-				wis = REALLOC(wis, WORLDITEM, ++uiNumberOfItems);
-				break;
-			}
-			if (!wis[cnt].fExists) break;
-		}
+  std::vector<WORLDITEM> wItems;
+  // Reserve enough space to hold all the items already present plus the ones to be
+  // added to avoid reallocations later.
+  wItems.reserve(uiNumberOfItems + uiNumberOfItemsToAdd);
 
-		WORLDITEM* const wi = &wis[cnt];
-		wi->fExists                  = TRUE;
-		wi->sGridNo                  = sGridNo;
-		wi->ubLevel                  = ubLevel;
-		wi->usFlags                  = usFlags;
-		wi->bVisible                 = bVisible;
-		wi->bRenderZHeightAboveLevel = bRenderZHeightAboveLevel;
-		wi->o                        = pObject[uiLoop1];
+  // Add the new items to the vector first.
+  wItems.resize(uiNumberOfItemsToAdd);
+  for (int i = 0; i < uiNumberOfItemsToAdd; ++i) {
+		WORLDITEM &wi = wItems[i];
+		wi.fExists                  = TRUE;
+		wi.sGridNo                  = sGridNo;
+		wi.ubLevel                  = ubLevel;
+		wi.usFlags                  = usFlags;
+		wi.bVisible                 = bVisible;
+		wi.bRenderZHeightAboveLevel = bRenderZHeightAboveLevel;
+		wi.o                        = pObject[i];
 
-		if (sGridNo == NOWHERE && !(wi->usFlags & WORLD_ITEM_GRIDNO_NOT_SET_USE_ENTRY_POINT))
+		if (sGridNo == NOWHERE && !(wi.usFlags & WORLD_ITEM_GRIDNO_NOT_SET_USE_ENTRY_POINT))
 		{
-			wi->usFlags |= WORLD_ITEM_GRIDNO_NOT_SET_USE_ENTRY_POINT;
+			wi.usFlags |= WORLD_ITEM_GRIDNO_NOT_SET_USE_ENTRY_POINT;
 			// Display warning.....
-			SLOGW(DEBUG_TAG_TACTSAVE, "Trying to add item ( %d: %ls ) to invalid gridno in unloaded sector. Please Report.", wi->o.usItem, ItemNames[wi->o.usItem]);
+			SLOGW(DEBUG_TAG_TACTSAVE, "Trying to add item ( %d: %ls ) to invalid gridno in unloaded sector. Please Report.", wi.o.usItem, ItemNames[wi.o.usItem]);
 		}
 	}
 
-	SaveWorldItemsToTempItemFile(sMapX, sMapY, bMapZ, uiNumberOfItems, wis);
+	//loop through all old objects to add
+	for (int i = 0; i < uiNumberOfItems; ++i) {
+    if (wis[i].fExists) wItems.push_back(wis[i]);
+  }
+
+	SaveWorldItemsToTempItemFile(sMapX, sMapY, bMapZ, wItems.size(), wItems.data());
 
 	MemFree(wis);
 }
@@ -416,7 +414,7 @@ void HandleAllReachAbleItemsInTheSector(INT16 const x, INT16 const y, INT8 const
 			reachable = false;
 			for (UINT8 dir = 0; dir != NUM_WORLD_DIRECTIONS; dir += 2)
 			{
-				GridNo const new_loc = NewGridNo(wi->sGridNo, DirectionInc(dir));
+				GridNo const new_loc = AdjacentGridNo(wi->sGridNo, dir);
 				if (new_loc == wi->sGridNo) continue;
 
 				// then it's a valid gridno, so test it
@@ -449,7 +447,7 @@ static UINT32 GetSectorFlags(INT16 const x, INT16 const y, UINT8 const z)
 {
 	if (z == 0)
 	{
-		return SectorInfo[SECTOR(x, y)].uiFlags;
+		return GetSectorInfo(x, y).uiFlags;
 	}
 	else
 	{
@@ -600,7 +598,7 @@ static UINT32 GetLastTimePlayerWasInSector(void)
 {
 	if (gbWorldSectorZ == 0)
 	{
-		return SectorInfo[SECTOR(gWorldSectorX, gWorldSectorY)].uiTimeCurrentSectorWasLastLoaded;
+		return GetSectorInfo(gWorldSectorX, gWorldSectorY).uiTimeCurrentSectorWasLastLoaded;
 	}
 	else if (gbWorldSectorZ > 0)
 	{
@@ -1122,7 +1120,7 @@ UINT32 GetNumberOfVisibleWorldItemsFromSectorStructureForSector(INT16 const x, I
 	UINT32 n_items;
 	if (z == 0)
 	{
-		n_items = SectorInfo[SECTOR(x, y)].uiNumberOfWorldItemsInTempFileThatCanBeSeenByPlayer;
+		n_items = GetSectorInfo(x, y).uiNumberOfWorldItemsInTempFileThatCanBeSeenByPlayer;
 	}
 	else
 	{

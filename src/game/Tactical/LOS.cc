@@ -2136,7 +2136,7 @@ static BOOLEAN BulletHitMerc(BULLET* pBullet, STRUCTURE* pStructure, BOOLEAN fIn
     // get a new gridno based on direction it was moving.  Check to see if we're not
     // going through walls, etc by testing for a path, unless on the roof, in which case it would always
     // be legal, but the bLevel May change...
-		sNewGridNo = NewGridNo(pBullet->sGridNo, DirectionInc(OppositeDirection(hit_direction)));
+		sNewGridNo = AdjacentGridNo(pBullet->sGridNo, OppositeDirection(hit_direction));
 
 		bSpewBloodLevel = tgt.bLevel;
     fCanSpewBlood   = TRUE;
@@ -2152,7 +2152,7 @@ static BOOLEAN BulletHitMerc(BULLET* pBullet, STRUCTURE* pStructure, BOOLEAN fIn
     else
     {
       // If a roof does not exist here, make level = 0
-      if ( !IsRoofPresentAtGridno( sNewGridNo ) )
+      if ( !IsRoofPresentAtGridNo( sNewGridNo ) )
       {
         bSpewBloodLevel = 0;
       }
@@ -2599,7 +2599,7 @@ static UINT8 CalcChanceToGetThrough(BULLET* pBullet)
 			}
 			else if ( pStructure->fFlags & STRUCTURE_CORPSE )
 			{
-				if ( iGridNo == (INT32) pBullet->sTargetGridNo || (pStructure->pDBStructureRef->pDBStructure->ubNumberOfTiles >= 10) )
+				if ( iGridNo == (INT32) pBullet->sTargetGridNo || (pStructure->pDBStructureRef->TileCount() >= 10) )
 				{
 					// could hit this corpse!
 					// but we should ignore the corpse if there is someone standing there
@@ -3781,7 +3781,7 @@ void MoveBullet(BULLET* const pBullet)
 			}
 			else if ( pStructure->fFlags & STRUCTURE_CORPSE )
 			{
-				if ( iGridNo == (INT32) pBullet->sTargetGridNo || (pStructure->pDBStructureRef->pDBStructure->ubNumberOfTiles >= 10) )
+				if ( iGridNo == (INT32) pBullet->sTargetGridNo || (pStructure->pDBStructureRef->TileCount() >= 10) )
 				{
 					// could hit this corpse!
 					// but ignore if someone is here

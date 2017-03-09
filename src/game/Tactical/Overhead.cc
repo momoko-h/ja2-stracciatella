@@ -1007,7 +1007,7 @@ void ExecuteOverhead(void)
 											// that our final dest may now have people on it....
 											if (FindBestPath(pSoldier, pSoldier->sFinalDestination, pSoldier->bLevel, pSoldier->usUIMovementMode, NO_COPYROUTE, PATH_THROUGH_PEOPLE) != 0)
 											{
-												const INT16 sNewGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(guiPathingData[0]));
+												const INT16 sNewGridNo = AdjacentGridNo(pSoldier->sGridNo, guiPathingData[0]);
 												SetDelayedTileWaiting(pSoldier, sNewGridNo, 1);
 											}
 
@@ -1349,7 +1349,7 @@ BOOLEAN HandleGotoNewGridNo(SOLDIERTYPE* pSoldier, BOOLEAN* pfKeepMoving, BOOLEA
 
 	}
 
-	const UINT16 usNewGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(pSoldier->ubPathingData[pSoldier->ubPathIndex]));
+	const UINT16 usNewGridNo = AdjacentGridNo(pSoldier->sGridNo, pSoldier->ubPathingData[pSoldier->ubPathIndex]);
 
 	// OK, check if this is a fence cost....
 	if (gubWorldMovementCosts[usNewGridNo][pSoldier->ubPathingData[pSoldier->ubPathIndex]][pSoldier->bLevel] == TRAVELCOST_FENCE)
@@ -1363,7 +1363,7 @@ BOOLEAN HandleGotoNewGridNo(SOLDIERTYPE* pSoldier, BOOLEAN* pfKeepMoving, BOOLEA
 		if (EnoughPoints(pSoldier, sAPCost, sBPCost, FALSE))
 		{
 			// ATE: Check for tile being clear....
-			const UINT16 sOverFenceGridNo = NewGridNo(usNewGridNo, DirectionInc(pSoldier->ubPathingData[pSoldier->ubPathIndex + 1]));
+			const UINT16 sOverFenceGridNo = AdjacentGridNo(usNewGridNo, pSoldier->ubPathingData[pSoldier->ubPathIndex + 1]);
 
 			if (HandleNextTile(pSoldier, (INT8)pSoldier->ubPathingData[pSoldier->ubPathIndex + 1], sOverFenceGridNo, pSoldier->sFinalDestination))
 			{
@@ -1406,7 +1406,7 @@ BOOLEAN HandleGotoNewGridNo(SOLDIERTYPE* pSoldier, BOOLEAN* pfKeepMoving, BOOLEA
 		INT16 sDoorGridNo;
 		if (bDirection == NORTH || bDirection == WEST)
 		{
-			sDoorGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(pSoldier->ubPathingData[pSoldier->ubPathIndex]));
+			sDoorGridNo = AdjacentGridNo(pSoldier->sGridNo, pSoldier->ubPathingData[pSoldier->ubPathIndex]);
 		}
 		else if (bDirection == SOUTH || bDirection == EAST)
 		{
@@ -3282,10 +3282,7 @@ INT16 FindAdjacentGridEx(SOLDIERTYPE* pSoldier, INT16 sGridNo, UINT8* pubDirecti
 		// If we are in the same tile as a switch, we can NEVER pull it....
 		if (fDoor)
 		{
-			// This can only happen if a door was to the south to east of us!
-
-			// Do south!
-			//sSpot = NewGridNo( sGridNo, DirectionInc( SOUTH ) );
+			// This can only happen if a door was to the south or east of us!
 
 			// ATE: Added: Switch behave EXACTLY like doors
 			pDoor = FindStructure(sGridNo, STRUCTURE_ANYDOOR);
@@ -3298,7 +3295,7 @@ INT16 FindAdjacentGridEx(SOLDIERTYPE* pSoldier, INT16 sGridNo, UINT8* pubDirecti
 				if (ubWallOrientation == OUTSIDE_TOP_LEFT || ubWallOrientation == INSIDE_TOP_LEFT)
 				{
 					// To the south!
-					sSpot = NewGridNo(sGridNo, DirectionInc(SOUTH));
+					sSpot = AdjacentGridNo(sGridNo, SOUTH);
 					if (pubDirection)
 					{
 						*pubDirection = GetDirectionFromGridNo(sSpot, pSoldier);
@@ -3308,7 +3305,7 @@ INT16 FindAdjacentGridEx(SOLDIERTYPE* pSoldier, INT16 sGridNo, UINT8* pubDirecti
 				if (ubWallOrientation == OUTSIDE_TOP_RIGHT || ubWallOrientation == INSIDE_TOP_RIGHT)
 				{
 					// TO the east!
-					sSpot = NewGridNo(sGridNo, DirectionInc(EAST));
+					sSpot = AdjacentGridNo(sGridNo, EAST);
 					if (pubDirection)
 					{
 						*pubDirection = GetDirectionFromGridNo(sSpot, pSoldier);
@@ -3386,7 +3383,7 @@ INT16 FindAdjacentGridEx(SOLDIERTYPE* pSoldier, INT16 sGridNo, UINT8* pubDirecti
 	for (cnt = 0; cnt < 4; cnt++)
 	{
 		// MOVE OUT TWO DIRECTIONS
-		sSpot = NewGridNo(sGridNo, DirectionInc(sDirs[cnt]));
+		sSpot = AdjacentGridNo(sGridNo, sDirs[cnt]);
 
 		ubTestDirection = sDirs[cnt];
 
@@ -3587,7 +3584,7 @@ INT16 FindNextToAdjacentGridEx( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 *pub
 	for (cnt = 0; cnt < 4; cnt++)
 	{
 		// MOVE OUT TWO DIRECTIONS
-		sSpot = NewGridNo(sGridNo, DirectionInc(sDirs[cnt]));
+		sSpot = AdjacentGridNo(sGridNo, sDirs[cnt]);
 
 		ubTestDirection = sDirs[cnt];
 
@@ -3631,7 +3628,7 @@ INT16 FindNextToAdjacentGridEx( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 *pub
 		}
 
 		// first tile is okay, how about the second?
-		sSpot2 = NewGridNo( sSpot, DirectionInc( sDirs[ cnt ] ) );
+		sSpot2 = AdjacentGridNo(sSpot, sDirs[cnt]);
 		if (gubWorldMovementCosts[sSpot2][sDirs[cnt]][pSoldier->bLevel] >= TRAVELCOST_BLOCKED ||
 				DoorTravelCost(pSoldier, sSpot2, gubWorldMovementCosts[sSpot2][sDirs[cnt]][pSoldier->bLevel], pSoldier->bTeam == OUR_TEAM, NULL) == TRAVELCOST_DOOR) // closed door blocks!
 		{
@@ -3753,7 +3750,7 @@ INT16 FindAdjacentPunchTarget(const SOLDIERTYPE* const pSoldier, const SOLDIERTY
 
 	for (UINT8 i = 0; i < NUM_WORLD_DIRECTIONS; ++i)
 	{
-		const INT16 sSpot = NewGridNo(pSoldier->sGridNo, DirectionInc(i));
+		const INT16 sSpot = AdjacentGridNo(pSoldier->sGridNo, i);
 
 		if (DoorTravelCost(pSoldier, sSpot, gubWorldMovementCosts[sSpot][i][pSoldier->bLevel], FALSE, NULL) >= TRAVELCOST_BLOCKED)
 		{

@@ -519,14 +519,10 @@ try
 	const STRUCTURE_FILE_REF* const pStructureFileRef = GetCachedTileStructureRefFromFilename(zFilename.c_str());
 	if (pStructureFileRef != NULL)
 	{
-		const UINT16                  usStructIndex   = GetCorpseStructIndex(pCorpseDef, TRUE);
-		const DB_STRUCTURE_REF* const pDBStructureRef = &pStructureFileRef->pDBStructureRef[usStructIndex];
-		for (UINT8 ubLoop = 0; ubLoop < pDBStructureRef->pDBStructure->ubNumberOfTiles; ++ubLoop)
-		{
-			DB_STRUCTURE_TILE* const* const ppTile      = pDBStructureRef->ppTile;
-			const INT16                     sTileGridNo = pCorpseDef->sGridNo + ppTile[ubLoop]->sPosRelToBase;
-			RemoveBlood(sTileGridNo, pCorpseDef->bLevel);
-		}
+		const UINT16 usStructIndex = GetCorpseStructIndex(pCorpseDef, TRUE);
+    for (auto &pTile : pStructureFileRef->pDBStructureRef[usStructIndex].ppTile) {
+      RemoveBlood(pCorpseDef->sGridNo + pTile->sPosRelToBase, pCorpseDef->bLevel);
+    }
 	}
 
 	return c;

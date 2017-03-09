@@ -269,7 +269,7 @@ int main(int argc, char* argv[])
 #endif
 
   // init logging
-  SLOG_Init(SLOG_STDERR, "ja2.log");
+  SLOG_Init(SLOG_STDERR, nullptr);
   SLOG_SetLevel(SLOG_WARNING, SLOG_WARNING);
 
   engine_options_t* params = create_engine_options(argv, argc);

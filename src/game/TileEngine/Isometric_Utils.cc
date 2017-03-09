@@ -339,6 +339,16 @@ INT32 OutOfBounds(INT16 sGridno, INT16 sProposedGridno)
 }
 
 
+GridNo AdjacentGridNo(GridNo const gn, uint8_t const dir) {
+  if (!IsValidGridNo(gn) || dir > 7) {
+    SLOGE(DEBUG_TAG_TILES, "AdjacentGridNo called with invalid arguments, GridNo = %d Direction = %d", gn, dir);
+    return gn;
+  }
+
+  GridNo result = gn + DirIncrementer[dir];
+  return IsValidGridNo(result) ? result : gn;
+}
+
 
 INT16 NewGridNo(INT16 sGridno, INT16 sDirInc)
 {
@@ -550,7 +560,7 @@ bool FindHigherLevel(SOLDIERTYPE const* const s, UINT8* const out_direction)
 	INT8 const starting_dir  = s->bDirection;
 	for (INT32 cnt = 0; cnt != 8; cnt += 2)
 	{
-		GridNo const new_grid_no = NewGridNo(grid_no, DirectionInc(cnt));
+		GridNo const new_grid_no = AdjacentGridNo(grid_no, cnt);
 		if (!NewOKDestination(s, new_grid_no, TRUE, 1)) continue;
 
 		// Check if this tile has a higher level
@@ -583,7 +593,7 @@ bool FindLowerLevel(SOLDIERTYPE const* const s, UINT8* const out_direction)
 	INT8   const starting_dir  = s->bDirection;
 	for (INT32 dir = 0; dir != 8; dir += 2)
 	{
-		GridNo const new_grid_no = NewGridNo(grid_no, DirectionInc(dir));
+		GridNo const new_grid_no = AdjacentGridNo(grid_no, dir);
 		if (!NewOKDestination(s, new_grid_no, TRUE, 0)) continue;
 		// Make sure there is NOT a roof here
 		if (FindStructure(new_grid_no, STRUCTURE_ROOF)) continue;
@@ -738,14 +748,14 @@ BOOLEAN IsFacingClimableWindow( SOLDIERTYPE const* const pSoldier )
 			return( FALSE );
 		}
 
-		sNewGridNo = NewGridNo( sGridNo, (UINT16)DirectionInc( (UINT8)bStartingDir ) );
+		sNewGridNo = AdjacentGridNo( sGridNo, bStartingDir );
 		sOtherSideOfWindow = sNewGridNo;
 	}
 	else
 	{
 		// current tile we are standing is the fence tile
 		sNewGridNo = sGridNo;
-		sOtherSideOfWindow = NewGridNo( sNewGridNo, (UINT16)DirectionInc( (UINT8)bStartingDir ) );
+		sOtherSideOfWindow = AdjacentGridNo( sNewGridNo, bStartingDir );
 	}
 
 	// ATE: Check if there is somebody waiting here.....
@@ -778,8 +788,8 @@ BOOLEAN FindFenceJumpDirection(SOLDIERTYPE const* const pSoldier, UINT8* const o
 	for ( cnt = 0; cnt < 8; cnt+= 2 )
 	{
 		// go out *2* tiles
-		sNewGridNo = NewGridNo( (UINT16)sGridNo, DirectionInc( cnt ) );
-		sOtherSideOfFence = NewGridNo( (UINT16)sNewGridNo, DirectionInc( cnt ) );
+		sNewGridNo = AdjacentGridNo( sGridNo,  cnt );
+		sOtherSideOfFence = AdjacentGridNo( sNewGridNo, cnt );
 
 		if ( NewOKDestination( pSoldier, sOtherSideOfFence, TRUE, 0 ) )
 		{

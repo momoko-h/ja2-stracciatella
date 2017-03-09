@@ -906,7 +906,7 @@ try
 			if ( pStructure->fFlags & STRUCTURE_SLIDINGDOOR )
 			{
 				// Get database value...
-				if ( pStructure->pDBStructureRef->pDBStructure->ubNumberOfTiles > 1 )
+				if ( pStructure->pDBStructureRef->ppTile.size() > 1 )
 				{
 					// change sound ID
 					uiSoundID = GARAGE_DOOR_OPEN;
@@ -975,7 +975,7 @@ try
 			if ( pStructure->fFlags & STRUCTURE_SLIDINGDOOR )
 			{
 				// Get database value...
-				if ( pStructure->pDBStructureRef->pDBStructure->ubNumberOfTiles > 1 )
+				if ( pStructure->pDBStructureRef->ppTile.size() > 1 )
 				{
 					// change sound ID
 					uiSoundID = GARAGE_DOOR_CLOSE;

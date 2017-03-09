@@ -396,7 +396,7 @@ INT16 InternalGoAsFarAsPossibleTowards(SOLDIERTYPE *pSoldier, INT16 sDesGrid, IN
 
       for (auto ubDirection : GetRandomizedDirections()) {
 				// determine the gridno 1 tile away from current friend in this direction
-				sTempDest = NewGridNo(sDesGrid,DirectionInc( ubDirection ));
+				sTempDest = AdjacentGridNo(sDesGrid, ubDirection );
 
 				// if that's out of bounds, ignore it & check next direction
 				if (sTempDest == sDesGrid)
@@ -430,8 +430,7 @@ INT16 InternalGoAsFarAsPossibleTowards(SOLDIERTYPE *pSoldier, INT16 sDesGrid, IN
   {
    // what is the next gridno in the path?
 
-	 //sTempDest = NewGridNo( sGoToGrid,DirectionInc( pSoldier->ubPathingData[sLoop] + 1) );
-	 sTempDest = NewGridNo( sGoToGrid,DirectionInc( pSoldier->ubPathingData[sLoop]) );
+   sTempDest = AdjacentGridNo(sGoToGrid, pSoldier->ubPathingData[sLoop]);
 
    // this should NEVER be out of bounds
    if (sTempDest == sGoToGrid)
@@ -560,9 +559,6 @@ INT16 GoAsFarAsPossibleTowards(SOLDIERTYPE *pSoldier, INT16 sDesGrid, INT8 bActi
 
 void SoldierTriesToContinueAlongPath(SOLDIERTYPE *pSoldier)
 {
-	INT16 usNewGridNo,bAPCost;
-
-
 	// turn off the flag now that we're going to do something about it...
 	// ATE: USed to be redundent, now if called befroe NewDest can cause some side efects...
 	// AdjustNoAPToFinishMove( pSoldier, FALSE );
@@ -607,10 +603,10 @@ void SoldierTriesToContinueAlongPath(SOLDIERTYPE *pSoldier)
 		SLOGD(DEBUG_TAG_AI, "Soldier (%d) HAS NOT ENOUGH AP to continue along path",pSoldier->ubID);
 	}
 
-	usNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( pSoldier->ubPathingData[ pSoldier->ubPathIndex ] ) );
+  GridNo usNewGridNo = AdjacentGridNo(pSoldier->sGridNo, pSoldier->ubPathingData[ pSoldier->ubPathIndex ] );
 
 	// Find out how much it takes to move here!
-	bAPCost = EstimateActionPointCost( pSoldier, usNewGridNo, (INT8)pSoldier->ubPathingData[ pSoldier->ubPathIndex ], pSoldier->usUIMovementMode, (INT8) pSoldier->ubPathIndex, (INT8) pSoldier->ubPathDataSize );
+  auto bAPCost = EstimateActionPointCost( pSoldier, usNewGridNo, (INT8)pSoldier->ubPathingData[ pSoldier->ubPathIndex ], pSoldier->usUIMovementMode, (INT8) pSoldier->ubPathIndex, (INT8) pSoldier->ubPathDataSize );
 
 	if (pSoldier->bActionPoints >= bAPCost)
 	{

@@ -77,16 +77,13 @@ struct MOUSE_REGION
 	INT16            FastHelpTimer; // Countdown timer for FastHelp text
 	wchar_t*         FastHelpText;  // Text string for the FastHelp (describes buttons if left there a while)
 	BACKGROUND_SAVE* FastHelpRect;
-
-	MOUSE_REGION* next; // List maintenance, do NOT touch these entries
-	MOUSE_REGION* prev;
 };
 
 // Mouse region priorities
 #define MSYS_PRIORITY_LOWEST		0
-#define MSYS_PRIORITY_LOW				15
-#define MSYS_PRIORITY_NORMAL		31
-#define MSYS_PRIORITY_HIGH			63
+#define MSYS_PRIORITY_LOW				31
+#define MSYS_PRIORITY_NORMAL		63
+#define MSYS_PRIORITY_HIGH			95
 #define MSYS_PRIORITY_HIGHEST		127
 
 // Mouse system defines used during updates

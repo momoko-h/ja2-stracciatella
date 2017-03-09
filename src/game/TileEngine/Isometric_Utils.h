@@ -10,7 +10,7 @@
 #define GRIDSIZE        (MAXCOL * MAXROW)
 #define RIGHTMOSTGRID   (MAXCOL - 1)
 #define LASTROWSTART    (GRIDSIZE - MAXCOL)
-#define NOWHERE         (GRIDSIZE + 1)
+constexpr GridNo NOWHERE = GRIDSIZE + 1;
 #define MAPWIDTH			(WORLD_COLS)
 #define MAPHEIGHT			(WORLD_ROWS)
 #define MAPLENGTH			(MAPHEIGHT*MAPWIDTH)
@@ -41,7 +41,9 @@ void ConvertGridNoToCenterCellXY( INT16 sGridNo, INT16 *sXPos, INT16 *sYPos );
 INT16 NewGridNo(INT16 sGridno, INT16 sDirInc);
 INT16 DirectionInc(UINT8 sDirection);
 INT32 OutOfBounds(INT16 sGridno, INT16 sProposedGridno);
-
+// This is a shortcut for the common NewGridNo(g, DirectionInc(d)) call.
+GridNo AdjacentGridNo(GridNo startGridNo, uint8_t direction);
+constexpr bool IsValidGridNo(GridNo gn) { return gn >= 0 && gn < WORLD_MAX; }
 
 BOOLEAN GetMouseXY( INT16 *psMouseX, INT16 *psMouseY );
 BOOLEAN GetMouseWorldCoords( INT16 *psMouseX, INT16 *psMouseY );

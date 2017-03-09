@@ -11,6 +11,8 @@
 //
 //=================================================================================================
 
+#include <algorithm>
+#include <list>
 #include <stdexcept>
 
 #include "Font.h"
@@ -56,8 +58,6 @@ static BOOLEAN MSYS_SystemInitialized   = FALSE;
 
 static MOUSE_REGION* g_clicked_region;
 
-static MOUSE_REGION* MSYS_RegList = NULL;
-
 static MOUSE_REGION* MSYS_PrevRegion = 0;
 static MOUSE_REGION* MSYS_CurrRegion = NULL;
 
@@ -75,8 +75,52 @@ static BOOLEAN gfRefreshUpdate = FALSE;
 #	define MOUSESYSTEM_DEBUGGING
 #endif
 
+void MSYS_RemoveRegion(MOUSE_REGION* const r);
 
-static void MSYS_TrashRegList(void);
+class OrderedList : public std::list<MOUSE_REGION *> {
+  public:
+
+  void Trash() {
+    while (size() > 0) {
+      auto p = front();
+      if (p->uiFlags & MSYS_REGION_EXISTS) {
+        // NB: MSYS_RemoveRegion calls DeleteRegion so we must not pop this element.
+        MSYS_RemoveRegion(p);
+      } else {
+        pop_front();
+      }
+    }
+  }
+
+  void DeleteRegion(MOUSE_REGION* r) {
+    remove(r);
+  }
+
+  /* Add a region struct to the current list. The list is sorted by priority
+   * levels. If two entries have the same priority level, then the latest to enter
+   * the list gets the higher priority. This is important because several places
+   * unfortunately depend on this order. It would be cleaner if the mouse regions
+   * had clearly defined priorities. */
+  void AddRegion(MOUSE_REGION* const r)
+  {
+    /* If region seems to already be in list, delete it so we can re-insert the
+     * region. */
+    remove(r);
+    for (auto it = begin(); it != end(); ++it) {
+      if (r->PriorityLevel >= (*it)->PriorityLevel) {
+        if (it == begin()) {
+          push_front(r);
+        } else {
+          insert(--it, r);
+        }
+        return;
+      }
+    }
+    push_back(r);
+  }
+};
+
+static OrderedList MSYS_RegList;
 
 
 //======================================================================================================
@@ -86,7 +130,7 @@ static void MSYS_TrashRegList(void);
 //
 void MSYS_Init(void)
 {
-	MSYS_TrashRegList();
+	MSYS_RegList.Trash();
 
 	MSYS_CurrentMX = 0;
 	MSYS_CurrentMY = 0;
@@ -106,7 +150,7 @@ void MSYS_Init(void)
 void MSYS_Shutdown(void)
 {
 	MSYS_SystemInitialized = FALSE;
-	MSYS_TrashRegList();
+	MSYS_RegList.Trash();
 }
 
 
@@ -181,92 +225,14 @@ force_move:
 }
 
 
-//======================================================================================================
-//	MSYS_TrashRegList
-//
-//	Deletes the entire region list.
-//
-static void MSYS_TrashRegList(void)
-{
-	while( MSYS_RegList )
-	{
-		if( MSYS_RegList->uiFlags & MSYS_REGION_EXISTS )
-		{
-			MSYS_RemoveRegion(MSYS_RegList);
-		}
-		else
-		{
-			MSYS_RegList = MSYS_RegList->next;
-		}
-	}
-}
-
-
-static void MSYS_DeleteRegionFromList(MOUSE_REGION*);
-
-
-/* Add a region struct to the current list. The list is sorted by priority
- * levels. If two entries have the same priority level, then the latest to enter
- * the list gets the higher priority. */
-static void MSYS_AddRegionToList(MOUSE_REGION* const r)
-{
-	/* If region seems to already be in list, delete it so we can re-insert the
-	 * region. */
-	MSYS_DeleteRegionFromList(r);
-
-	MOUSE_REGION* i = MSYS_RegList;
-	if (!i)
-	{ // Empty list, so add it straight up.
-		MSYS_RegList = r;
-	}
-	else
-	{
-		// Walk down list until we find place to insert (or at end of list)
-		for (; i->next; i = i->next)
-		{
-			if (i->PriorityLevel <= r->PriorityLevel) break;
-		}
-
-		if (i->PriorityLevel > r->PriorityLevel)
-		{ // Add after node
-			r->prev = i;
-			r->next = i->next;
-			if (r->next) r->next->prev = r;
-			i->next = r;
-		}
-		else
-		{ // Add before node
-			r->prev = i->prev;
-			r->next = i;
-			*(r->prev ? &r->prev->next : &MSYS_RegList) = r;
-			i->prev = r;
-		}
-	}
-}
-
-
-// Removes a region from the current list.
-static void MSYS_DeleteRegionFromList(MOUSE_REGION* const r)
-{
-	MOUSE_REGION* const prev = r->prev;
-	MOUSE_REGION* const next = r->next;
-	if (prev) prev->next = next;
-	if (next) next->prev = prev;
-
-	if (MSYS_RegList == r) MSYS_RegList = next;
-
-	r->prev = 0;
-	r->next = 0;
-}
-
-
 /* Searches the list for the highest priority region and updates its info.  It
  * also dispatches the callback functions */
 static void MSYS_UpdateMouseRegion(void)
 {
 	MOUSE_REGION* cur;
-	for (cur = MSYS_RegList; cur != NULL; cur = cur->next)
-	{
+  auto it = MSYS_RegList.begin();
+  while (it != MSYS_RegList.end()) {
+    cur = *it;
 		if (cur->uiFlags & (MSYS_REGION_ENABLED | MSYS_ALLOW_DISABLED_FASTHELP) &&
 		  	cur->RegionTopLeftX <= MSYS_CurrentMX && MSYS_CurrentMX <= cur->RegionBottomRightX &&
 		  	cur->RegionTopLeftY <= MSYS_CurrentMY && MSYS_CurrentMY <= cur->RegionBottomRightY)
@@ -275,7 +241,10 @@ static void MSYS_UpdateMouseRegion(void)
 			 * the whole list is sorted the right way! */
 			break;
 		}
+    ++it;
 	}
+
+  if (it == MSYS_RegList.end()) cur = nullptr;
 	MSYS_CurrRegion = cur;
 
 	MOUSE_REGION* prev = MSYS_PrevRegion;
@@ -345,17 +314,19 @@ static void MSYS_UpdateMouseRegion(void)
 			{
 				/* Addition Oct 10/1997 Carter, patch for mouse cursor
 				 * start at region and find another region encompassing */
-				for (const MOUSE_REGION* i = cur->next; i != NULL; i = i->next)
-				{
-					if (i->uiFlags & MSYS_REGION_ENABLED &&
-							i->RegionTopLeftX <= MSYS_CurrentMX && MSYS_CurrentMX <= i->RegionBottomRightX &&
-							i->RegionTopLeftY <= MSYS_CurrentMY && MSYS_CurrentMY <= i->RegionBottomRightY &&
-							i->Cursor != MSYS_NO_CURSOR)
-					{
-						MSYS_SetCurrentCursor(i->Cursor);
-						break;
-					}
-				}
+        if (it != MSYS_RegList.end()) {
+          for (it = ++it; it != MSYS_RegList.end(); ++it) {
+            auto i = *it;
+            if (i->uiFlags & MSYS_REGION_ENABLED &&
+                i->RegionTopLeftX <= MSYS_CurrentMX && MSYS_CurrentMX <= i->RegionBottomRightX &&
+                i->RegionTopLeftY <= MSYS_CurrentMY && MSYS_CurrentMY <= i->RegionBottomRightY &&
+                i->Cursor != MSYS_NO_CURSOR)
+            {
+              MSYS_SetCurrentCursor(i->Cursor);
+              break;
+            }
+          }
+        }
       }
 		}
 
@@ -565,10 +536,8 @@ void MSYS_DefineRegion(MOUSE_REGION* const r, UINT16 const tlx, UINT16 const tly
 	r->ButtonCallback     = buttoncallback;
 	r->FastHelpTimer      = 0;
 	r->FastHelpText       = 0;
-	r->next               = 0;
-	r->prev               = 0;
 
-	MSYS_AddRegionToList(r);
+  MSYS_RegList.AddRegion(r);
 	gfRefreshUpdate = TRUE;
 }
 
@@ -604,10 +573,9 @@ void MSYS_RemoveRegion(MOUSE_REGION* const r)
 	if (r->FastHelpText)
 	{
 		MemFree(r->FastHelpText);
-		r->FastHelpText = 0;
 	}
 
-	MSYS_DeleteRegionFromList(r);
+	MSYS_RegList.DeleteRegion(r);
 
 	if (MSYS_PrevRegion  == r) MSYS_PrevRegion  = 0;
 	if (MSYS_CurrRegion  == r) MSYS_CurrRegion  = 0;
@@ -685,12 +653,7 @@ void MOUSE_REGION::SetFastHelpText(wchar_t const* const text)
 
 static UINT32 GetNumberOfLinesInHeight(const wchar_t* String)
 {
-	UINT32 Lines = 1;
-	for (const wchar_t* i = String; *i != L'\0'; i++)
-	{
-		if (*i == L'\n') Lines++;
-	}
-	return Lines;
+  return std::count(String, String + wcslen(String), L'\n') + 1;
 }
 
 

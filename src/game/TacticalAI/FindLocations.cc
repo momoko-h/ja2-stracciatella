@@ -176,14 +176,14 @@ static INT8 CalcBestCTGT(SOLDIERTYPE* const pSoldier, const SOLDIERTYPE* const o
 
 	// precalculate these for speed
 	// what was struct for?
-	sNorthGridNo = NewGridNo( sCentralGridNo, DirectionInc(NORTH) );
-	sSouthGridNo = NewGridNo( sCentralGridNo, DirectionInc(SOUTH) );
+	sNorthGridNo = AdjacentGridNo( sCentralGridNo, NORTH);
+	sSouthGridNo = AdjacentGridNo( sCentralGridNo, SOUTH);
 
 	// look into all 8 adjacent tiles & determine where the cover is the worst
 	for (sDir = 0; sDir < 8; sDir++)
 	{
 		// get the gridno of the adjacent spot lying in that direction
-		sAdjSpot = NewGridNo( sCentralGridNo, DirectionInc( sDir ) );
+		sAdjSpot = AdjacentGridNo( sCentralGridNo, sDir);
 
 		// if it wasn't out of bounds
 		if (sAdjSpot != sCentralGridNo)
@@ -483,7 +483,7 @@ static UINT8 NumberOfTeamMatesAdjacent(SOLDIERTYPE* pSoldier, INT16 sGridNo)
 
 	for (UINT8 ubLoop = 0; ubLoop < NUM_WORLD_DIRECTIONS; ++ubLoop)
 	{
-		sTempGridNo = NewGridNo( sGridNo, DirectionInc( ubLoop ) );
+		sTempGridNo = AdjacentGridNo(sGridNo, ubLoop);
 		if ( sTempGridNo != sGridNo )
 		{
 			const SOLDIERTYPE* const tgt = WhoIsThere2(sGridNo, pSoldier->bLevel);

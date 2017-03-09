@@ -93,6 +93,7 @@ static const DOUBLE gClimbUpRoofDistGoingLower[NUMSOLDIERBODYTYPES] = { 0.9, 0.1
 static void CheckForAndHandleSoldierIncompacitated(SOLDIERTYPE* pSoldier);
 static BOOLEAN CheckForImproperFireGunEnd(SOLDIERTYPE* pSoldier);
 static BOOLEAN HandleUnjamAnimation(SOLDIERTYPE* pSoldier);
+static GridNo GetNextGridNo(SOLDIERTYPE const *pSoldier);
 
 
 BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
@@ -238,7 +239,6 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 		      // re-enable sight
 		      gTacticalStatus.uiFlags &= (~DISALLOW_SIGHT);
 					{
-						//usNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( pSoldier->bDirection ) );
 						EVENT_SetSoldierPosition(pSoldier, pSoldier->sTempNewGridNo, SSP_NONE);
 					}
 					// Move two CC directions
@@ -407,12 +407,6 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 
 				case 437:
 
-					// CHANGE DIRECTION AND GET-UP
-					//sGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, (-1 * DirectionInc( pSoldier->bDirection ) ) );
-					//ConvertGridNoToCenterCellXY(pSoldier->sGridNo, &sXPos, &sYPos);
-					//SetSoldierPosition( pSoldier, (FLOAT)sXPos, (FLOAT)sYPos );
-
-
 					// Reverse direction
 					EVENT_SetSoldierDirection(pSoldier, OppositeDirection(pSoldier->bDirection));
 					EVENT_SetSoldierDesiredDirection( pSoldier, pSoldier->bDirection );
@@ -472,7 +466,7 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 					LightSpritePower(l, TRUE);
 
 					// Get one move forward
-					const UINT16 usNewGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(pSoldier->bDirection));
+					const UINT16 usNewGridNo = GetNextGridNo(pSoldier);
 					INT16 x;
 					INT16 y;
 					ConvertGridNoToXY(usNewGridNo, &x, &y);
@@ -593,7 +587,7 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 
 						// TRY FORWARDS...
 						// FIRST GRIDNO
-						sNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( pSoldier->bDirection ) );
+						sNewGridNo = GetNextGridNo(pSoldier);
 
 						if ( OKFallDirection( pSoldier, sNewGridNo, pSoldier->bLevel, pSoldier->bDirection, FALLFORWARD_HITDEATH_STOP ) )
 						{
@@ -749,11 +743,9 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 
 					//CODE: BEGINHOPFENCE
 					// MOVE TWO FACGIN GRIDNOS
-					sNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( pSoldier->bDirection ) );
-					sNewGridNo = NewGridNo( (UINT16)sNewGridNo, DirectionInc( pSoldier->bDirection ) );
-					pSoldier->sForcastGridno = sNewGridNo;
-					break;
-
+          sNewGridNo = NewGridNo(pSoldier->sGridNo, 2 * DirectionInc(pSoldier->bDirection));
+          pSoldier->sForcastGridno = sNewGridNo;
+          break;
 
 				case 451:
 
@@ -914,7 +906,7 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 					// Set new gridno
 					{
 						//Get Next GridNo;
-						const GridNo sTempGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(pSoldier->bDirection));
+						const GridNo sTempGridNo = GetNextGridNo(pSoldier);
 
 						// Set position
 						EVENT_SetSoldierPosition(pSoldier, sTempGridNo, SSP_NONE);
@@ -3426,7 +3418,7 @@ void KickOutWheelchair( SOLDIERTYPE *pSoldier )
 	INT16 sNewGridNo;
 
 	// Move forward one gridno....
-	sNewGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( pSoldier->bDirection ) );
+	sNewGridNo = GetNextGridNo(pSoldier);
 
 	// ATE: Make sure that the gridno is unoccupied!
 	if ( !NewOKDestination( pSoldier, sNewGridNo, TRUE, pSoldier->bLevel ) )
@@ -3452,4 +3444,8 @@ void KickOutWheelchair( SOLDIERTYPE *pSoldier )
 		gMercProfiles[ pSoldier->ubProfile ].ubBodyType = REGMALE;
 	}
 
+}
+
+static GridNo GetNextGridNo(SOLDIERTYPE const *pSoldier) {
+  return AdjacentGridNo(pSoldier->sGridNo, pSoldier->bDirection);
 }

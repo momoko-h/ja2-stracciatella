@@ -1,4 +1,5 @@
 // Rewritten mostly by Kris Morness
+#include <memory>
 #include  <stdexcept>
 
 #include "Button_Sound_Control.h"
@@ -122,10 +123,10 @@ const ButtonDimensions* GetDimensionsOfButtonPic(const BUTTON_PICS* const pics)
 }
 
 
-static HVOBJECT GenericButtonOffNormal;
-static HVOBJECT GenericButtonOffHilite;
-static HVOBJECT GenericButtonOnNormal;
-static HVOBJECT GenericButtonOnHilite;
+static std::unique_ptr<SGPVObject> GenericButtonOffNormal;
+static std::unique_ptr<SGPVObject> GenericButtonOffHilite;
+static std::unique_ptr<SGPVObject> GenericButtonOnNormal;
+static std::unique_ptr<SGPVObject> GenericButtonOnHilite;
 static UINT16   GenericButtonFillColors;
 
 static HVOBJECT GenericButtonIcons[MAX_BUTTON_ICONS];
@@ -312,10 +313,8 @@ static void InitializeButtonImageManager(void)
 		pics->OnHilite  = -1;
 	}
 
-	// Blank out all Generic button data
-	GenericButtonOffNormal  = NULL;
+	// Blank out all optional Generic button data
 	GenericButtonOffHilite  = NULL;
-	GenericButtonOnNormal   = NULL;
 	GenericButtonOnHilite   = NULL;
 	GenericButtonFillColors = 0;
 
@@ -324,8 +323,8 @@ static void InitializeButtonImageManager(void)
 		GenericButtonIcons[x] = NULL;
 
 	// Load the default generic button images
-	GenericButtonOffNormal = AddVideoObjectFromFile(DEFAULT_GENERIC_BUTTON_OFF);
-	GenericButtonOnNormal  = AddVideoObjectFromFile(DEFAULT_GENERIC_BUTTON_ON);
+	GenericButtonOffNormal = SP::AddVideoObjectFromFile(DEFAULT_GENERIC_BUTTON_OFF);
+	GenericButtonOnNormal  = SP::AddVideoObjectFromFile(DEFAULT_GENERIC_BUTTON_ON);
 
 	/* Load up the off hilite and on hilite images. We won't check for errors
 	 * because if the file doesn't exists, the system simply ignores that file.
@@ -334,12 +333,12 @@ static void InitializeButtonImageManager(void)
 	 */
 	try
 	{
-		GenericButtonOffHilite = AddVideoObjectFromFile(DEFAULT_GENERIC_BUTTON_OFF_HI);
+		GenericButtonOffHilite = SP::AddVideoObjectFromFile(DEFAULT_GENERIC_BUTTON_OFF_HI);
 	}
 	catch (...) { /* see comment above */ }
 	try
 	{
-		GenericButtonOnHilite  = AddVideoObjectFromFile(DEFAULT_GENERIC_BUTTON_ON_HI);
+		GenericButtonOnHilite  = SP::AddVideoObjectFromFile(DEFAULT_GENERIC_BUTTON_ON_HI);
 	}
 	catch (...) { /* see comment above */ }
 
@@ -395,31 +394,6 @@ static void ShutdownButtonImageManager(void)
 	FOR_EACH(BUTTON_PICS, i, ButtonPictures)
 	{
 		if (i->vobj != NULL) UnloadButtonImage(i);
-	}
-
-	// Remove all GenericButton images
-	if (GenericButtonOffNormal != NULL)
-	{
-		DeleteVideoObject(GenericButtonOffNormal);
-		GenericButtonOffNormal = NULL;
-	}
-
-	if (GenericButtonOffHilite != NULL)
-	{
-		DeleteVideoObject(GenericButtonOffHilite);
-		GenericButtonOffHilite = NULL;
-	}
-
-	if (GenericButtonOnNormal != NULL)
-	{
-		DeleteVideoObject(GenericButtonOnNormal);
-		GenericButtonOnNormal = NULL;
-	}
-
-	if (GenericButtonOnHilite != NULL)
-	{
-		DeleteVideoObject(GenericButtonOnHilite);
-		GenericButtonOnHilite = NULL;
 	}
 
 	GenericButtonFillColors = 0;
@@ -1145,7 +1119,7 @@ static void DrawQuickButton(const GUI_BUTTON* b)
 		}
 	}
 
-	BltVideoObject(ButtonDestBuffer, pics->vobj, UseImage, b->X(), b->Y());
+  pics->vobj->Blit(ButtonDestBuffer, UseImage, b->X(), b->Y());
 }
 
 
@@ -1245,7 +1219,7 @@ static void DrawCheckBoxButton(const GUI_BUTTON *b)
 		}
 	}
 
-	BltVideoObject(ButtonDestBuffer, pics->vobj, UseImage, b->X(), b->Y());
+  pics->vobj->Blit(ButtonDestBuffer, UseImage, b->X(), b->Y());
 }
 
 
@@ -1337,7 +1311,7 @@ static void DrawIconOnButton(const GUI_BUTTON* b)
 	// Set the clipping rectangle to the viewable area of the button
 	SetClippingRect(&NewClip);
 
-	BltVideoObject(ButtonDestBuffer, hvObject, b->usIconIndex, xp, yp);
+  hvObject->Blit(ButtonDestBuffer, b->usIconIndex, xp, yp);
 
 	// Restore previous clip region
 	SetClippingRect(&OldClip);
@@ -1524,16 +1498,10 @@ static void DrawTextOnButton(const GUI_BUTTON* b)
 }
 
 
-/* This function is called by the DrawIconicButton and DrawTextButton routines
- * to draw the borders and background of the buttons.
- */
-static void DrawGenericButton(const GUI_BUTTON* b)
-{
-	// Select the graphics to use depending on the current state of the button
-	HVOBJECT BPic;
+// Helper function for DrawGenericButton
+static std::unique_ptr<SGPVObject> & DetermineButton(const GUI_BUTTON *b) {
 	if (!b->Enabled())
 	{
-		BPic = GenericButtonOffNormal;
 		switch (b->bDisabledStyle)
 		{
 			case GUI_BUTTON::DISABLED_STYLE_DEFAULT:
@@ -1547,29 +1515,40 @@ static void DrawGenericButton(const GUI_BUTTON* b)
 				gbDisabledButtonStyle = b->bDisabledStyle;
 				break;
 		}
+    return GenericButtonOffNormal;
 	}
 	else if (b->Clicked())
 	{
 		if  (b->Area.uiFlags & MSYS_MOUSE_IN_AREA && GenericButtonOnHilite != NULL && gfRenderHilights)
 		{
-			BPic = GenericButtonOnHilite;
+			return GenericButtonOnHilite;
 		}
 		else
 		{
-			BPic = GenericButtonOnNormal;
+			return GenericButtonOnNormal;
 		}
 	}
 	else
 	{
 		if (b->Area.uiFlags & MSYS_MOUSE_IN_AREA && GenericButtonOffHilite != NULL && gfRenderHilights)
 		{
-			BPic = GenericButtonOffHilite;
+			return GenericButtonOffHilite;
 		}
 		else
 		{
-			BPic = GenericButtonOffNormal;
+			return GenericButtonOffNormal;
 		}
 	}
+}
+
+
+/* This function is called by the DrawIconicButton and DrawTextButton routines
+ * to draw the borders and background of the buttons.
+ */
+static void DrawGenericButton(const GUI_BUTTON* b)
+{
+	// Select the graphics to use depending on the current state of the button
+  std::unique_ptr<SGPVObject> &BPic = DetermineButton(b);
 
 	const INT32 iBorderWidth  = 3;
 	const INT32 iBorderHeight = 2;
@@ -1602,27 +1581,27 @@ static void DrawGenericButton(const GUI_BUTTON* b)
 	{
 		INT32 const ImgNum = (q == 0 ? 0 : 1);
 		INT32 const x = bx + q * iBorderWidth;
-		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic, x,  by, ImgNum,     &ClipRect);
-		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic, x,  cy, ImgNum + 5, &ClipRect);
+		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic.get(), x,  by, ImgNum,     &ClipRect);
+		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic.get(), x,  cy, ImgNum + 5, &ClipRect);
 	}
 	// Blit the right side corners
-	Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic, cx, by, 2, &ClipRect);
-	Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic, cx, cy, 7, &ClipRect);
+	Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic.get(), cx, by, 2, &ClipRect);
+	Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic.get(), cx, cy, 7, &ClipRect);
 	// Draw the vertical members of the button's borders
 	NumChunksHigh--;
 
 	if (hremain != 0)
 	{
 		INT32 const y = by + NumChunksHigh * iBorderHeight - iBorderHeight + hremain;
-		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic, bx, y, 3, &ClipRect);
-		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic, cx, y, 4, &ClipRect);
+		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic.get(), bx, y, 3, &ClipRect);
+		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic.get(), cx, y, 4, &ClipRect);
 	}
 
 	for (INT32 q = 1; q < NumChunksHigh; q++)
 	{
 		INT32 const y = by + q * iBorderHeight;
-		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic, bx, y, 3, &ClipRect);
-		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic, cx, y, 4, &ClipRect);
+		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic.get(), bx, y, 3, &ClipRect);
+		Blt8BPPDataTo16BPPBufferTransparentClip(pDestBuf, uiDestPitchBYTES, BPic.get(), cx, y, 4, &ClipRect);
 	}
 }
 

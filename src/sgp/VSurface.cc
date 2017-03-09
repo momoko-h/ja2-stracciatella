@@ -143,6 +143,12 @@ void SGPVSurface::ShadowRectUsingLowPercentTable(INT32 const x1, INT32 const y1,
 	InternalShadowVideoSurfaceRect(this, x1, y1, x2, y2, IntensityTable);
 }
 
+
+void SGPVSurface::Blit(SGPVSurface* const dst, INT32 const iDestX, INT32 const iDestY, SGPBox const* const src_box) {
+  BltVideoSurface(dst, this, iDestX, iDestY, src_box);
+}
+
+
 SGPVSurface* g_back_buffer;
 SGPVSurface* g_frame_buffer;
 SGPVSurface* g_mouse_buffer;

@@ -1720,7 +1720,7 @@ INT8 DecideActionRed(SOLDIERTYPE *pSoldier, UINT8 ubUnconsciousOK)
 				const UINT8 ubOpponentDir = GetDirectionFromGridNo(BestThrow.sTarget, pSoldier);
 
 				// Get new gridno!
-				sCheckGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( ubOpponentDir ) );
+				sCheckGridNo = AdjacentGridNo(pSoldier->sGridNo, ubOpponentDir);
 
 				if ( !OKFallDirection( pSoldier, sCheckGridNo, pSoldier->bLevel, ubOpponentDir, pSoldier->usAnimState ) )
 				{
@@ -1728,7 +1728,7 @@ INT8 DecideActionRed(SOLDIERTYPE *pSoldier, UINT8 ubUnconsciousOK)
 					BestThrow.ubPossible = FALSE;
 
 					// try behind us, see if there's room to move back
-					sCheckGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(OppositeDirection(ubOpponentDir)));
+					sCheckGridNo = AdjacentGridNo(pSoldier->sGridNo, OppositeDirection(ubOpponentDir));
 					if (OKFallDirection(pSoldier, sCheckGridNo, pSoldier->bLevel, OppositeDirection(ubOpponentDir), pSoldier->usAnimState))
 					{
 					 pSoldier->usActionData = sCheckGridNo;
@@ -2853,7 +2853,7 @@ bCanAttack = FALSE;
 				ubOpponentDir = (UINT8)GetDirectionFromGridNo( BestThrow.sTarget, pSoldier );
 
 				// Get new gridno!
-				sCheckGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( ubOpponentDir ) );
+				sCheckGridNo = AdjacentGridNo(pSoldier->sGridNo, ubOpponentDir);
 
 				if ( !OKFallDirection( pSoldier, sCheckGridNo, pSoldier->bLevel, ubOpponentDir, pSoldier->usAnimState ) )
 				{
@@ -2861,7 +2861,7 @@ bCanAttack = FALSE;
 					BestThrow.ubPossible = FALSE;
 
 					// try behind us, see if there's room to move back
-					sCheckGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(OppositeDirection(ubOpponentDir)));
+					sCheckGridNo = AdjacentGridNo(pSoldier->sGridNo, OppositeDirection(ubOpponentDir));
 					if (OKFallDirection(pSoldier, sCheckGridNo, pSoldier->bLevel, OppositeDirection(ubOpponentDir), pSoldier->usAnimState))
 					{
 					 pSoldier->usActionData = sCheckGridNo;

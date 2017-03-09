@@ -547,7 +547,7 @@ static LEVELNODE* AddStructToTailCommon(UINT32 const map_idx, UINT16 const idx, 
 		if (DB_STRUCTURE_REF const* const sr = te.pDBStructureRef)
 		{
 			// If we are NOT a wall and NOT multi-tiles, set mapelement flag
-			if (!FindStructure(map_idx, STRUCTURE_WALLSTUFF) && sr->pDBStructure->ubNumberOfTiles == 1) // XXX TODO0015
+			if (!FindStructure(map_idx, STRUCTURE_WALLSTUFF) && sr->TileCount() == 1) // XXX TODO0015
 			{
 				me.ubExtFlags[0] |= MAPELEMENT_EXT_NOBURN_STRUCT;
 			}
@@ -604,7 +604,7 @@ void AddStructToHead(UINT32 const map_idx, UINT16 const idx)
 		if (DB_STRUCTURE_REF const* const sr = te.pDBStructureRef)
 		{
 			// If we are NOT a wall and NOT multi-tiles, set mapelement flag
-			if (FindStructure(map_idx, STRUCTURE_WALLSTUFF) && sr->pDBStructure->ubNumberOfTiles == 1) // XXX TODO0015
+			if (FindStructure(map_idx, STRUCTURE_WALLSTUFF) && sr->TileCount() == 1) // XXX TODO0015
 			{
 				me.ubExtFlags[0] |= MAPELEMENT_EXT_NOBURN_STRUCT;
 			}
@@ -1137,7 +1137,7 @@ BOOLEAN AddMercStructureInfoFromAnimSurface(const INT16 sGridNo, SOLDIERTYPE* co
 	}
 
 	// Turn on if we are multi-tiled
-	if (sr->pDBStructure->ubNumberOfTiles > 1) s->uiStatusFlags |= SOLDIER_MULTITILE;
+	if (sr->TileCount() > 1) s->uiStatusFlags |= SOLDIER_MULTITILE;
 
 	return success;
 }

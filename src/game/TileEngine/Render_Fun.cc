@@ -130,12 +130,10 @@ void ExamineGridNoForSlantRoofExtraGraphic(GridNo const check_grid_no)
 	LEVELNODE*                const node         = FindLevelNodeBasedOnStructure(base);
 	bool                      const hidden       = node->uiFlags & LEVELNODE_HIDDEN;
 	GridNo                    const base_grid_no = base->sGridNo;
-	DB_STRUCTURE_TILE* const* const tile         = base->pDBStructureRef->ppTile;
-	DB_STRUCTURE_TILE* const* const end          = tile + base->pDBStructureRef->pDBStructure->ubNumberOfTiles;
 	// Loop through each gridno and see if revealed
-	for (DB_STRUCTURE_TILE* const* i = tile; i != end; ++i)
+  for (auto &i : base->pDBStructureRef->ppTile)
 	{
-		GridNo const grid_no = base_grid_no + (*i)->sPosRelToBase;
+		GridNo const grid_no = base_grid_no + i->sPosRelToBase;
 		if (grid_no < 0 || WORLD_MAX < grid_no) continue;
 
 		if (gpWorldLevelData[grid_no].uiFlags & MAPELEMENT_REVEALED)

@@ -54,6 +54,9 @@ class SGPVSurface
 		// Blits a video Surface to another video Surface
 		friend void BltVideoSurface(SGPVSurface* dst, SGPVSurface* src, INT32 iDestX, INT32 iDestY, SGPBox const* src_rect);
 
+    // Same as above as a method
+    void Blit(SGPVSurface* dst, int32_t iDestX, int32_t iDestY, SGPBox const* src_rect);
+
 		/* This function will stretch the source image to the size of the dest rect.
 		 * If the 2 images are not 16 Bpp, it returns false. */
 		friend void BltStretchVideoSurface(SGPVSurface* dst, SGPVSurface const* src, SGPBox const* src_rect, SGPBox const* dst_rect);

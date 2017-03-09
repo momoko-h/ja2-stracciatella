@@ -244,6 +244,11 @@ void SGPVObject::Blit(SGPVSurface* const dst, uint16_t const usRegionIndex, int3
 }
 
 
+void SGPVObject::Blit(std::unique_ptr<SGPVSurface> &dst, uint16_t const usRegionIndex, int32_t iDestX, int32_t iDestY) const {
+  Blit(dst.get(), usRegionIndex, iDestX, iDestY);
+}
+
+
 void InitializeVideoObjectManager(void)
 {
 	//Shouldn't be calling this if the video object manager already exists.

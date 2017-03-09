@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <functional>
 #include <random>
+#include <boost/algorithm/clamp.hpp>
 #include "Soldier_Create.h"
 #include "Overhead.h"
 #include "Soldier_Profile.h"
@@ -96,6 +98,7 @@ UINT8 gubItemDroppableFlag[NUM_INV_SLOTS] =
 	0
 };
 
+using boost::algorithm::clamp;
 
 void RandomizeNewSoldierStats( SOLDIERCREATE_STRUCT *pCreateStruct )
 {
@@ -1085,13 +1088,7 @@ INT8 CalcDifficultyModifier( UINT8 ubSoldierClass )
 	// Assert( bDiffModifier <= 100 );
 
 	// limit the range of the combined factors to between 0 and 100
-	bDiffModifier = __max(   0, bDiffModifier );
-	bDiffModifier = __min( 100, bDiffModifier );
-
-	// DON'T change this function without carefully considering the impact on GenerateRandomEquipment(),
-	// CreateDetailedPlacementGivenBasicPlacementInfo(), and SoldierDifficultyLevel().
-
-	return(bDiffModifier);
+  return clamp(bDiffModifier, 0, 100);
 }
 
 
@@ -1315,11 +1312,11 @@ void CreateDetailedPlacementGivenBasicPlacementInfo( SOLDIERCREATE_STRUCT *pp, B
 	// clamp experience level to 1-9 or the externalised values (elites only)
 	if (ubSoldierClass == SOLDIER_CLASS_ELITE)
 	{
-		pp->bExpLevel = MAX(gamepolicy(enemy_elite_minimum_level), pp->bExpLevel);
-		pp->bExpLevel = MIN(gamepolicy(enemy_elite_maximum_level), pp->bExpLevel);
+		pp->bExpLevel = clamp(pp->bExpLevel, gamepolicy(enemy_elite_minimum_level), gamepolicy(enemy_elite_maximum_level));
 	} else {
-		pp->bExpLevel = MAX(1, pp->bExpLevel); //minimum exp. level of 1
-		pp->bExpLevel = MIN(9, pp->bExpLevel); //maximum exp. level of 9
+		//minimum exp. level of 1
+		//maximum exp. level of 9
+    pp->bExpLevel = clamp(pp->bExpLevel, 1, 9);
 	}
 
 	ubStatsLevel = pp->bExpLevel + bStatsModifier;
@@ -1649,8 +1646,9 @@ void ModifySoldierAttributesWithNewRelativeLevel( SOLDIERTYPE *s, INT8 bRelative
 	// Rel level 0: Lvl 1, 1: Lvl 2-3, 2: Lvl 4-5, 3: Lvl 6-7, 4: Lvl 8-9
 	s->bExpLevel = (INT8)(2 * bRelativeAttributeLevel + Random(2));
 
-	s->bExpLevel = MAX( 1, s->bExpLevel ); //minimum level of 1
-	s->bExpLevel = MIN( 9, s->bExpLevel ); //maximum level of 9
+	//minimum level of 1
+	//maximum level of 9
+  s->bExpLevel = clamp(s->bExpLevel, 1, 9);
 
 	//Set the minimum base attribute
 	bBaseAttribute = 49 + ( 4 * s->bExpLevel );
@@ -1842,8 +1840,7 @@ void RandomizeRelativeLevel( INT8 *pbRelLevel, UINT8 ubSoldierClass )
 	if ( SOLDIER_CLASS_MILITIA( ubSoldierClass ) )
 	{
 		// Militia never get to roll bad/great results at all (to avoid great equipment drops from them if killed)
-		bAdjustedRoll = __max( 1, bAdjustedRoll );
-		bAdjustedRoll = __min( 8, bAdjustedRoll );
+    bAdjustedRoll = clamp(bAdjustedRoll, 1, 8);
 		if( IsAutoResolveActive() )
 		{ //Artificially strengthen militia strength for sake of gameplay
 			bAdjustedRoll++;
@@ -1852,8 +1849,7 @@ void RandomizeRelativeLevel( INT8 *pbRelLevel, UINT8 ubSoldierClass )
 	else
 	{
 		// max-min this to a range of 0-9
-		bAdjustedRoll = __max( 0, bAdjustedRoll );
-		bAdjustedRoll = __min( 9, bAdjustedRoll );
+    bAdjustedRoll = clamp(bAdjustedRoll, 0, 9);
 		if( IsAutoResolveActive() )
 		{ //Artificially weaken enemy/creature strength for sake of gameplay
 			if( bAdjustedRoll > 0 )

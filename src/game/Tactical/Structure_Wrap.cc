@@ -10,28 +10,6 @@
 #include "StrategicMap.h"
 #include "Rotting_Corpses.h"
 
-
-BOOLEAN	IsFencePresentAtGridno( INT16 sGridNo )
-{
-	if ( FindStructure( sGridNo, STRUCTURE_ANYFENCE ) != NULL )
-	{
-		return( TRUE );
-	}
-
-	return( FALSE );
-}
-
-BOOLEAN	IsRoofPresentAtGridno( INT16 sGridNo )
-{
-	if ( FindStructure( sGridNo, STRUCTURE_ROOF ) != NULL )
-	{
-		return( TRUE );
-	}
-
-	return( FALSE );
-}
-
-
 BOOLEAN	IsJumpableWindowPresentAtGridNo( INT32 sGridNo, INT8 bStartingDir)
 {
 	STRUCTURE const* pStructure = FindStructure( sGridNo, STRUCTURE_WALLNWINDOW );
@@ -82,17 +60,6 @@ BOOLEAN	IsJumpableFencePresentAtGridno( INT16 sGridNo )
 }
 
 
-BOOLEAN	IsTreePresentAtGridno( INT16 sGridNo )
-{
-	if ( FindStructure( sGridNo, STRUCTURE_TREE ) != NULL )
-	{
-		return( TRUE );
-	}
-
-	return( FALSE );
-}
-
-
 STRUCTURE* GetWallStructOfSameOrientationAtGridno(GridNo const grid_no, INT8 const orientation)
 {
 	FOR_EACH_STRUCTURE(pStructure, grid_no, STRUCTURE_WALLSTUFF)
@@ -124,12 +91,12 @@ BOOLEAN IsDoorVisibleAtGridNo( INT16 sGridNo )
 			case OUTSIDE_TOP_LEFT:
 
 				// Here, check north direction
-				sNewGridNo = NewGridNo( sGridNo, DirectionInc( NORTH ) );
+				sNewGridNo = AdjacentGridNo(sGridNo, NORTH);
 
 				if ( IsRoofVisible2( sNewGridNo ) )
 				{
 					// OK, now check south, if true, she's not visible
-					sNewGridNo = NewGridNo( sGridNo, DirectionInc( SOUTH ) );
+					sNewGridNo = AdjacentGridNo(sGridNo, SOUTH);
 
 					if ( IsRoofVisible2( sNewGridNo ) )
 					{
@@ -142,12 +109,12 @@ BOOLEAN IsDoorVisibleAtGridNo( INT16 sGridNo )
 			case OUTSIDE_TOP_RIGHT:
 
 				// Here, check west direction
-				sNewGridNo = NewGridNo( sGridNo, DirectionInc( WEST ) );
+				sNewGridNo = AdjacentGridNo(sGridNo, WEST);
 
 				if ( IsRoofVisible2( sNewGridNo ) )
 				{
 					// OK, now check south, if true, she's not visible
-					sNewGridNo = NewGridNo( sGridNo, DirectionInc( EAST ) );
+					sNewGridNo = AdjacentGridNo(sGridNo, EAST);
 
 					if ( IsRoofVisible2( sNewGridNo ) )
 					{
@@ -268,7 +235,7 @@ BOOLEAN OpenLeftOrientedDoorWithDoorOnLeftOfEdgeExists( INT16 sGridNo )
 }
 
 
-static STRUCTURE* FindCuttableWireFenceAtGridNo(INT16 sGridNo)
+STRUCTURE* FindCuttableWireFenceAtGridNo(INT16 sGridNo)
 {
 	STRUCTURE * pStructure;
 
@@ -298,13 +265,8 @@ BOOLEAN CutWireFence( INT16 sGridNo )
 	return( FALSE );
 }
 
-BOOLEAN IsCuttableWireFenceAtGridNo( INT16 sGridNo )
-{
-	return( FindCuttableWireFenceAtGridNo( sGridNo ) != NULL );
-}
 
-
-BOOLEAN IsRepairableStructAtGridNo(const INT16 sGridNo, SOLDIERTYPE** const tgt)
+uint8_t IsRepairableStructAtGridNo(const INT16 sGridNo, SOLDIERTYPE** const tgt)
 {
 	// OK, first look for a vehicle....
 	SOLDIERTYPE* const s = WhoIsThere2(sGridNo, 0);
@@ -333,51 +295,16 @@ SOLDIERTYPE* GetRefuelableStructAtGridNo(INT16 sGridNo)
 
 INT16 FindDoorAtGridNoOrAdjacent( INT16 sGridNo )
 {
-	STRUCTURE * pStructure;
-	STRUCTURE * pBaseStructure;
-	INT16				sTestGridNo;
+  auto FindBaseGridNo = [] (GridNo gn) -> GridNo {
+    auto pStructure = FindStructure(gn, STRUCTURE_ANYDOOR);
+    return pStructure ? FindBaseStructure(pStructure)->sGridNo : 0;
+  };
 
-	sTestGridNo = sGridNo;
-	pStructure = FindStructure( sTestGridNo, STRUCTURE_ANYDOOR );
-	if (pStructure)
-	{
-		pBaseStructure = FindBaseStructure( pStructure );
-		return( pBaseStructure->sGridNo );
-	}
-
-	sTestGridNo = sGridNo + DirectionInc( NORTH );
-	pStructure = FindStructure( sTestGridNo, STRUCTURE_ANYDOOR );
-	if (pStructure)
-	{
-		pBaseStructure = FindBaseStructure( pStructure );
-		return( pBaseStructure->sGridNo );
-	}
-
-	sTestGridNo = sGridNo + DirectionInc( WEST );
-	pStructure = FindStructure( sTestGridNo, STRUCTURE_ANYDOOR );
-	if (pStructure)
-	{
-		pBaseStructure = FindBaseStructure( pStructure );
-		return( pBaseStructure->sGridNo );
-	}
-
-	return( NOWHERE );
+  return FindBaseGridNo(sGridNo) ||
+         FindBaseGridNo(sGridNo + DirectionInc(NORTH)) ||
+         FindBaseGridNo(sGridNo + DirectionInc(WEST)) ||
+         NOWHERE;
 }
-
-
-
-BOOLEAN IsCorpseAtGridNo( INT16 sGridNo, UINT8 ubLevel )
-{
-	if ( GetCorpseAtGridNo( sGridNo , ubLevel ) != NULL )
-	{
-		return( TRUE );
-	}
-	else
-	{
-		return( FALSE );
-	}
-}
-
 
 BOOLEAN SetOpenableStructureToClosed( INT16 sGridNo, UINT8 ubLevel )
 {

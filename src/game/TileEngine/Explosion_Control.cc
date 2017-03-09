@@ -450,8 +450,8 @@ static bool ExplosiveDamageStructureAtGridNo(STRUCTURE* const pCurrent, STRUCTUR
 			// Alrighty add!
 
 			// Add to every gridno structure is in
-			UINT8                     const n_tiles = base->pDBStructureRef->pDBStructure->ubNumberOfTiles;
-			DB_STRUCTURE_TILE* const* const ppTile  = base->pDBStructureRef->ppTile;
+			UINT8 const n_tiles = base->pDBStructureRef->TileCount();
+			auto const &ppTile  = base->pDBStructureRef->ppTile;
 
 			destruction_partner = orig_destruction_partner;
 
@@ -669,10 +669,10 @@ static void ExplosiveDamageGridNo(const INT16 sGridNo, const INT16 sWoundAmt, co
 		if ( pBaseStructure )
 		{
 			sBaseGridNo = pBaseStructure->sGridNo;
-			ubNumberOfTiles = pBaseStructure->pDBStructureRef->pDBStructure->ubNumberOfTiles;
+			ubNumberOfTiles = pBaseStructure->pDBStructureRef->TileCount();
 			fMultiStructure = ( ( pBaseStructure->fFlags & STRUCTURE_MULTI ) != 0 );
       ppTile = MALLOCN(DB_STRUCTURE_TILE*, ubNumberOfTiles);
-			memcpy(ppTile, pBaseStructure->pDBStructureRef->ppTile, sizeof(*ppTile) * ubNumberOfTiles);
+			memcpy(ppTile, pBaseStructure->pDBStructureRef->ppTile.data(), sizeof(*ppTile) * ubNumberOfTiles);
 
 			if ( bMultiStructSpecialFlag == -1 )
 			{

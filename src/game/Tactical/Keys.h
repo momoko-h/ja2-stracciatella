@@ -1,6 +1,7 @@
 #ifndef		_KEYS_H_
 #define		_KEYS_H_
 
+#include <vector>
 #include "Handle_Items.h"
 #include "Item_Types.h"
 #include "Types.h"
@@ -126,35 +127,26 @@ bool SoldierHasKey(SOLDIERTYPE const&, UINT8 key_id);
  * Door utils add by Kris Morness *
  **********************************/
 
-//Dynamic array of Doors.  For general game purposes, the doors that are locked and/or trapped
-//are permanently saved within the map, and are loaded and allocated when the map is loaded.  Because
-//the editor allows more doors to be added, or removed, the actual size of the DoorTable may change.
-extern DOOR *DoorTable;
-
-//Current number of doors in world.
-extern UINT8 gubNumDoors;
+extern std::vector<DOOR> DoorTable;
 //File I/O for loading the door information from the map.  This automatically allocates
 //the exact number of slots when loading.
 
-#define FOR_EACH_DOOR(iter) \
-	for (DOOR* iter = DoorTable, * const iter##__end = iter + gubNumDoors; iter != iter##__end; ++iter)
-
-void LoadDoorTableFromMap(HWFILE);
+void LoadDoorTableFromMap(HWFILE f);
 
 //Saves the existing door information to the map.  Before it actually saves, it'll verify that the
 //door still exists.  Otherwise, it'll ignore it.  It is possible in the editor to delete doors in
 //many different ways, so I opted to put it in the saving routine.
-extern void SaveDoorTableToMap( HWFILE fp );
+extern void SaveDoorTableToMap(HWFILE f);
 
 //The editor adds locks to the world.  If the gridno already exists, then the currently existing door
 //information is overwritten.
-extern void AddDoorInfoToTable( DOOR *pDoor );
+extern void AddDoorInfoToTable(DOOR *pDoor);
 //When the editor removes a door from the world, this function looks for and removes accompanying door
 //information.  If the entry is not the last entry, the last entry is move to it's current slot, to keep
 //everything contiguous.
-extern void RemoveDoorInfoFromTable( INT32 iMapIndex );
+extern void RemoveDoorInfoFromTable(GridNo iMapIndex);
 //This is the link to see if a door exists at a gridno.
-DOOR * FindDoorInfoAtGridNo( INT32 iMapIndex );
+DOOR * FindDoorInfoAtGridNo(GridNo iMapIndex);
 //Upon world deallocation, the door table needs to be deallocated.
 void TrashDoorTable(void);
 
@@ -205,7 +197,7 @@ void SaveKeyTableToSaveGameFile(HWFILE);
 void LoadKeyTableFromSaveedGameFile(HWFILE);
 
 // Returns a doors status value, NULL if not found
-DOOR_STATUS	*GetDoorStatus( INT16 sGridNo );
+DOOR_STATUS	*GetDoorStatus(GridNo sGridNo);
 
 bool AllMercsLookForDoor(GridNo);
 
@@ -219,7 +211,7 @@ void LoadLockTable(void);
 
 void ExamineDoorsOnEnteringSector();
 
-void AttachStringToDoor( INT16 sGridNo );
+void AttachStringToDoor(GridNo sGridNo );
 
 void DropKeysInKeyRing(SOLDIERTYPE&, GridNo, INT8 level, Visibility, bool add_to_drop_list, INT32 drop_list_slot, bool use_unloaded);
 
