@@ -6,21 +6,22 @@
 //	Originally by Derek Beland and Bret Rowden.
 //
 //------------------------------------------------------------------------------
-
+#include <stdexcept>
+extern "C" {
+#include "smacker.h"
+}
 #include "Cinematics.h"
 #include "Debug.h"
 #include "FileMan.h"
+#include "HImage.h"
 #include "Intro.h"
 #include "Local.h"
-//#include "Smack.h" // XXX
-
-#include "Smack_Stub.h" // XXX
+#include "Smack_Stub.h"
 #include "SoundMan.h"
 #include "Types.h"
 #include "VSurface.h"
-#include "HImage.h"
-#include "Video.h"
 #include "UILayout.h"
+#include "Video.h"
 
 #include "ContentManager.h"
 #include "GameInstance.h"
@@ -30,8 +31,8 @@ struct SMKFLIC
 {
 	HWFILE    hFileHandle;
 	Smack*    SmackerObject;
-        CHAR8     SmackerStatus;
-        SDL_Surface*    SmackBuffer;
+  CHAR8     SmackerStatus;
+  SDL_Surface*    SmackBuffer;
 	UINT32    uiFlags;
 	UINT32    uiLeft;
 	UINT32    uiTop;
@@ -44,7 +45,6 @@ struct SMKFLIC
 #define SMK_FLIC_AUTOCLOSE 0x00000008 // Close when done
 
 static SMKFLIC SmkList[4];
-static UINT32  guiSmackPixelFormat = SMACKBUFFER565;
 
 
 BOOLEAN SmkPollFlics(void)
@@ -55,24 +55,13 @@ BOOLEAN SmkPollFlics(void)
 		if (!(i->uiFlags & SMK_FLIC_PLAYING)) continue;
 		fFlicStatus = TRUE;
 
-                Smack* const smkobj = i->SmackerObject;
+    Smack* const smkobj = i->SmackerObject;
 
+    SmackDoFrame(smkobj, i->uiLeft, i->uiTop);
 
-		if (SmackWait(smkobj)) continue;
-
-                //if (SmackSkipFrames(smkobj)) continue;
-
-		{ SGPVSurface::Lock l(FRAME_BUFFER);
-                  SmackToBuffer(smkobj, i->uiLeft, i->uiTop, l.Pitch(), smkobj->Height, smkobj->Width, l.Buffer<UINT16>(), guiSmackPixelFormat);
-		  SmackDoFrame(smkobj);
-		}
-
-		// Check to see if the flic is done the last frame
-                //printf ("smk->FrameNum %u\n", smk->FrameNum);
-		// if (smk->FrameNum == smk->Frames - 1)
-                if (i->SmackerStatus == SMK_LAST )
+    if (i->SmackerStatus == SMK_LAST )
 		{
-                  if (i->uiFlags & SMK_FLIC_AUTOCLOSE) SmkCloseFlic(i);
+      if (i->uiFlags & SMK_FLIC_AUTOCLOSE) SmkCloseFlic(i);
 		}
 		else
 		{
@@ -88,9 +77,6 @@ void SmkInitialize(void)
 {
 	// Wipe the flic list clean
 	memset(SmkList, 0, sizeof(SmkList));
-
-	// Use MMX acceleration, if available
-	SmackUseMMX(1);
 }
 
 
@@ -125,55 +111,28 @@ SMKFLIC* SmkPlayFlic(const char* const filename, const UINT32 left, const UINT32
 
 
 static SMKFLIC* SmkGetFreeFlic(void);
-static void SmkSetupVideo(void);
-
 
 static SMKFLIC* SmkOpenFlic(const char* const filename)
 try
 {
 	SMKFLIC* const sf = SmkGetFreeFlic();
-	if (!sf)
-	{
-		SLOGE(DEBUG_TAG_SMK, "Out of flic slots, cannot open another");
-		return NULL;
-	}
-
 	AutoSGPFile file(GCM->openGameResForReading(filename));
 
-	//FILE* const f = GetRealFileHandleFromFileManFileHandle(file);
-
-        //printf("File Size: %u\n", FileGetSize(file));
-	// Allocate a Smacker buffer for video decompression
-        /*
-        sf->SmackBuffer = SmackBufferOpen(SMACKAUTOBLIT, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0);
-	if (sf->SmackBuffer == NULL)
-	{
-		SLOGE(DEBUG_TAG_SMK, "Can't allocate a Smacker decompression buffer");
-		return NULL;
-	}
-        */
-	sf->SmackerObject = SmackOpen( file , SMACKFILEHANDLE | SMACKTRACKS, SMACKAUTOEXTRA);
-	if (!sf->SmackerObject)
-	{
-		SLOGE(DEBUG_TAG_SMK, "Smacker won't open the SMK file");
-		return NULL;
-	}
-
-	// Make sure we have a video surface
-	SmkSetupVideo();
-
+	sf->SmackerObject = SmackOpen(file);
 	sf->hFileHandle  = file.Release();
 	sf->uiFlags     |= SMK_FLIC_OPEN;
 	return sf;
 }
-catch (...) { return 0; }
+catch (std::exception &e) {
+  SLOGE(DEBUG_TAG_SMK, "Exception during SmkOpenFlic: %s", e.what());
+  return NULL;
+}
 
 
 void SmkCloseFlic(SMKFLIC* const sf)
 {
   SmackClose(sf->SmackerObject);
-  //FileClose(sf->hFileHandle);
-  // reenable for blitting SmackBufferClose(sf->SmackBuffer);
+  FileClose(sf->hFileHandle);
   memset(sf, 0, sizeof(*sf));
 }
 
@@ -184,22 +143,5 @@ static SMKFLIC* SmkGetFreeFlic(void)
 	{
 		if (!(i->uiFlags & SMK_FLIC_OPEN)) return i;
 	}
-	return NULL;
-}
-
-
-static void SmkSetupVideo(void)
-{
-	UINT32 red;
-	UINT32 green;
-	UINT32 blue;
-	GetPrimaryRGBDistributionMasks(&red, &green, &blue);
-	if (red == 0xf800 && green == 0x07e0 && blue == 0x001f)
-	{
-		guiSmackPixelFormat = SMACKBUFFER565;
-	}
-	else
-	{
-		guiSmackPixelFormat = SMACKBUFFER555;
-	}
+  throw std::logic_error("SmkGetFreeFlic out of flic slots");
 }

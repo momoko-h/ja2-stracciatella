@@ -85,13 +85,15 @@ static UINT32  guiPrintFrameBufferIndex;
 
 
 static SDL_Surface* MouseCursor;
+
 static SDL_Surface* FrameBuffer;
+
 static SDL_Renderer*  GameRenderer;
 SDL_Window* g_game_window;
 
 static SDL_Surface* ScreenBuffer;
 static SDL_Texture* ScreenTexture;
-static Uint32       g_window_flags = 0;
+static Uint32       g_window_flags = SDL_WINDOW_RESIZABLE;
 
 static void RecreateBackBuffer();
 static void DeletePrimaryVideoSurfaces(void);
@@ -100,24 +102,24 @@ void VideoSetFullScreen(const BOOLEAN enable)
 {
 	if (enable)
 	{
-		g_window_flags |= SDL_WINDOW_FULLSCREEN;
+		g_window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	}
 	else
 	{
-		g_window_flags &= ~SDL_WINDOW_FULLSCREEN;
+		g_window_flags &= ~SDL_WINDOW_FULLSCREEN_DESKTOP;
 	}
 }
 
 
 void VideoToggleFullScreen(void)
 {
-    if (SDL_GetWindowFlags(g_game_window) & SDL_WINDOW_FULLSCREEN)
+    if (SDL_GetWindowFlags(g_game_window) & SDL_WINDOW_FULLSCREEN_DESKTOP)
     {
         SDL_SetWindowFullscreen(g_game_window, 0);
     }
     else
     {
-        SDL_SetWindowFullscreen(g_game_window, SDL_WINDOW_FULLSCREEN);
+        SDL_SetWindowFullscreen(g_game_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
     }
 }
 
@@ -703,14 +705,6 @@ static void GetRGBDistribution()
 	gusRedShift   = f.Rshift - f.Rloss;
 	gusGreenShift = f.Gshift - f.Gloss;
 	gusBlueShift  = f.Bshift - f.Bloss;
-}
-
-
-void GetPrimaryRGBDistributionMasks(UINT32* const  RedBitMask, UINT32* const GreenBitMask, UINT32* const BlueBitMask)
-{
-	*RedBitMask   = gusRedMask;
-	*GreenBitMask = gusGreenMask;
-	*BlueBitMask  = gusBlueMask;
 }
 
 

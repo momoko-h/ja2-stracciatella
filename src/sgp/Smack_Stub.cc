@@ -2,10 +2,18 @@
 #if !defined(_MSC_VER)
   #include <strings.h>
 #endif
+#include <new>
+#include <stdexcept>
+#include "SDL_pixels.h"
+#include "SDL_timer.h"
+
+#include "Debug.h"
 #include "Smack_Stub.h"
 #include "Sound_Control.h"
 #include "SoundMan.h"
 #include "FileMan.h"
+#include "Video.h"
+#include "VSurface.h"
 
 extern "C" {
 #include "smacker.h"
@@ -13,40 +21,36 @@ extern "C" {
 
 #define SMKTRACK 0
 
-typedef unsigned char   UCHAR8;
+struct Smack
+{
+  smk Smacker; //object pointer type for libsmacker
+  SDL_Surface *Surface;
+  void *OldPixels; // the original value of Surface->pixels
+  UINT32 SoundTag; // for soundman
+  unsigned long Height;
+  unsigned long Width;
+  unsigned long Frames;
+  UINT32 MicrosecondsPerFrame;
+  UINT32 LastTick;
+};
 
-BOOLEAN SmackCheckStatus(CHAR8 smkstatus) {
+
+static void SmackCheckStatus(INT8 smkstatus) {
   if (smkstatus <0) {
-    printf ("SmackLibrary returned an error!\n");
-    return TRUE;
+    throw std::runtime_error("SmackLibrary returned an error");
   }
-  return FALSE;
 }
 
-BOOLEAN SmkVideoSwitch (smk SmkObj, BOOLEAN sw) 
-{
-  return (SmackCheckStatus ( smk_enable_video (SmkObj, sw)));
-} 
-
-BOOLEAN SmkAudioSwitch (smk SmkObj, BOOLEAN sw) {
-  return SmackCheckStatus (smk_enable_audio (SmkObj, SMKTRACK, sw));
-}
-
-void SmackPrintFlickInfo(unsigned long width, unsigned long height, UCHAR8 scale, unsigned long framecount, 
-                    DOUBLE usf, UCHAR8 a_channels, UCHAR8 a_depth, UCHAR8 a_rate)
-{
-  printf ("Video -- Frames: %lu Width: %lu Height: %lu Scale: %d \n", framecount, width, height, scale);
-  printf ("Audio -- FPS: %2.2f  Channels: %d Depth: %d Rate %d\n", usf/1000, a_channels, a_depth, a_rate);
-}
 
 // read all smackaudio and convert it to 22050Hz on the fly (44100 originally)
-UINT32 SmackGetAudio (const smk SmkObj, const INT16* audiobuffer) 
+static UINT32 SmackGetAudio (const smk SmkObj, INT16* audiobuffer) 
 {
   UINT32 n_samples = 0,  smacklen = 0;
   UINT32 i, index;
-  INT16 *smackaudio, *paudio = (INT16*) audiobuffer;
+  INT16 *smackaudio, *paudio = audiobuffer;
   if (! audiobuffer ) return 0;
-  SmkAudioSwitch  (SmkObj, ENABLE);
+
+  smk_enable_audio(SmkObj, SMKTRACK, true);
   smk_first(SmkObj);
   do {
     smacklen = smk_get_audio_size (SmkObj, SMKTRACK);
@@ -60,94 +64,94 @@ UINT32 SmackGetAudio (const smk SmkObj, const INT16* audiobuffer)
       } 
     n_samples += i;
   } while (  smk_next(SmkObj) != SMK_DONE  );
-  SmkAudioSwitch  (SmkObj, DISABLE);
+
+  smk_enable_audio(SmkObj, SMKTRACK, false);
   return n_samples;
 }
 
-void SmackWriteAudio (INT16* abuffer, UINT32 size)
+
+Smack* SmackOpen(SGPFile* FileHandle)
 {
-  FILE* fp = fopen("/tmp/smk.raw", "wb");
-  fwrite (abuffer, size, 1, fp);
-  fclose(fp);
-}
+  Smack* flickinfo = NULL;
+  INT16* audiobuffer = NULL;
 
-UCHAR8* SmackToMemory (SGPFile* File) 
-{
-  UCHAR8* smacktomemory;
-  UINT32 FileSize=FileGetSize(File);
+try {
+  flickinfo = new Smack();
+  memset(flickinfo, 0, sizeof(Smack));
 
-  smacktomemory = (UCHAR8*) malloc (FileSize);
-  if (! smacktomemory) return NULL;
-  FileRead (File, smacktomemory, FileSize);
-  return smacktomemory;
-}
+  UINT32 smacksize = FileGetSize(FileHandle);
+  uint8_t *smacktomemory = new uint8_t[smacksize];
+  FileRead (FileHandle, smacktomemory, smacksize);
+  flickinfo->Smacker = smk_open_memory(smacktomemory, smacksize);
+  // Quoting http://libsmacker.sourceforge.net , smk_open_memory:
+  // "You may free the buffer after initialization."
+  delete [] smacktomemory;
 
+  if (! flickinfo->Smacker ) throw std::runtime_error("smk_open_memory failed");
 
-Smack* SmackOpen(SGPFile* FileHandle, UINT32 Flags, UINT32 ExtraFlag)
-{
-  Smack* flickinfo;
-  // smacklib info types
-  unsigned long frame, framecount,  width, height;
-  UCHAR8 scale;
+  INT8 smkstatus;
+  smkstatus = smk_info_video(flickinfo->Smacker, &flickinfo->Width, &flickinfo->Height, NULL);
+  SmackCheckStatus(smkstatus);
+
   DOUBLE usf;
-  CHAR8 smkstatus;
+  smkstatus = smk_info_all(flickinfo->Smacker, NULL, &flickinfo->Frames, &usf);
+  SmackCheckStatus(smkstatus);
+  flickinfo->MicrosecondsPerFrame = usf;
+
+  UINT8    a_depth[7], a_channels[7];
   /* arrays for audio track metadata */
-  UCHAR8    a_depth[7], a_channels[7];
   unsigned long   a_rate[7];
-  unsigned long audiolen, audiosamples;
-  INT16* audiobuffer;
-UCHAR8* smackloaded;
-UINT32 smacksize = FileGetSize(FileHandle);
-  flickinfo = (Smack*)malloc (sizeof (Smack)); 
-  if ( ! flickinfo ) return NULL;
-
-  smackloaded = SmackToMemory (FileHandle);
-  if (! smackloaded) { free(flickinfo); return NULL; }
-  flickinfo->SmackerInMemory = smackloaded;
-  flickinfo->Smacker = smk_open_memory (smackloaded, smacksize);
-  //open file with given filehandle DISK/MEMORY mode
-  //flickinfo->Smacker = smk_open_generic(1, fp, 0, SMK_MODE_DISK);
-  //flickinfo->Smacker = smk_open_generic(1, fp, 0, SMK_MODE_MEMORY);
-  if ( ! flickinfo->Smacker ) { free(flickinfo); return NULL; }
-
-  smkstatus = smk_info_video (flickinfo->Smacker, &width, &height, &scale);
-  SmackCheckStatus(smkstatus);
-  smkstatus = smk_info_all   (flickinfo->Smacker, &frame, &framecount, &usf);
-  SmackCheckStatus(smkstatus);
   smkstatus = smk_info_audio(flickinfo->Smacker,  NULL, a_channels, a_depth, a_rate);
   SmackCheckStatus(smkstatus);
 
-  SmkVideoSwitch (flickinfo->Smacker, DISABLE);
+  flickinfo->Surface = SDL_CreateRGBSurfaceWithFormat(0,
+      flickinfo->Width, flickinfo->Height, 24, SDL_PIXELFORMAT_INDEX8);
+  if (!flickinfo->Surface) throw std::runtime_error("SDL_CreateRGBSurfaceWithFormat failed");
+  flickinfo->OldPixels = flickinfo->Surface->pixels;
 
-  flickinfo->Frames=framecount;
-  flickinfo->Height=height;
-  flickinfo->Width=width;
-  flickinfo->FramesPerSecond = usf;
   // calculated audio memory for downsampling 44100->22050
+  unsigned long audiolen, audiosamples;
   audiosamples = ( (flickinfo->Frames / (usf/1000)) * (a_rate[SMKTRACK]/2) * 16 *  a_channels[SMKTRACK]);
-  audiobuffer = (INT16*) malloc( audiosamples );
-  if ( ! audiobuffer ) { free(flickinfo); return NULL; }
+  audiobuffer = (INT16*)malloc( audiosamples );
+  if ( ! audiobuffer ) throw std::bad_alloc();
+
+  smk_enable_video(flickinfo->Smacker, false);
   audiolen = SmackGetAudio (flickinfo->Smacker, audiobuffer);
-  //SmackWriteAudio( audiobuffer, audiolen); // are getting right audio data?
+  smk_enable_video(flickinfo->Smacker, true);
+
   // shoot and forget... audiobuffer should be freed by SoundMan
-  if ( audiolen > 0 ) flickinfo->SoundTag = SoundPlayFromBuffer( audiobuffer, audiolen, MAXVOLUME, 64, 1, NULL, NULL);
-  else free(audiobuffer), audiobuffer = NULL;
-  SmkVideoSwitch  (flickinfo->Smacker, ENABLE);
-  if ( (smk_first(flickinfo->Smacker) < 0)) { printf ("First Failed!"); return NULL; }
-  smk_first(flickinfo->Smacker);
+  if (audiolen > 0) {
+    flickinfo->SoundTag = SoundPlayFromBuffer(audiobuffer, audiolen, MAXVOLUME, 64, 1, NULL, NULL);
+  } else {
+    // Ok, go on with just video, no sound
+    free(audiobuffer);
+  }
+  audiobuffer = NULL; // make sure the exception handler does not free this buffer
+
+  smkstatus = smk_first(flickinfo->Smacker);
+  SmackCheckStatus(smkstatus);
+
   flickinfo->LastTick = SDL_GetTicks();
   return flickinfo;
 }
+catch (...) {
+  if (flickinfo) SmackClose(flickinfo);
+  free(audiobuffer);
+  throw;
+}
+}
 
-
-UINT32 SmackDoFrame(Smack* Smk)
+void BlitCurrentFrame(Smack* Smk, UINT32 Left, UINT32 Top);
+void SmackDoFrame(Smack* Smk, UINT32 Left, UINT32 Top)
 {
+  BlitCurrentFrame(Smk, Left, Top);
+
   UINT32 i=0;
   // wait for FPS milliseconds
   UINT16 millisecondspassed = SDL_GetTicks() - Smk->LastTick;
   UINT16 skiptime;
   UINT16 delay, skipframes = 0;
-  DOUBLE framerate = Smk->FramesPerSecond/1000;
+  DOUBLE framerate = Smk->MicrosecondsPerFrame/1000;
 
   if (  framerate > millisecondspassed ) {
     delay = framerate-millisecondspassed;
@@ -179,94 +183,41 @@ UINT32 SmackDoFrame(Smack* Smk)
     }
   SDL_Delay(delay);
   Smk->LastTick = SDL_GetTicks();
-  return 0;
 }
 
 
-
-CHAR8 SmackNextFrame(Smack* Smk)
+INT8 SmackNextFrame(Smack* Smk)
 {
-  CHAR8 smkstatus;
-  smkstatus = smk_next(Smk->Smacker);
-  return smkstatus;
-}
-
-UINT32 SmackWait(Smack* Smk)
-{
-  return 0;
+  return smk_next(Smk->Smacker);
 }
 
 
 void SmackClose(Smack* Smk)
 {
-  if ( ! SoundStop(Smk->SoundTag) ) printf ("Error in SmackClose SoundStop\n");
-  free (Smk->SmackerInMemory);
-  smk_close (Smk->Smacker); // closes and frees Smacker Object and file
-}
-
-void SmackToBuffer(Smack* Smk, UINT32 Left, UINT32 Top, UINT32 Pitch, UINT32 DestHeight, UINT32 DestWidth, void* Buf, UINT32 Flags)
-{
-  unsigned char* smackframe, *pframe;
-  unsigned char* smackpal;
-  UINT16 i,j,pixel,*buf;
-  UINT8 *rgb;
-  UINT32 halfpitch = Pitch / 2;
-  smackframe = smk_get_video(Smk->Smacker);
-  smackpal = smk_get_palette (Smk->Smacker);
-  // dump_bmp (smackpal, smackframe, 640, 480, Smk->FrameNum);
-  buf=(UINT16*)Buf;
-  pframe=smackframe;
-  // hardcoded copy to frambuffer without taking sdl methods into account. 
-  // maybe need to find a way to blit it later
-  if (Flags == SMACKBUFFER565) 
-    {
-      buf+=Left + Top*halfpitch;
-      for (i =0; i < DestHeight ; i++) {
-        for (j = 0; j <DestWidth; j++) {
-          rgb = &smackpal[*pframe++*3] ;
-          *buf++ = (rgb[0]>>3)<<11 | (rgb[1]>>2)<<5 | rgb[2]>>3;
-        }
-        buf+=halfpitch-DestWidth;
-      }
-    }
-  else // SMACKBUFFER555
-    {
-      for (i =0; i < DestHeight ; i++) {
-        for (j = 0; j < DestWidth; j++) {
-          // get rgb offset of palette
-          rgb = &smackpal[pframe[0]*3] ;
-          // convert from rbg to rgb555 0=red 1=green 2=blue
-          pixel = (rgb[0]>>3)<<10 | (rgb[1]>>2)<<5 | rgb[2]>>3;
-          buf[(j+Top)+(i+Left)*halfpitch]=pixel;
-          pframe++;
-        }
-      }
-    }
-}
-
-// not needed for now... 
-/*
-SDL_Surface* SmackBufferOpen(UINT32 BlitType, UINT32 Width, UINT32 Height, UINT32 ZoomW, UINT32 ZoomH)
-{
-  SDL_Surface* buffer;
-  buffer = SDL_CreateRGBSurface(BlitType, Width, Height, 16, 0, 0, 0, 0);
-  if ( ! buffer ) {
-    fprintf(stderr, "CreateRGBSurface failed: %s       ", SDL_GetError());
-    exit (1);
+  if (Smk->SoundTag) SoundStop(Smk->SoundTag);
+  if (Smk->Smacker) smk_close (Smk->Smacker); // closes and frees Smacker Object and file
+  if (Smk->Surface) {
+    Smk->Surface->pixels = Smk->OldPixels;
+    SDL_FreeSurface(Smk->Surface);
   }
-  return buffer;
+  delete Smk;
 }
-*/
 
-/*
-void SmackBufferClose(SmackBuf* SBuf)
+
+void BlitCurrentFrame(Smack* Smk, UINT32 const Left, UINT32 const Top)
 {
-  free (SBuf);
-}
-*/
+  uint8_t const *smk_palette = smk_get_palette(Smk->Smacker);
+  SDL_Color sdl_palette[256];
+  for (int i = 0; i < 256; ++i) {
+    sdl_palette[i].r = smk_palette[3 * i + 0];
+    sdl_palette[i].g = smk_palette[3 * i + 1];
+    sdl_palette[i].b = smk_palette[3 * i + 2];
+    sdl_palette[i].a = 255;
+  }
 
+  SDL_SetPaletteColors(Smk->Surface->format->palette, sdl_palette, 0, 256);
+  Smk->Surface->pixels = smk_get_video(Smk->Smacker);
 
-UINT32 SmackUseMMX(UINT32 Flag)
-{
-	return 0;
+  SDL_Rect dstRect = { int(Left), int(Top), int(Smk->Width), int(Smk->Height) };
+  SDL_BlitSurface(Smk->Surface, NULL, FRAME_BUFFER->surface_, &dstRect);
 }

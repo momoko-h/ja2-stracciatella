@@ -19,6 +19,8 @@ class SGPVSurface;
 extern SGPVSurface* g_back_buffer;
 extern SGPVSurface* g_frame_buffer;
 extern SGPVSurface* g_mouse_buffer;
+struct Smack;
+extern void BlitCurrentFrame(Smack *, uint32_t, uint32_t);
 
 /** Utility wrapper around SDL_Surface. */
 class SGPVSurface
@@ -60,6 +62,9 @@ class SGPVSurface
 		/* This function will stretch the source image to the size of the dest rect.
 		 * If the 2 images are not 16 Bpp, it returns false. */
 		friend void BltStretchVideoSurface(SGPVSurface* dst, SGPVSurface const* src, SGPBox const* src_rect, SGPBox const* dst_rect);
+
+    // Allow the Smacker video functions to access our SDL_Surface *.
+    friend void BlitCurrentFrame(Smack *, uint32_t, uint32_t);
 
 	private:
 		SDL_Surface*                               surface_;
