@@ -218,7 +218,7 @@ void SLOG_LogMessage(SLOGLevel level, SLOGTopics tag, const char *format, ...)
 
     /* print time, level and tag */
     size += snprintf(buf + size, sizeof(buf) - size, "%4d/%02d/%02d %02d:%02d:%02d %-7s [%-16s] ",
-                     localTime->tm_year + 1900, localTime->tm_mon, localTime->tm_mday,
+                     localTime->tm_year + 1900, localTime->tm_mon + 1, localTime->tm_mday,
                      localTime->tm_hour, localTime->tm_min, localTime->tm_sec,
                      getLevelName(level), SLOGTags[tag]);
 
