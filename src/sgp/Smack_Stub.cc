@@ -195,7 +195,7 @@ INT8 SmackNextFrame(Smack* Smk)
 void SmackClose(Smack* Smk)
 {
   if (Smk->SoundTag) SoundStop(Smk->SoundTag);
-  if (Smk->Smacker) smk_close (Smk->Smacker); // closes and frees Smacker Object and file
+  if (Smk->Smacker) smk_close (Smk->Smacker);
   if (Smk->Surface) {
     Smk->Surface->pixels = Smk->OldPixels;
     SDL_FreeSurface(Smk->Surface);
@@ -206,16 +206,7 @@ void SmackClose(Smack* Smk)
 
 void BlitCurrentFrame(Smack* Smk, UINT32 const Left, UINT32 const Top)
 {
-  uint8_t const *smk_palette = smk_get_palette(Smk->Smacker);
-  SDL_Color sdl_palette[256];
-  for (int i = 0; i < 256; ++i) {
-    sdl_palette[i].r = smk_palette[3 * i + 0];
-    sdl_palette[i].g = smk_palette[3 * i + 1];
-    sdl_palette[i].b = smk_palette[3 * i + 2];
-    sdl_palette[i].a = 255;
-  }
-
-  SDL_SetPaletteColors(Smk->Surface->format->palette, sdl_palette, 0, 256);
+  SDL_SetPaletteColors(Smk->Surface->format->palette, (SDL_Color *)(smk_get_palette(Smk->Smacker)), 0, 256);
   Smk->Surface->pixels = smk_get_video(Smk->Smacker);
 
   SDL_Rect dstRect = { int(Left), int(Top), int(Smk->Width), int(Smk->Height) };

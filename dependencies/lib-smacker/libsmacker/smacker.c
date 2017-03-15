@@ -755,22 +755,22 @@ static char smk_render_palette(struct smk_video_t *s, unsigned char *p, unsigned
 	smk_null_check(p);
 
 	/* Allocate a placeholder for our palette. */
-	smk_malloc(t,768);
+	smk_malloc(t,1024);
 
 	i = 0; /* index into NEW palette */
 	j = 0; /* Index into OLD palette */
 
-	while ( (i < 768) && (size > 0) ) /* looping index into NEW palette */
+	while ( (i < 1024) && (size > 0) ) /* looping index into NEW palette */
 	{
 		if ((*p) & 0x80)
 		{
 			/* Copy (c + 1) color entries of the previous palette
 				to the next entries of the new palette. */
-			k = (((*p) & 0x7F) + 1) * 3;
+			k = (((*p) & 0x7F) + 1) * 4;
 			p ++; size --;
 
 			/* check for overflow condition */
-			if (i + k > 768)
+			if (i + k > 1024)
 			{
 				fprintf(stderr,"libsmacker::palette_render(s,p,size) - ERROR: overflow, 0x80 attempt to copy %d bytes from %d\n",k,i);
 				goto error;
@@ -800,14 +800,14 @@ static char smk_render_palette(struct smk_video_t *s, unsigned char *p, unsigned
 			}
 
 			/* pick "count" items to copy */
-			k = (((*p) & 0x3F) + 1) * 3;  /* count */
+			k = (((*p) & 0x3F) + 1) * 4;  /* count */
 			p ++; size --;
 
 			/* start offset of old palette */
-			j = (*p) * 3;
+			j = (*p) * 4;
 			p ++; size --;
 
-			if (j + k > 768 || i + k > 768)
+			if (j + k > 1024 || i + k > 1024)
 			{
 				fprintf(stderr,"libsmacker::palette_render(s,p,size) - ERROR: overflow, 0x40 attempt to copy %d bytes from %d to %d\n",k,j,i);
 				goto error;
@@ -838,11 +838,12 @@ static char smk_render_palette(struct smk_video_t *s, unsigned char *p, unsigned
 			t[i++] = palmap[(*p) & 0x3F];
 			p++; size --;
 			t[i++] = palmap[(*p) & 0x3F];
+      t[i++] = 255;
 			p++; size --;
 		}
 	}
 
-	if (i < 768)
+	if (i < 1024)
 	{
 		fprintf(stderr,"libsmacker::palette_render - ERROR: did not completely fill palette (idx=%u)\n",i);
 		goto error;
