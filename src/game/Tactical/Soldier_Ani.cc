@@ -3275,7 +3275,7 @@ BOOLEAN OKFallDirection( SOLDIERTYPE *pSoldier, INT16 sGridNo, INT8 bLevel, INT8
 	}
 
   //NOT ok if in water....
-	if ( GetTerrainType( sGridNo ) == MED_WATER || GetTerrainType( sGridNo ) == DEEP_WATER || GetTerrainType( sGridNo ) == LOW_WATER )
+	if (Water(sGridNo))
   {
     return( FALSE );
   }

@@ -1831,7 +1831,7 @@ void StructureHit(BULLET* const pBullet, const INT16 sXPos, const INT16 sYPos, c
 				UINT16 usMissTileIndex = FIRSTMISS1;
 
 				// Check if we are in water...
-				if ( gpWorldLevelData[ sGridNo ].ubTerrainID == LOW_WATER ||  gpWorldLevelData[ sGridNo ].ubTerrainID == DEEP_WATER )
+				if (Water(sGridNo))
 				{
 					usMissTileIndex = SECONDMISS1;
 

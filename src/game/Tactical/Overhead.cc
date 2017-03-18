@@ -5226,7 +5226,7 @@ static void HandleSuppressionFire(const SOLDIERTYPE* const targeted_merc, SOLDIE
 						}
 						break;
 					default: // standing!
-						if (pSoldier->bOverTerrainType == LOW_WATER || pSoldier->bOverTerrainType == DEEP_WATER)
+						if (pSoldier->bOverTerrainType == LOW_WATER || pSoldier->bOverTerrainType == MED_WATER || pSoldier->bOverTerrainType == DEEP_WATER)
 						{
 							// can't change stance here!
 							break;

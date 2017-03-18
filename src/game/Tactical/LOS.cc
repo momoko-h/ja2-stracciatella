@@ -4301,7 +4301,6 @@ INT32 CheckForCollision(FLOAT dX, FLOAT dY, FLOAT dZ, FLOAT dDeltaX, FLOAT dDelt
 	INT32		iCurrCubesAboveLevelZ;
 	INT16		sDesiredLevel;
 
-	MAP_ELEMENT *		pMapElement;
 	STRUCTURE *			pStructure, *pTempStructure;
 
 	SOLDIERTYPE *		pTarget;
@@ -4323,7 +4322,8 @@ INT32 CheckForCollision(FLOAT dX, FLOAT dY, FLOAT dZ, FLOAT dDeltaX, FLOAT dDelt
 	sY = (INT16)( dY / CELL_Y_SIZE );
 
 	// Check if gridno is in bounds....
-	if ( !GridNoOnVisibleWorldTile( (INT16) (sX + sY * WORLD_COLS) ) )
+  GridNo const gridNo = GridNo(sX + sY * WORLD_COLS);
+	if ( !GridNoOnVisibleWorldTile(gridNo))
 	{
 	//	return( COLLISION_NONE );
 	}
@@ -4335,7 +4335,7 @@ INT32 CheckForCollision(FLOAT dX, FLOAT dY, FLOAT dZ, FLOAT dDeltaX, FLOAT dDelt
 
 	// check a particular tile
 	// retrieve values from world for this particular tile
-	pMapElement = &(gpWorldLevelData[ sX + sY * WORLD_COLS] );
+	MAP_ELEMENT const * const pMapElement = &(gpWorldLevelData[gridNo]);
 	iLandHeight = CONVERT_PIXELS_TO_HEIGHTUNITS( pMapElement->sHeight );
 
 	// Calculate old height and new hieght in pixels
@@ -4381,7 +4381,7 @@ INT32 CheckForCollision(FLOAT dX, FLOAT dY, FLOAT dZ, FLOAT dDeltaX, FLOAT dDelt
 	if (iCurrAboveLevelZ < 0)
 	{
 		// ground is in the way!
-		if ( pMapElement->ubTerrainID == DEEP_WATER || pMapElement->ubTerrainID == LOW_WATER || pMapElement->ubTerrainID == MED_WATER )
+		if (Water(gridNo))
 		{
 			return ( COLLISION_WATER );
 		}
@@ -4421,7 +4421,7 @@ INT32 CheckForCollision(FLOAT dX, FLOAT dY, FLOAT dZ, FLOAT dDeltaX, FLOAT dDelt
 		if ( dZ < iLandHeight)
 		{
 			// ground is in the way!
-			if ( pMapElement->ubTerrainID == DEEP_WATER || pMapElement->ubTerrainID == LOW_WATER || pMapElement->ubTerrainID == MED_WATER  )
+			if (Water(gridNo))
 			{
 				return ( COLLISION_WATER );
 			}

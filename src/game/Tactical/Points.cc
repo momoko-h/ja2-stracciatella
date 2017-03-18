@@ -173,7 +173,7 @@ INT16 TerrainBreathPoints(SOLDIERTYPE * pSoldier, INT16 sGridno,INT8 bDir, UINT1
 	iPoints = iPoints * BreathPointAdjustmentForCarriedWeight( pSoldier ) / 100;
 
   // ATE - MAKE MOVEMENT ALWAYS WALK IF IN WATER
-	if ( gpWorldLevelData[ sGridno ].ubTerrainID == DEEP_WATER || gpWorldLevelData[ sGridno ].ubTerrainID == MED_WATER || gpWorldLevelData[ sGridno ].ubTerrainID == LOW_WATER )
+	if (Water(sGridno))
   {
     usMovementMode = WALKING;
   }
@@ -233,7 +233,7 @@ INT16 ActionPointCost(const SOLDIERTYPE* const pSoldier, const INT16 sGridNo, co
   }
 
   // ATE - MAKE MOVEMENT ALWAYS WALK IF IN WATER
-	if ( gpWorldLevelData[ sGridNo ].ubTerrainID == DEEP_WATER || gpWorldLevelData[ sGridNo ].ubTerrainID == MED_WATER || gpWorldLevelData[ sGridNo ].ubTerrainID == LOW_WATER )
+	if (Water(sGridNo))
   {
     usMovementMode = WALKING;
   }
@@ -1162,17 +1162,14 @@ INT8 MinPtsToMove(const SOLDIERTYPE* const pSoldier)
 INT8 PtsToMoveDirection(const SOLDIERTYPE* const pSoldier, const UINT8 bDirection)
 {
 	INT16	sGridno,sCost;
-	INT8	bOverTerrainType;
 	UINT16	usMoveModeToUse;
 
   sGridno = NewGridNo( pSoldier->sGridNo, DirectionInc( bDirection ) );
 
 	usMoveModeToUse = pSoldier->usUIMovementMode;
 
-	// ATE: Check if the new place is watter and we were tying to run....
-	bOverTerrainType = GetTerrainType( sGridno );
-
-	if ( bOverTerrainType == MED_WATER || bOverTerrainType == DEEP_WATER || bOverTerrainType == LOW_WATER )
+	// ATE: Check if the new place is water and we were tying to run....
+	if (Water(sGridno))
 	{
 		usMoveModeToUse = WALKING;
 	}

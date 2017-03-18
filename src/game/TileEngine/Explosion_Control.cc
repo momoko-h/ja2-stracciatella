@@ -179,8 +179,6 @@ void IgniteExplosionXY(SOLDIERTYPE* const owner, const INT16 sX, const INT16 sY,
 
 static void GenerateExplosionFromExplosionPointer(EXPLOSIONTYPE* pExplosion)
 {
-	UINT8			ubTerrainType;
-
 	ANITILE_PARAMS	AniParams;
 
 	// Assign param values
@@ -198,9 +196,6 @@ static void GenerateExplosionFromExplosionPointer(EXPLOSIONTYPE* pExplosion)
 
 	pExplosion->light = NULL;
 
-	// OK, if we are over water.... use water explosion...
-	ubTerrainType = GetTerrainType( sGridNo );
-
 	const ExplosionInfo* inf = &explosion_info[pExplosion->ubTypeID];
 
 	// Setup explosion!
@@ -212,7 +207,8 @@ static void GenerateExplosionFromExplosionPointer(EXPLOSIONTYPE* pExplosion)
 	AniParams.sStartFrame					= pExplosion->sCurrentFrame;
 	AniParams.uiFlags             = ANITILE_FORWARD | ANITILE_EXPLOSION;
 
-	if ( ubTerrainType == LOW_WATER || ubTerrainType == MED_WATER || ubTerrainType == DEEP_WATER )
+	// OK, if we are over water.... use water explosion...
+	if (Water(sGridNo))
 	{
 		// Change type to water explosion...
 		inf = &explosion_info[WATER_BLAST];
