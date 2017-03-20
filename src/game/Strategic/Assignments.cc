@@ -1,4 +1,3 @@
-
 #include "Assignments.h"
 #include "Auto_Resolve.h"
 #include "Directories.h"
@@ -239,34 +238,12 @@ BOOLEAN gfReEvaluateEveryonesNothingToDo = FALSE;
 #define MIN_CONDITION_TO_FIX_SAM 20
 */
 
-
-// a list of which sectors have characters
-static BOOLEAN fSectorsWithSoldiers[MAP_WORLD_X * MAP_WORLD_Y][4];
-
-
 /* No point in allowing SAM site repair any more.  Jan/13/99.  ARM
 BOOLEAN IsTheSAMSiteInSectorRepairable( INT16 sSectorX, INT16 sSectorY, INT16 sSectorZ );
 BOOLEAN SoldierInSameSectorAsSAM( SOLDIERTYPE *pSoldier );
 BOOLEAN CanSoldierRepairSAM( SOLDIERTYPE *pSoldier, INT8 bRepairPoints );
 BOOLEAN IsSoldierCloseEnoughToSAMControlPanel( SOLDIERTYPE *pSoldier );
 */
-
-
-void InitSectorsWithSoldiersList( void )
-{
-	// init list of sectors
-	memset( &fSectorsWithSoldiers, 0, sizeof( fSectorsWithSoldiers ) );
-}
-
-
-void BuildSectorsWithSoldiersList( void )
-{
-	// fills array with pressence of player controlled characters
-	CFOR_EACH_IN_TEAM(s, OUR_TEAM)
-	{
-		fSectorsWithSoldiers[s->sSectorX + s->sSectorY * MAP_WORLD_X][s->bSectorZ] = TRUE;
-	}
-}
 
 
 void ChangeSoldiersAssignment( SOLDIERTYPE *pSoldier, INT8 bAssignment )
@@ -915,12 +892,6 @@ void UpdateAssignments()
 {
 	INT8 sX,sY, bZ;
 
-	// init sectors with soldiers list
-	InitSectorsWithSoldiersList( );
-
-	// build list
-	BuildSectorsWithSoldiersList(  );
-
 	// handle natural healing
 	HandleNaturalHealing( );
 
@@ -946,7 +917,7 @@ void UpdateAssignments()
 			for( bZ = 0; bZ < 4; bZ++)
 			{
 				// is there anyone in this sector?
-				if (fSectorsWithSoldiers[sX + sY * MAP_WORLD_X][bZ])
+				if (IsThereASoldierInThisSector(sX, sY, bZ))
 				{
 					// handle any doctors
 					HandleDoctorsInSector( sX, sY, bZ );
@@ -1498,7 +1469,7 @@ static void HealHospitalPatient(SOLDIERTYPE* pPatient, UINT16 usHealingPtsLeft);
 
 static void CheckForAndHandleHospitalPatients(void)
 {
-	if (!fSectorsWithSoldiers[HOSPITAL_SECTOR_X + HOSPITAL_SECTOR_Y * MAP_WORLD_X][0])
+  if (!IsThereASoldierInThisSector(HOSPITAL_SECTOR_X, HOSPITAL_SECTOR_Y, 0))
 	{
 		// nobody in the hospital sector... leave
 		return;
@@ -6432,7 +6403,10 @@ BOOLEAN PutMercInAwakeState( SOLDIERTYPE *pSoldier )
 
 BOOLEAN IsThereASoldierInThisSector( INT16 sSectorX, INT16 sSectorY, INT8 bSectorZ )
 {
-	return fSectorsWithSoldiers[sSectorX + sSectorY * MAP_WORLD_X][bSectorZ];
+  CFOR_EACH_IN_TEAM(s, OUR_TEAM) {
+    if (s->sSectorX == sSectorX && s->sSectorY == sSectorY && s->bSectorZ == bSectorZ) return true;
+  }
+  return false;
 }
 
 

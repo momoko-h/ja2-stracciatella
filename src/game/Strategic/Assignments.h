@@ -103,13 +103,7 @@ void UpdateAssignments(void);
 
 void MakeSoldiersTacticalAnimationReflectAssignment( SOLDIERTYPE *pSoldier );
 
-// build list of sectors with mercs
-void BuildSectorsWithSoldiersList( void );
-
-// init sectors with soldiers list
-void InitSectorsWithSoldiersList( void );
-
-// is there a soldier in this sector?..only use after BuildSectorsWithSoldiersList is called
+// is there a soldier in this sector?
 BOOLEAN IsThereASoldierInThisSector( INT16 sSectorX, INT16 sSectorY, INT8 bSectorZ );
 
 void CheckIfSoldierUnassigned( SOLDIERTYPE *pSoldier );

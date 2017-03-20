@@ -981,12 +981,6 @@ static BOOLEAN MoveGroupFromSectorToSectorButAvoidLastSector(GROUP& g, INT16 con
 
 BOOLEAN MoveGroupFromSectorToSectorButAvoidPlayerInfluencedSectors(GROUP& g, INT16 const sStartX, INT16 const sStartY, INT16 const sDestX, INT16 const sDestY)
 {
-	// init sectors with soldiers in them
-	InitSectorsWithSoldiersList( );
-
-	// build the list of sectors with soldier in them
-	BuildSectorsWithSoldiersList( );
-
 	// turn on the avoid flag
 	gfPlotToAvoidPlayerInfuencedSectors = TRUE;
 
@@ -1012,12 +1006,6 @@ BOOLEAN MoveGroupFromSectorToSectorButAvoidPlayerInfluencedSectors(GROUP& g, INT
 
 BOOLEAN MoveGroupFromSectorToSectorButAvoidPlayerInfluencedSectorsAndStopOneSectorBeforeEnd(GROUP& g, INT16 const sStartX, INT16 const sStartY, INT16 const sDestX, INT16 const sDestY)
 {
-	// init sectors with soldiers in them
-	InitSectorsWithSoldiersList( );
-
-	// build the list of sectors with soldier in them
-	BuildSectorsWithSoldiersList( );
-
 	// turn on the avoid flag
 	gfPlotToAvoidPlayerInfuencedSectors = TRUE;
 
