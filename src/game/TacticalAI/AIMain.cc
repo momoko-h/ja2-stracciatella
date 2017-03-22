@@ -1448,9 +1448,9 @@ INT8 ExecuteAction(SOLDIERTYPE *pSoldier)
       {
         if ( ( gTacticalStatus.uiFlags & INCOMBAT ) )
         {
-          if ( Random( 2 ) == 0 )
+          if ( Chance(50) )
           {
-            PlaySoldierJA2Sample(pSoldier, SoundRange<BLOODCAT_GROWL_1, BLOODCAT_GROWL_4>(), HIGHVOLUME, 1, TRUE);
+            PlayRandomSoldierJA2Sample(pSoldier, BLOODCAT_GROWL_1, BLOODCAT_GROWL_4, HIGHVOLUME, 1, TRUE);
           }
         }
       }

@@ -1939,7 +1939,7 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 			{
 				case 702:
 					// Play fall to knees sound
-					PlaySoldierJA2Sample(pSoldier, SoundRange<FALL_1, FALL_2>(), HIGHVOLUME, 1, FALSE);
+					PlayRandomSoldierJA2Sample(pSoldier, FALL_1, FALL_2, HIGHVOLUME, 1, FALSE);
 					break;
 
 				case 703:
@@ -2094,7 +2094,7 @@ no_cry:
 
 				case 721:
 					// Play fall from knees to ground...
-					PlaySoldierJA2Sample(pSoldier, SoundRange<FALL_TO_GROUND_1, FALL_TO_GROUND_3>(), HIGHVOLUME, 1, FALSE);
+					PlayRandomSoldierJA2Sample(pSoldier, FALL_TO_GROUND_1, FALL_TO_GROUND_3, HIGHVOLUME, 1, FALSE);
 					if ( pSoldier->usAnimState == FALLFORWARD_FROMHIT_STAND )
 					{
 						CheckEquipmentForFragileItemDamage( pSoldier, 20 );
@@ -2137,7 +2137,7 @@ no_cry:
 				case 727:
 
 					// Swoosh
-					PlaySoldierJA2Sample(pSoldier, SoundRange<SWOOSH_1, SWOOSH_6>(), HIGHVOLUME, 1, TRUE);
+					PlayRandomSoldierJA2Sample(pSoldier, SWOOSH_1, SWOOSH_6, HIGHVOLUME, 1, TRUE);
 					break;
 
 				case 728:
@@ -2161,7 +2161,7 @@ no_cry:
 				case 731:
 
 					// Stop climb roof..
-					PlaySoldierJA2Sample(pSoldier, SoundRange<FALL_TO_GROUND_1, FALL_TO_GROUND_3>(), HIGHVOLUME, 1, TRUE);
+					PlayRandomSoldierJA2Sample(pSoldier, FALL_TO_GROUND_1, FALL_TO_GROUND_3, HIGHVOLUME, 1, TRUE);
 					break;
 
 				case 732:
@@ -3086,7 +3086,7 @@ static void CheckForAndHandleSoldierIncompacitated(SOLDIERTYPE* pSoldier)
 #elif defined ( TESTFALLFORWARD )
 		if ( 0 )
 #else
-		if ( Random(100 ) > 40 && IS_MERC_BODY_TYPE( pSoldier ) && !IsProfileATerrorist( pSoldier->ubProfile ) )
+		if (Chance(60) && IS_MERC_BODY_TYPE(pSoldier) && !IsProfileATerrorist(pSoldier->ubProfile))
 #endif
 		{
 			// CHECK IF WE HAVE AN ATTACKER, TAKE OPPOSITE DIRECTION!

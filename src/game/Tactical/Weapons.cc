@@ -1824,7 +1824,7 @@ void StructureHit(BULLET* const pBullet, const INT16 sXPos, const INT16 sYPos, c
 				}
 				else
 				{
-					PlayJA2Sample(SoundRange<MISS_1, MISS_8>(), uiMissVolume, 1, SoundDir(sGridNo));
+					PlayRandomJA2Sample(MISS_1, MISS_8, uiMissVolume, 1, SoundDir(sGridNo));
 				}
 
 				// Default hit is the ground
@@ -2012,7 +2012,7 @@ void WindowHit( INT16 sGridNo, UINT16 usStructureID, BOOLEAN fBlowWindowSouth, B
 
 	pNode = CreateAnimationTile( &AniParams );
 
-	PlayJA2Sample(SoundRange<GLASS_SHATTER1, GLASS_SHATTER2>(), MIDVOLUME, 1, SoundDir(sGridNo));
+	PlayRandomJA2Sample(GLASS_SHATTER1, GLASS_SHATTER2, MIDVOLUME, 1, SoundDir(sGridNo));
 }
 
 
@@ -3247,7 +3247,7 @@ void ShotMiss(const BULLET* const b)
 			// RANDOMIZE SOUND SYSTEM
 			if (!DoSpecialEffectAmmoMiss(pAttacker, NOWHERE, 0, 0, 0, TRUE, TRUE, NULL))
 			{
-				PlayJA2Sample(SoundRange<MISS_1, MISS_8>(), HIGHVOLUME, 1, MIDDLEPAN);
+				PlayRandomJA2Sample(MISS_1, MISS_8, HIGHVOLUME, 1, MIDDLEPAN);
 			}
 
 			// ATE: Show misses...( if our team )

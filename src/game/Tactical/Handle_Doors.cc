@@ -900,7 +900,7 @@ try
 		if ( fDoAnimation && pSoldier && pSoldier->ubDoorOpeningNoise)
 		{
 			// ATE; Default to normal door...
-			SoundID uiSoundID = SoundRange<DROPEN_1, DROPEN_3>();
+			SoundID uiSoundID = SoundRange(DROPEN_1, DROPEN_3);
 
 			// OK, check if this door is sliding and is multi-tiled...
 			if ( pStructure->fFlags & STRUCTURE_SLIDINGDOOR )
@@ -969,7 +969,7 @@ try
 			ModifyDoorStatus( sGridNo, DONTSETDOORSTATUS, FALSE );
 
 			// ATE; Default to normal door...
-			SoundID uiSoundID = SoundRange<DRCLOSE_1, DRCLOSE_2>();
+			SoundID uiSoundID = SoundRange(DRCLOSE_1, DRCLOSE_2);
 
 			// OK, check if this door is sliding and is multi-tiled...
 			if ( pStructure->fFlags & STRUCTURE_SLIDINGDOOR )

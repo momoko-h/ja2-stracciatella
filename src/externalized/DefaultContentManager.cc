@@ -17,6 +17,7 @@
 #include "sgp/FileMan.h"
 #include "sgp/LibraryDataBase.h"
 #include "sgp/MemMan.h"
+#include "sgp/Random.h"
 #include "sgp/StrUtils.h"
 #include "sgp/UTF8String.h"
 

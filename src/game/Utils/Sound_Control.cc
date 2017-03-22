@@ -1,6 +1,8 @@
 // MODULE FOR SOUND SYSTEM
 
+#include <random>
 #include "Directories.h"
+#include "Random.h"
 #include "Sound_Control.h"
 #include "SoundMan.h"
 #include "Overhead.h"
@@ -363,6 +365,11 @@ const char * getSoundSample(SoundID soundId)
   }
 }
 
+SoundID SoundRange(SoundID first, SoundID last) {
+  std::uniform_int_distribution<int> dist(first, last);
+  return static_cast<SoundID>(dist(gMT19937));
+}
+
 UINT32 PlayJA2Sample(SoundID const usNum, UINT32 const ubVolume, UINT32 const ubLoops, UINT32 const uiPan)
 {
 	UINT32 const vol = CalculateSoundEffectsVolume(ubVolume);
@@ -378,6 +385,11 @@ UINT32 PlayJA2Sample(const char *sample, UINT32 const ubVolume, UINT32 const ubL
     return SoundPlay(sample, vol, uiPan, ubLoops, NULL, NULL);
   }
   return SOUND_ERROR;
+}
+
+
+UINT32 PlayRandomJA2Sample(SoundID const first, SoundID const last, UINT32 const ubVolume, UINT32 const ubLoops, UINT32 const uiPan) {
+  return PlayJA2Sample(SoundRange(first, last), ubVolume, ubLoops, uiPan);
 }
 
 
@@ -426,6 +438,14 @@ UINT32 PlayLocationJA2Sample(UINT16 const grid_no, SoundID const idx, UINT32 con
 }
 
 
+UINT32 PlayRandomLocationJA2Sample(UINT16 const grid_no, SoundID const first, SoundID last, UINT32 const base_vol, UINT32 const loops)
+{
+	UINT32 const vol = SoundVolume(base_vol, grid_no);
+	UINT32 const pan = SoundDir(grid_no);
+	return PlayJA2Sample(SoundRange(first, last), vol, loops, pan);
+}
+
+
 UINT32 PlayLocationJA2Sample(UINT16 const grid_no, const std::string &sample, UINT32 const base_vol, UINT32 const loops)
 {
 	UINT32 const vol = SoundVolume(base_vol, grid_no);
@@ -456,6 +476,11 @@ UINT32 PlaySoldierJA2Sample(SOLDIERTYPE const* const s, SoundID const usNum, UIN
   }
 
 	return( 0 );
+}
+
+
+UINT32 PlayRandomSoldierJA2Sample(SOLDIERTYPE const* const s, SoundID const first, SoundID const last, UINT32 const base_vol, UINT32 const ubLoops, BOOLEAN const fCheck) {
+  return PlaySoldierJA2Sample(s, SoundRange(first, last), base_vol, ubLoops, fCheck);
 }
 
 

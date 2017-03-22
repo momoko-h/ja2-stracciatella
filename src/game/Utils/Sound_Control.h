@@ -4,7 +4,6 @@
 #include <string>
 
 #include "JA2Types.h"
-#include "Random.h"
 
 
 #define FARLEFT         0
@@ -324,21 +323,6 @@ enum SoundID
 };
 
 
-const char * getSoundSample(SoundID soundId);
-
-template<SoundID, SoundID, bool> struct SoundRangeHelper;
-template<SoundID first, SoundID last> struct SoundRangeHelper<first, last, true>
-{
-	operator SoundID() { return static_cast<SoundID>(first + Random(last - first + 1)); }
-};
-
-
-template<SoundID first, SoundID last> static inline SoundID SoundRange()
-{
-	return SoundRangeHelper<first, last, first < last>();
-}
-
-
 enum AmbientSoundID
 {
 	LIGHTNING_1 = 0,
@@ -363,6 +347,8 @@ typedef void (*SOUND_STOP_CALLBACK)( void *pData );
 
 
 void   ShutdownJA2Sound(void);
+const char * getSoundSample(SoundID soundId);
+SoundID SoundRange(SoundID first, SoundID last);
 UINT32 PlayJA2Sample(const char *sample, UINT32 const ubVolume, UINT32 const ubLoops, UINT32 const uiPan);
 UINT32 PlayJA2Sample(SoundID, UINT32 ubVolume, UINT32 ubLoops, UINT32 uiPan);
 UINT32 PlayJA2StreamingSample(SoundID, UINT32 ubVolume, UINT32 ubLoops, UINT32 uiPan);
@@ -379,6 +365,9 @@ UINT32 PlayLocationJA2Sample(UINT16 grid_no, const std::string &sample, UINT32 b
 UINT32 PlayLocationJA2StreamingSample(UINT16 grid_no, SoundID, UINT32 base_vol, UINT32 loops);
 UINT32 PlaySoldierJA2Sample(SOLDIERTYPE const* s, SoundID, UINT32 base_vol, UINT32 ubLoops, BOOLEAN fCheck);
 
+UINT32 PlayRandomJA2Sample(SoundID first, SoundID last, UINT32 ubVolume, UINT32 ubLoops, UINT32 uiPan);
+UINT32 PlayRandomLocationJA2Sample(UINT16 grid_no, SoundID first, SoundID last, UINT32 base_vol, UINT32 loops);
+UINT32 PlayRandomSoldierJA2Sample(SOLDIERTYPE const* s, SoundID first, SoundID last, UINT32 base_vol, UINT32 ubLoops, BOOLEAN fCheck);
 
 UINT32 GetSoundEffectsVolume(void);
 void		SetSoundEffectsVolume( UINT32 uiNewVolume );

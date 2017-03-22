@@ -120,13 +120,13 @@ enum
 };
 
 
-static UINT8 Dir2ExtDir(const UINT8 dir)
+constexpr UINT8 Dir2ExtDir(const UINT8 dir)
 {
 	return dir * 4;
 }
 
 
-static UINT8 ExtOneCDirection(const UINT8 exdir)
+constexpr UINT8 ExtOneCDirection(const UINT8 exdir)
 {
 	return (exdir + 4) % EX_NUM_WORLD_DIRECTIONS;
 }
@@ -238,7 +238,7 @@ void AdjustNoAPToFinishMove( SOLDIERTYPE *pSoldier, BOOLEAN fSet )
 }
 
 
-static bool IsCrowWithShadow(SOLDIERTYPE const& s)
+constexpr bool IsCrowWithShadow(SOLDIERTYPE const& s)
 {
 	return
 		s.ubBodyType  == CROW     &&
@@ -2852,7 +2852,7 @@ void EVENT_SoldierGotHit(SOLDIERTYPE* pSoldier, const UINT16 usWeaponIndex, INT1
   }
   else
   {
-	  PlayLocationJA2Sample(pSoldier->sGridNo, SoundRange<BULLET_IMPACT_1, BULLET_IMPACT_3>(), MIDVOLUME, 1);
+	  PlayRandomLocationJA2Sample(pSoldier->sGridNo, BULLET_IMPACT_1, BULLET_IMPACT_3, MIDVOLUME, 1);
   }
 
 	// PLAY RANDOM GETTING HIT SOUND
@@ -5786,7 +5786,7 @@ UINT8 SoldierTakeDamage(SOLDIERTYPE* const pSoldier, INT16 sLifeDeduct, INT16 sB
 
 				if ( (pSoldier->bNumHitsThisTurn >= 3) && ( pSoldier->bLife - pSoldier->bOldLife > 20 ) )
 				{
-					if ( Random(100) < (UINT16)((40 * ( pSoldier->bNumHitsThisTurn - 2))))
+					if (Chance(40 * (pSoldier->bNumHitsThisTurn - 2)))
 					{
 						DelayedTacticalCharacterDialogue( pSoldier, QUOTE_TAKEN_A_BREATING );
 						pSoldier->usQuoteSaidFlags |= SOLDIER_QUOTE_SAID_BEING_PUMMELED;
@@ -5852,7 +5852,7 @@ BOOLEAN InternalDoMercBattleSound(SOLDIERTYPE* s, BattleSound battle_snd_id, INT
 				case QUEENMONSTER:       sub_snd = LQ_SHRIEK;                                      break;
 				case LARVAE_MONSTER:     sub_snd = BCR_SHRIEK;                                     break;
 				case BLOODCAT:           sub_snd = BLOODCAT_HIT_1;                                 break;
-				case ROBOTNOWEAPON:      sub_snd = SoundRange<S_METAL_IMPACT1, S_METAL_IMPACT2>(); break;
+				case ROBOTNOWEAPON:      sub_snd = SoundRange(S_METAL_IMPACT1, S_METAL_IMPACT2);   break;
 
 				default: goto no_sub;
 			}
