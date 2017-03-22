@@ -60,11 +60,11 @@ extern	BOOLEAN		gfUseAlternateMap;
 #define			CHECK_DIR_X_DELTA							( WORLD_TILE_X * 4 )
 #define			CHECK_DIR_Y_DELTA							( WORLD_TILE_Y * 10 )
 
-#define MAP_WORLD_X 18
-#define MAP_WORLD_Y 18
+constexpr int16_t MAP_WORLD_X = 18;
+constexpr int16_t MAP_WORLD_Y = 18;
 
-// get index into aray
-#define		CALCULATE_STRATEGIC_INDEX( x, y )			( x + ( y * MAP_WORLD_X ) )
+// get index into array
+constexpr int16_t CALCULATE_STRATEGIC_INDEX(int x, int y) { return x + y * MAP_WORLD_X; }
 #define   GET_X_FROM_STRATEGIC_INDEX( i )				( i % MAP_WORLD_X )
 #define   GET_Y_FROM_STRATEGIC_INDEX( i )				( i / MAP_WORLD_X )
 

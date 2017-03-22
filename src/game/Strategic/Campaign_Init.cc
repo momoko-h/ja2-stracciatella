@@ -1,3 +1,4 @@
+#include <initializer_list>
 #include "Types.h"
 #include "Campaign_Init.h"
 #include "Quests.h"
@@ -37,37 +38,18 @@ static UNDERGROUND_SECTORINFO* NewUndergroundNode(UINT8 const x, UINT8 const y, 
 // setup which know facilities are in which cities
 static void InitKnowFacilitiesFlags(void)
 {
-	SECTORINFO *pSector;
+  auto InitCity = [] (std::initializer_list<int> const &sectors, int flag) {
+    for (int sector : sectors) {
+      SectorInfo[sector].uiFacilitiesFlags |= flag;
+    }
+  };
 
-	// Cambria hospital
-	pSector = &SectorInfo[SEC_G8];
-	pSector->uiFacilitiesFlags |= SFCF_HOSPITAL;
-	pSector = &SectorInfo[SEC_F8];
-	pSector->uiFacilitiesFlags |= SFCF_HOSPITAL;
-	pSector = &SectorInfo[SEC_G9];
-	pSector->uiFacilitiesFlags |= SFCF_HOSPITAL;
-	pSector = &SectorInfo[SEC_F9];
-	pSector->uiFacilitiesFlags |= SFCF_HOSPITAL;
-
-	// Drassen airport
-	pSector = &SectorInfo[SEC_B13];
-	pSector->uiFacilitiesFlags |= SFCF_AIRPORT;
-	pSector = &SectorInfo[SEC_C13];
-	pSector->uiFacilitiesFlags |= SFCF_AIRPORT;
-	pSector = &SectorInfo[SEC_D13];
-	pSector->uiFacilitiesFlags |= SFCF_AIRPORT;
-
-	// Meduna airport & military complex
-	pSector = &SectorInfo[SEC_N3];
-	pSector->uiFacilitiesFlags |= SFCF_AIRPORT;
-	pSector = &SectorInfo[SEC_N4];
-	pSector->uiFacilitiesFlags |= SFCF_AIRPORT;
-	pSector = &SectorInfo[SEC_N5];
-	pSector->uiFacilitiesFlags |= SFCF_AIRPORT;
-	pSector = &SectorInfo[SEC_O3];
-	pSector->uiFacilitiesFlags |= SFCF_AIRPORT;
-	pSector = &SectorInfo[SEC_O4];
-	pSector->uiFacilitiesFlags |= SFCF_AIRPORT;
+  // Cambria hospital
+  InitCity({ SEC_G8, SEC_F8, SEC_G9, SEC_F9}, SFCF_HOSPITAL);
+  // Drassen airport
+  InitCity({ SEC_B13, SEC_C13, SEC_D13 }, SFCF_AIRPORT);
+  // Meduna airport & military complex
+  InitCity({ SEC_N3, SEC_N4, SEC_N5, SEC_O3, SEC_O4 }, SFCF_AIRPORT);
 }
 
 
@@ -248,7 +230,7 @@ void InitNewCampaign()
 {
 	//First clear all the sector information of all enemy existance.  Conveniently, the
 	//ubGroupType is also cleared, which is perceived to be an empty group.
-	memset( &SectorInfo, 0, sizeof( SECTORINFO ) * 256 );
+	memset(&SectorInfo, 0, sizeof(SectorInfo));
 	InitStrategicMovementCosts();
 	RemoveAllGroups();
 

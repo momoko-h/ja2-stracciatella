@@ -105,7 +105,7 @@ struct RANDOM_ANI_DEF
 
 
 // Enumeration of animation states
-enum AnimationStates
+enum AnimationStates : uint16_t
 {
 	WALKING = 0,
 	STANDING,
