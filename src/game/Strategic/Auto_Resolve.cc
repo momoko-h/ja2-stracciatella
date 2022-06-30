@@ -160,6 +160,9 @@ struct AUTORESOLVE_STRUCT
 	BOOLEAN fCaptureNotPermittedDueToEPCs;
 
 	MOUSE_REGION AutoResolveRegion;
+	SOLDIERCELL  mercs[20];
+	SOLDIERCELL  civs[MAX_ALLOWABLE_MILITIA_PER_SECTOR];
+	SOLDIERCELL  enemies[32];
 };
 
 //Classifies the type of soldier the soldier cell is
@@ -420,11 +423,11 @@ void EnterAutoResolveMode(const SGPSector& ubSector)
 	//Allocate memory for all the globals while we are in this mode.
 	gpAR = new AUTORESOLVE_STRUCT{};
 	//Mercs -- 20 max
-	gpMercs = new SOLDIERCELL[20]{};
+	gpMercs = gpAR->mercs;
 	//Militia -- MAX_ALLOWABLE_MILITIA_PER_SECTOR max
-	gpCivs = new SOLDIERCELL[MAX_ALLOWABLE_MILITIA_PER_SECTOR]{};
+	gpCivs = gpAR->civs;
 	//Enemies -- 32 max
-	gpEnemies = new SOLDIERCELL[32]{};
+	gpEnemies = gpAR->enemies;
 
 	//Set up autoresolve
 	gpAR->fEnteringAutoResolve = TRUE;
@@ -682,6 +685,7 @@ static void CalculateSoldierCells(BOOLEAN fReset)
 			}
 			SOLDIERCELL& c = gpMercs[index];
 			c.pRegion = new MouseRegion(c.xp, c.yp, 50, 44, MSYS_PRIORITY_HIGH, 0, MercCellMouseMoveCallback, MercCellMouseClickCallback);
+			c.pRegion->SetUserPtr(&c);
 			if( fReset )
 				RefreshMerc( gpMercs[ index ].pSoldier );
 			if( !gpMercs[ index ].pSoldier->bLife )
@@ -1842,14 +1846,8 @@ static void RemoveAutoResolveInterface(bool const delete_for_good)
 		// Everything internal to them, should have already been deleted.
 		delete gpAR;
 		gpAR = 0;
-
-		delete[] gpMercs;
 		gpMercs = 0;
-
-		delete[] gpCivs;
 		gpCivs = 0;
-
-		delete[] gpEnemies;
 		gpEnemies = 0;
 	}
 
@@ -2014,21 +2012,10 @@ static void DoneButtonCallback(GUI_BUTTON* btn, INT32 reason)
 }
 
 
-// Find the merc with the same region.
-static SOLDIERCELL* GetCell(MOUSE_REGION const* const reg)
-{
-	FOR_EACH_AR_MERC(i)
-	{
-		if (&i->pRegion->Base() != reg) continue;
-		return i;
-	}
-	throw std::logic_error("Region does not belong to a soldier cell");
-}
-
-
 static void MercCellMouseMoveCallback(MOUSE_REGION* reg, INT32 reason)
 {
-	SOLDIERCELL* const pCell = GetCell(reg);
+	SOLDIERCELL* const pCell = reg->GetUserPtr<SOLDIERCELL>();
+
 	if( gpAR->fPendingSurrender )
 	{ //Can't setup retreats when pending surrender.
 		pCell->uiFlags &= ~CELL_SHOWRETREATTEXT;
@@ -2060,7 +2047,7 @@ static void MercCellMouseClickCallback(MOUSE_REGION* reg, INT32 reason)
 			return;
 		}
 
-		SOLDIERCELL* const pCell = GetCell(reg);
+		SOLDIERCELL* const pCell = reg->GetUserPtr<SOLDIERCELL>();
 
 		if( pCell->uiFlags & ( CELL_RETREATING | CELL_RETREATED ) )
 		{ //already retreated/retreating.
