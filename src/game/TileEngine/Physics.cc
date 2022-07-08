@@ -1430,7 +1430,7 @@ static INT32 ChanceToGetThroughObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE
 
 
 static FLOAT CalculateForceFromRange(INT16 sRange, FLOAT dDegrees);
-static FLOAT CalculateSoldierMaxForce(const SOLDIERTYPE* pSoldier, FLOAT dDegrees, const OBJECTTYPE* pItem, BOOLEAN fArmed);
+static FLOAT CalculateSoldierMaxForce(const SOLDIERTYPE* pSoldier, const OBJECTTYPE* pItem, BOOLEAN fArmed);
 
 
 static void CalculateLaunchItemBasicParams(const SOLDIERTYPE* pSoldier, const OBJECTTYPE* pItem, INT16 sGridNo, UINT8 ubLevel, INT16 sEndZ,  FLOAT* pdMagForce, FLOAT* pdDegrees, INT16* psFinalGridNo, BOOLEAN fArmed)
@@ -1531,7 +1531,7 @@ static void CalculateLaunchItemBasicParams(const SOLDIERTYPE* pSoldier, const OB
 		FindBestForceForTrajectory( pSoldier->sGridNo, sGridNo, sStartZ, sEndZ, dDegrees, pItem, psFinalGridNo, &dMagForce );
 
 		// Adjust due to max range....
-		dMaxForce   = CalculateSoldierMaxForce( pSoldier, dDegrees, pItem, fArmed );
+		dMaxForce   = CalculateSoldierMaxForce( pSoldier, pItem, fArmed );
 
 		if ( fIndoors )
 		{
@@ -1564,7 +1564,7 @@ static void CalculateLaunchItemBasicParams(const SOLDIERTYPE* pSoldier, const OB
 	else
 	{
 		// Use MAX force, vary angle....
-		dMagForce   = CalculateSoldierMaxForce( pSoldier, dDegrees, pItem, fArmed );
+		dMagForce   = CalculateSoldierMaxForce( pSoldier, pItem, fArmed );
 
 		if ( ubLevel == 0 )
 		{
@@ -1683,18 +1683,12 @@ static FLOAT CalculateForceFromRange(INT16 sRange, FLOAT dDegrees)
 }
 
 
-static FLOAT CalculateSoldierMaxForce(const SOLDIERTYPE* pSoldier, FLOAT dDegrees, const OBJECTTYPE* pItem, BOOLEAN fArmed)
+static FLOAT CalculateSoldierMaxForce(const SOLDIERTYPE* pSoldier, const OBJECTTYPE* pItem, BOOLEAN fArmed)
 {
-	INT32 uiMaxRange;
-	FLOAT dMagForce;
+	constexpr float dDegrees = PI / 4; // 45°
+	const INT16 maxRange = static_cast<INT16>(CalcMaxTossRange( pSoldier, pItem->usItem, fArmed ));
 
-	dDegrees = (FLOAT)( PI/4 );
-
-	uiMaxRange = CalcMaxTossRange( pSoldier, pItem->usItem, fArmed );
-
-	dMagForce = CalculateForceFromRange( (INT16) uiMaxRange, dDegrees );
-
-	return( dMagForce );
+	return CalculateForceFromRange( maxRange, dDegrees );
 }
 
 
