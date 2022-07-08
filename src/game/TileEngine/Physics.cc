@@ -162,7 +162,7 @@ REAL_OBJECT* CreatePhysicalObject(OBJECTTYPE const* const pGameObj, float const 
 	o->InitialForce.x          = SCALE_VERT_VAL_TO_HORZ(xForce);
 	o->InitialForce.y          = SCALE_VERT_VAL_TO_HORZ(yForce);
 	o->InitialForce.z          = zForce;
-	o->InitialForce            = VMultScalar(&o->InitialForce, (float)(1.5 / TIME_MULTI));
+	o->InitialForce            *= 1.5f / TIME_MULTI;
 	o->sGridNo                 = MAPROWCOLTOPOS(((INT16)yPos / CELL_Y_SIZE), ((INT16)xPos / CELL_X_SIZE));
 	o->pNode                   = 0;
 	o->pShadow                 = 0;
@@ -309,29 +309,23 @@ static void SimulateObject(REAL_OBJECT* pObject, float deltaT)
 
 static BOOLEAN PhysicsComputeForces(REAL_OBJECT* pObject)
 {
-	vector_3			vTemp;
-
 	// Calculate forces
 	pObject->Force = pObject->InitialForce;
 
 	pObject->Force.z -= (float)GRAVITY;
 
 	// Set intial force to zero
-	pObject->InitialForce = VMultScalar( &(pObject->InitialForce ), 0 );
+	pObject->InitialForce *= 0;
 
 	if ( pObject->fApplyFriction )
 	{
-		vTemp = VMultScalar( &(pObject->Velocity), -pObject->AppliedMu );
-		pObject->Force = VAdd( &(vTemp), &(pObject->Force) );
-
+		pObject->Force += pObject->Velocity * -pObject->AppliedMu;
 		pObject->fApplyFriction = FALSE;
 	}
 
 	if( fDampingActive )
 	{
-		vTemp = VMultScalar( &(pObject->Velocity), -Kdl );
-		pObject->Force = VAdd( &(vTemp), &(pObject->Force) );
-
+		pObject->Force += pObject->Velocity * -Kdl;
 	}
 
 	return( TRUE );
@@ -455,14 +449,11 @@ static BOOLEAN PhysicsUpdateLife(REAL_OBJECT* pObject, float DeltaTime)
 
 static BOOLEAN PhysicsIntegrate(REAL_OBJECT* pObject, float DeltaTime)
 {
-	vector_3			vTemp;
-
 	// Save old position
 	pObject->OldPosition = pObject->Position;
 	pObject->OldVelocity = pObject->Velocity;
 
-	vTemp = VMultScalar( &(pObject->Velocity), DeltaTime );
-	pObject->Position = VAdd( &(pObject->Position), &vTemp );
+	pObject->Position += pObject->Velocity * DeltaTime;
 
 	// Save test TargetPosition
 	if ( pObject->fTestPositionNotSet )
@@ -470,8 +461,7 @@ static BOOLEAN PhysicsIntegrate(REAL_OBJECT* pObject, float DeltaTime)
 		pObject->TestTargetPosition = pObject->Position;
 	}
 
-	vTemp = VMultScalar( &(pObject->Force), ( DeltaTime * pObject->OneOverMass ) );
-	pObject->Velocity = VAdd( &(pObject->Velocity), &vTemp );
+	pObject->Velocity += pObject->Force * (DeltaTime * pObject->OneOverMass);
 
 	if ( pObject->fPotentialForDebug )
 	{
@@ -1004,13 +994,8 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			vIncident.x = dDeltaX;
 			vIncident.y = dDeltaY;
 			vIncident.z = 0;
-			// Nomralize
+			vIncident.normalize();
 
-			vIncident = VGetNormal( &vIncident );
-
-			//vTemp.x = -1;
-			//vTemp.y = 0;
-			//vTemp.z = 0;
 			vTemp.x = -1 * vIncident.x;
 			vTemp.y = -1 * vIncident.y;
 			vTemp.z = 0;
@@ -1056,17 +1041,8 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 static void PhysicsResolveCollision(REAL_OBJECT* pObject, vector_3* pVelocity, vector_3* pNormal, float CoefficientOfRestitution)
 {
-	float ImpulseNumerator, Impulse;
-	vector_3 vTemp;
-
-	ImpulseNumerator = -1 * CoefficientOfRestitution * VDotProduct( pVelocity , pNormal );
-
-	Impulse = ImpulseNumerator;
-
-	vTemp = VMultScalar( pNormal, Impulse );
-
-	pObject->Velocity = VAdd( &(pObject->Velocity), &vTemp );
-
+	const float Impulse = -CoefficientOfRestitution * (*pVelocity * *pNormal);
+	pObject->Velocity += *pNormal * Impulse;
 }
 
 
@@ -1248,9 +1224,7 @@ static vector_3 FindBestForceForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT1
 	vDirNormal.x = (float)(sDestX - sSrcX);
 	vDirNormal.y = (float)(sDestY - sSrcY);
 	vDirNormal.z = 0;
-
-	// NOmralize
-	vDirNormal = VGetNormal( &vDirNormal );
+	vDirNormal.normalize();
 
 	// From degrees, calculate Z portion of normal
 	vDirNormal.z = (float)sin( dzDegrees );
@@ -1271,9 +1245,7 @@ static vector_3 FindBestForceForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT1
 
 
 		// Now use a force
-		vForce.x = dForce * vDirNormal.x;
-		vForce.y = dForce * vDirNormal.y;
-		vForce.z = dForce * vDirNormal.z;
+		vForce = vDirNormal * dForce;
 
 		dTestRange = CalculateObjectTrajectory( sEndZ, pItem, &vPosition, &vForce, psGridNo );
 
@@ -1318,7 +1290,7 @@ static vector_3 FindBestForceForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT1
 
 static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 sStartZ, INT16 sEndZ, float dForce, const OBJECTTYPE* pItem, INT16* psGridNo)
 {
-	vector_3 vDirNormal, vPosition, vForce;
+	vector_3 vDirNormal, vPosition;
 	INT16    sDestX, sDestY, sSrcX, sSrcY;
 	float    dRange;
 	float    dzDegrees = ( (float)PI/8 );
@@ -1340,9 +1312,7 @@ static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 s
 	vDirNormal.x = (float)(sDestX - sSrcX);
 	vDirNormal.y = (float)(sDestY - sSrcY);
 	vDirNormal.z = 0;
-
-	// NOmralize
-	vDirNormal = VGetNormal( &vDirNormal );
+	vDirNormal.normalize();
 
 	// From degrees, calculate Z portion of normal
 	vDirNormal.z = (float)sin( dzDegrees );
@@ -1357,9 +1327,7 @@ static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 s
 		iNumChecks++;
 
 		// Now use a force
-		vForce.x = dForce * vDirNormal.x;
-		vForce.y = dForce * vDirNormal.y;
-		vForce.z = dForce * vDirNormal.z;
+		vector_3 vForce{vDirNormal * dForce};
 
 		dTestRange = CalculateObjectTrajectory( sEndZ, pItem, &vPosition, &vForce, psGridNo );
 
@@ -1417,7 +1385,7 @@ static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 s
 
 static void FindTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 sStartZ, INT16 sEndZ, float dForce, float dzDegrees, const OBJECTTYPE* pItem, INT16* psGridNo)
 {
-	vector_3 vDirNormal, vPosition, vForce;
+	vector_3 vDirNormal, vPosition;
 	INT16    sDestX, sDestY, sSrcX, sSrcY;
 
 	// Get XY from gridno
@@ -1433,17 +1401,13 @@ static void FindTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 sStartZ, INT16
 	vDirNormal.x = (float)(sDestX - sSrcX);
 	vDirNormal.y = (float)(sDestY - sSrcY);
 	vDirNormal.z = 0;
-
-	// NOmralize
-	vDirNormal = VGetNormal( &vDirNormal );
+	vDirNormal.normalize();
 
 	// From degrees, calculate Z portion of normal
 	vDirNormal.z = (float)sin( dzDegrees );
 
 	// Now use a force
-	vForce.x = dForce * vDirNormal.x;
-	vForce.y = dForce * vDirNormal.y;
-	vForce.z = dForce * vDirNormal.z;
+	vector_3 vForce{vDirNormal * dForce};
 
 	CalculateObjectTrajectory( sEndZ, pItem, &vPosition, &vForce, psGridNo );
 }
@@ -1718,7 +1682,7 @@ BOOLEAN CalculateLaunchItemChanceToGetThrough(const SOLDIERTYPE* pSoldier, const
 {
 	FLOAT    dForce, dDegrees;
 	INT16    sDestX, sDestY, sSrcX, sSrcY;
-	vector_3 vForce, vPosition, vDirNormal;
+	vector_3 vPosition, vDirNormal;
 
 	/* Prevent throwing to the same tile the thrower is standing on and only the
 	 * target level differs.  This would lead to an endless loop when calculation
@@ -1746,17 +1710,13 @@ BOOLEAN CalculateLaunchItemChanceToGetThrough(const SOLDIERTYPE* pSoldier, const
 	vDirNormal.x = (float)(sDestX - sSrcX);
 	vDirNormal.y = (float)(sDestY - sSrcY);
 	vDirNormal.z = 0;
-
-	// NOmralize
-	vDirNormal = VGetNormal( &vDirNormal );
+	vDirNormal.normalize();
 
 	// From degrees, calculate Z portion of normal
 	vDirNormal.z = (float)sin( dDegrees );
 
 	// Do force....
-	vForce.x = dForce * vDirNormal.x;
-	vForce.y = dForce * vDirNormal.y;
-	vForce.z = dForce * vDirNormal.z;
+	vector_3 vForce{vDirNormal * dForce};
 
 	// OK, we have our force, calculate change to get through without collide
 	if ( ChanceToGetThroughObjectTrajectory( sEndZ, pItem, &vPosition, &vForce, psFinalGridNo, pbLevel, fFromUI ) == 0 )
@@ -1826,7 +1786,7 @@ void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridN
 {
 	FLOAT    dForce, dDegrees;
 	INT16    sDestX, sDestY, sSrcX, sSrcY;
-	vector_3 vForce, vDirNormal;
+	vector_3 vDirNormal;
 	INT16    sFinalGridNo;
 	BOOLEAN  fArmed = FALSE;
 	UINT16   usLauncher;
@@ -1914,18 +1874,13 @@ void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridN
 	vDirNormal.x = (float)(sDestX - sSrcX);
 	vDirNormal.y = (float)(sDestY - sSrcY);
 	vDirNormal.z = 0;
-
-	// NOmralize
-	vDirNormal = VGetNormal( &vDirNormal );
+	vDirNormal.normalize();
 
 	// From degrees, calculate Z portion of normal
 	vDirNormal.z = (float)sin( dDegrees );
 
 	// Do force....
-	vForce.x = dForce * vDirNormal.x;
-	vForce.y = dForce * vDirNormal.y;
-	vForce.z = dForce * vDirNormal.z;
-
+	vector_3 vForce{vDirNormal * dForce};
 
 	// Allocate Throw Parameters
 	pSoldier->pThrowParams = new THROW_PARAMS{};

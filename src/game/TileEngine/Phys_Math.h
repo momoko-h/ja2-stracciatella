@@ -1,17 +1,24 @@
 #ifndef __PHYS_MATH_H
 #define __PHYS_MATH_H
 
-#include "Types.h"
-
 struct vector_3
 {
 	float x, y, z;
+
+	// Vector addition
+	vector_3  operator+  (vector_3 const& other) const;
+	// Scalar multiplication
+	vector_3  operator*  (float const factor) const;
+	// Dot product
+	float     operator*  (vector_3 const& other) const;
+
+	// vector1 = vector1 + vector2
+	vector_3& operator+= (vector_3 const& other);
+	// vector = vector * factor
+	vector_3& operator*= (float const factor);
+
+	// Vector = Vector / |Vector|
+	vector_3& normalize();
 };
-
-
-vector_3	VAdd( vector_3 *a, vector_3 *b );
-vector_3	VMultScalar( vector_3 *a, float b );
-float			VDotProduct( vector_3 *a, vector_3 *b );
-vector_3	VGetNormal( vector_3 *a );
 
 #endif
