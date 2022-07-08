@@ -64,8 +64,7 @@
 
 #define TIME_MULTI				1.8
 
-
-#define DELTA_T					( 1.0 * TIME_MULTI )
+constexpr float DELTA_T = TIME_MULTI;
 
 
 #define GRAVITY					( 9.8 * 2.5 )
@@ -77,7 +76,6 @@ UINT32  guiNumObjectSlots = 0;
 
 #define EPSILONV				0.5
 #define EPSILONP				(float)0.01
-#define EPSILONPZ				3
 
 #define SCALE_VERT_VAL_TO_HORZ( f )		( ( f / HEIGHT_UNITS ) * CELL_X_SIZE )
 #define SCALE_HORZ_VAL_TO_VERT( f )		( ( f / CELL_X_SIZE ) * HEIGHT_UNITS )
@@ -196,7 +194,7 @@ void SimulateWorld(  )
 				// Get object
 				pObject = &( ObjectSlots[ cnt ] );
 
-				SimulateObject( pObject, (float)DELTA_T );
+				SimulateObject( pObject, DELTA_T );
 			}
 		}
 	}
@@ -549,17 +547,6 @@ static BOOLEAN PhysicsHandleCollisions(REAL_OBJECT* pObject, INT32* piCollisionI
 				return( FALSE );
 			}
 		}
-
-
-		// Check for -ve velocity still...
-		//if ( pObject->Velocity.z <= EPSILONV && pObject->Velocity.z >= -EPSILONV &&
-		//		pObject->Velocity.y <= EPSILONV && pObject->Velocity.y >= -EPSILONV &&
-		//		pObject->Velocity.x <= EPSILONV && pObject->Velocity.x >= -EPSILONV )
-		//{
-			//PhysicsDeleteObject( pObject );
-		//	pObject->fAlive = FALSE;
-		//	return( FALSE );
-		//}
 	}
 
 	return( TRUE );
@@ -591,7 +578,6 @@ static void CheckForObjectHittingMerc(REAL_OBJECT* pObject, UINT16 usStructureID
 
 static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisionID)
 {
-	vector_3 vTemp;
 	FLOAT    dDeltaX, dDeltaY, dDeltaZ, dX, dY, dZ;
 	INT32    iCollisionCode = COLLISION_NONE;
 	BOOLEAN  fDoCollision = FALSE;
@@ -605,18 +591,11 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 	dY = pObject->Position.y;
 	dZ = pObject->Position.z;
 
-	vTemp.x = 0;
-	vTemp.y = 0;
-	vTemp.z = 0;
+	vector_3 vTemp{0, 0, 0};
 
 	dDeltaX = dX - pObject->OldPosition.x;
 	dDeltaY = dY - pObject->OldPosition.y;
 	dDeltaZ = dZ - pObject->OldPosition.z;
-
-	//Round delta pos to nearest 0.01
-	//dDeltaX = (float)( (int)dDeltaX * 100 ) / 100;
-	//dDeltaY = (float)( (int)dDeltaY * 100 ) / 100;
-	//dDeltaZ = (float)( (int)dDeltaZ * 100 ) / 100;
 
 	// SKIP FIRST GRIDNO, WE'LL COLLIDE WITH OURSELVES....
 	if ( pObject->fTestObject != TEST_OBJECT_NO_COLLISIONS )
@@ -818,16 +797,12 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 		if ( iCollisionCode == COLLISION_GROUND )
 		{
-			vTemp.x = 0;
-			vTemp.y = 0;
-			vTemp.z = -1;
+			vTemp = { 0, 0, -1 };
 
 			pObject->fApplyFriction = TRUE;
-			//pObject->AppliedMu = (float)(0.54 * TIME_MULTI );
 			pObject->AppliedMu = (float)(0.34 * TIME_MULTI );
 
-			//dElasity = (float)1.5;
-			dElasity = (float)1.3;
+			dElasity = 1.3f;
 
 			fDoCollision = TRUE;
 
@@ -899,32 +874,16 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 		}
 		else if ( iCollisionCode == COLLISION_ROOF || iCollisionCode == COLLISION_INTERIOR_ROOF )
 		{
-			vTemp.x = 0;
-			vTemp.y = 0;
-			vTemp.z = -1;
+			vTemp = { 0, 0, -1 };
 
 			pObject->fApplyFriction = TRUE;
 			pObject->AppliedMu = (float)(0.54 * TIME_MULTI );
 
-			dElasity = (float)1.4;
+			dElasity = 1.4f;
 
 			fDoCollision = TRUE;
 
 		}
-		//else if ( iCollisionCode == COLLISION_INTERIOR_ROOF )
-		//{
-		//	vTemp.x = 0;
-		//	vTemp.y = 0;
-		//	vTemp.z = 1;
-
-		//	pObject->fApplyFriction = TRUE;
-		//	pObject->AppliedMu = (float)(0.54 * TIME_MULTI );
-
-		//	dElasity = (float)1.4;
-
-		//	fDoCollision = TRUE;
-
-		//}
 		else if ( iCollisionCode == COLLISION_STRUCTURE_Z )
 		{
 			if ( CheckForCatcher( pObject, usStructureID ) )
@@ -934,14 +893,12 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 			CheckForObjectHittingMerc( pObject, usStructureID );
 
-			vTemp.x = 0;
-			vTemp.y = 0;
-			vTemp.z = -1;
+			vTemp = { 0, 0, -1 };
 
 			pObject->fApplyFriction = TRUE;
 			pObject->AppliedMu = (float)(0.54 * TIME_MULTI );
 
-			dElasity = (float)1.2;
+			dElasity = 1.2f;
 
 			fDoCollision = TRUE;
 
@@ -950,18 +907,14 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 				iCollisionCode == COLLISION_WALL_NORTHEAST || iCollisionCode == COLLISION_WALL_NORTHWEST )
 		{
 			// A wall, do stuff
-			vTemp.x = dNormalX;
-			vTemp.y = dNormalY;
-			vTemp.z = dNormalZ;
+			vTemp = { dNormalX, dNormalY, dNormalZ };
 
 			fDoCollision = TRUE;
 
-			dElasity = (float)1.1;
+			dElasity = 1.1f;
 		}
 		else
 		{
-			vector_3 vIncident;
-
 			if ( CheckForCatcher( pObject, usStructureID ) )
 			{
 				return( FALSE );
@@ -969,9 +922,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 			CheckForObjectHittingMerc( pObject, usStructureID );
 
-			vIncident.x = dDeltaX;
-			vIncident.y = dDeltaY;
-			vIncident.z = 0;
+			vector_3 vIncident{ dDeltaX, dDeltaY, 0 };
 			vIncident.normalize();
 
 			vTemp.x = -1 * vIncident.x;
@@ -980,14 +931,12 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 			fDoCollision = TRUE;
 
-			dElasity = (float)1.1;
+			dElasity = 1.1f;
 		}
 
 		if ( fDoCollision )
 		{
-			pObject->CollisionNormal.x		= vTemp.x;
-			pObject->CollisionNormal.y		= vTemp.y;
-			pObject->CollisionNormal.z		= vTemp.z;
+			pObject->CollisionNormal = vTemp;
 			pObject->CollisionElasticity  = dElasity;
 			pObject->iOldCollisionCode  = iCollisionCode;
 
@@ -1205,7 +1154,7 @@ static vector_3 FindBestForceForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT1
 	vDirNormal.normalize();
 
 	// From degrees, calculate Z portion of normal
-	vDirNormal.z = (float)sin( dzDegrees );
+	vDirNormal.z = sinf( dzDegrees );
 
 	// Get range
 	dRange = (float)GetRangeInCellCoordsFromGridNoDiff( sGridNo, sSrcGridNo );
@@ -1293,7 +1242,7 @@ static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 s
 	vDirNormal.normalize();
 
 	// From degrees, calculate Z portion of normal
-	vDirNormal.z = (float)sin( dzDegrees );
+	vDirNormal.z = sinf( dzDegrees );
 
 	// Get range
 	dRange = (float)GetRangeInCellCoordsFromGridNoDiff( sGridNo, sSrcGridNo );
@@ -1314,7 +1263,7 @@ static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 s
 
 		// How have we done?
 		// < 5% off...
-		if ( fabs( (FLOAT)( dTestDiff / dRange ) ) < .05 )
+		if ( fabs( dTestDiff / dRange ) < .05 )
 		{
 			break;
 		}
@@ -1336,18 +1285,16 @@ static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 s
 			// Use 0.....
 			dzDegrees = 0;
 			// From degrees, calculate Z portion of normal
-			vDirNormal.z	= (float)sin( dzDegrees );
+			vDirNormal.z = 0; // == sin(0)
 			// Now use a force
-			vForce.x = dForce * vDirNormal.x;
-			vForce.y = dForce * vDirNormal.y;
-			vForce.z = dForce * vDirNormal.z;
+			vForce = vDirNormal * dForce;
 			dTestRange = CalculateObjectTrajectory( sEndZ, pItem, &vPosition, &vForce, psGridNo );
-			return( (FLOAT)( dzDegrees ) );
+			return 0;
 		}
 
 
 		// From degrees, calculate Z portion of normal
-		vDirNormal.z = (float)sin( dzDegrees );
+		vDirNormal.z = sinf( dzDegrees );
 
 	} while( TRUE );
 
@@ -1382,7 +1329,7 @@ static void FindTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 sStartZ, INT16
 	vDirNormal.normalize();
 
 	// From degrees, calculate Z portion of normal
-	vDirNormal.z = (float)sin( dzDegrees );
+	vDirNormal.z = sinf( dzDegrees );
 
 	// Now use a force
 	vector_3 vForce{vDirNormal * dForce};
@@ -1415,7 +1362,7 @@ static FLOAT CalculateObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE* pItem, 
 	// Alrighty, move this beast until it dies....
 	while( pObject->fAlive )
 	{
-		SimulateObject( pObject, (float)DELTA_T );
+		SimulateObject( pObject, DELTA_T );
 	}
 
 	// Calculate gridno from last position
@@ -1432,8 +1379,7 @@ static FLOAT CalculateObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE* pItem, 
 		(*psFinalGridNo) = sGridNo;
 	}
 
-	return (FLOAT) std::hypot(dDiffX, dDiffY);
-
+	return std::hypot<float>(dDiffX, dDiffY);
 }
 
 
@@ -1451,7 +1397,7 @@ static INT32 ChanceToGetThroughObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE
 	// Alrighty, move this beast until it dies....
 	while( pObject->fAlive )
 	{
-		SimulateObject( pObject, (float)DELTA_T );
+		SimulateObject( pObject, DELTA_T );
 	}
 
 
@@ -1622,7 +1568,7 @@ static void CalculateLaunchItemBasicParams(const SOLDIERTYPE* pSoldier, const OB
 
 		if ( ubLevel == 0 )
 		{
-			dMagForce = (float)( dMagForce * 1.25 );
+			dMagForce = dMagForce * 1.25f;
 		}
 
 		FindTrajectory( pSoldier->sGridNo, sGridNo, sStartZ, sEndZ, dMagForce, dDegrees, pItem, psFinalGridNo );
@@ -1632,7 +1578,7 @@ static void CalculateLaunchItemBasicParams(const SOLDIERTYPE* pSoldier, const OB
 			// Is there a guy here...?
 			if (WhoIsThere2(sGridNo, ubLevel) != NULL)
 			{
-				dMagForce = (float)( dMagForce * 0.85 );
+				dMagForce = dMagForce * 0.85f;
 
 				// Yep, try to get angle...
 				dNewDegrees = FindBestAngleForTrajectory( pSoldier->sGridNo, sGridNo, GET_SOLDIER_THROW_HEIGHT( pSoldier->bLevel ), 150, dMagForce, pItem, psFinalGridNo );
@@ -1691,7 +1637,7 @@ BOOLEAN CalculateLaunchItemChanceToGetThrough(const SOLDIERTYPE* pSoldier, const
 	vDirNormal.normalize();
 
 	// From degrees, calculate Z portion of normal
-	vDirNormal.z = (float)sin( dDegrees );
+	vDirNormal.z = sinf( dDegrees );
 
 	// Do force....
 	vector_3 vForce{vDirNormal * dForce};
@@ -1808,7 +1754,7 @@ void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridN
 		bMaxRadius = 5;
 
 		// scale if pyth spaces away is too far
-		if ( PythSpacesAway( sGridNo, pSoldier->sGridNo ) < ( (float)bMaxRadius / (float)1.5 ) )
+		if ( PythSpacesAway( sGridNo, pSoldier->sGridNo ) < ( (float)bMaxRadius / 1.5f ) )
 		{
 			bMaxRadius = PythSpacesAway( sGridNo, pSoldier->sGridNo ) / 2;
 		}
@@ -1855,7 +1801,7 @@ void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridN
 	vDirNormal.normalize();
 
 	// From degrees, calculate Z portion of normal
-	vDirNormal.z = (float)sin( dDegrees );
+	vDirNormal.z = sinf( dDegrees );
 
 	// Do force....
 	vector_3 vForce{vDirNormal * dForce};
