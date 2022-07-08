@@ -1658,23 +1658,8 @@ static UINT16 RandomGridFromRadius(INT16 sSweetGridNo, INT8 ubMinRadius, INT8 ub
 
 void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridNo, const UINT8 ubLevel, const INT16 sEndZ, OBJECTTYPE* const pItem, INT8 bMissBy, const UINT8 ubActionCode, SOLDIERTYPE* const target)
 {
-	FLOAT    dForce, dDegrees;
-	INT16    sDestX, sDestY, sSrcX, sSrcY;
-	vector_3 vDirNormal;
-	INT16    sFinalGridNo;
-	BOOLEAN  fArmed = FALSE;
-	UINT16   usLauncher;
-	INT16    sStartZ;
-	INT8     bMinMissRadius, bMaxMissRadius, bMaxRadius;
-	FLOAT    fScale;
-
 	// Set target if anyone
 	pSoldier->target = WhoIsThere2(sGridNo, ubLevel);
-
-	if ( ubActionCode == THROW_ARM_ITEM )
-	{
-		fArmed = TRUE;
-	}
 
 	if ( bMissBy < 0 )
 	{
@@ -1684,23 +1669,12 @@ void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridN
 
 	if ( bMissBy > 0 )
 	{
-		// Max the miss variance
-		if ( bMissBy > MAX_MISS_BY )
-		{
-			bMissBy = MAX_MISS_BY;
-		}
-
-		// Min the miss varience...
-		if ( bMissBy < MIN_MISS_BY )
-		{
-			bMissBy = MIN_MISS_BY;
-		}
-
-		// Adjust position, force, angle
+		// Clamp the miss variance
+		bMissBy = std::clamp<INT8>(bMissBy, MIN_MISS_BY, MAX_MISS_BY);
 		SLOGD("Throw miss by: {}", bMissBy);
 
 		// Default to max radius...
-		bMaxRadius = 5;
+		INT8 bMaxRadius = 5;
 
 		// scale if pyth spaces away is too far
 		if ( PythSpacesAway( sGridNo, pSoldier->sGridNo ) < 3 ) // 3 = bMaxRadius / 1.5, rounded down
@@ -1708,42 +1682,29 @@ void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridN
 			bMaxRadius = PythSpacesAway( sGridNo, pSoldier->sGridNo ) / 2;
 		}
 
-
 		// Get radius
-		fScale = ( (float)bMissBy / (float) MAX_MISS_BY );
-
-		bMaxMissRadius = (INT8)( bMaxRadius * fScale );
+		const float fScale = ( (float)bMissBy / (float) MAX_MISS_BY );
 
 		// Limit max radius...
-		if ( bMaxMissRadius > 4 )
-		{
-			bMaxMissRadius = 4;
-		}
-
-
-		bMinMissRadius = bMaxMissRadius - 1;
-
-		if ( bMinMissRadius < 2 )
-		{
-			bMinMissRadius = 2;
-		}
-
-		if ( bMaxMissRadius < bMinMissRadius )
-		{
-			bMaxMissRadius = bMinMissRadius;
-		}
+		const INT8 bMaxMissRadius = std::clamp<INT8>(bMaxRadius * fScale, 2, 4); // 2, 3 or 4
+		const INT8 bMinMissRadius = std::max<INT8>(2, bMaxMissRadius - 1);  // 2 or 3
 
 		sGridNo = RandomGridFromRadius( sGridNo, bMinMissRadius, bMaxMissRadius );
 	}
 
 	// Get basic launch params...
-	CalculateLaunchItemBasicParams( pSoldier, pItem, sGridNo, ubLevel, sEndZ, &dForce, &dDegrees, &sFinalGridNo, fArmed );
+	const bool fArmed = (ubActionCode == THROW_ARM_ITEM);
+	FLOAT dForce, dDegrees;
+	GridNo unused;
+	CalculateLaunchItemBasicParams( pSoldier, pItem, sGridNo, ubLevel, sEndZ, &dForce, &dDegrees, &unused, fArmed );
 
 	// Get XY from gridno
+	INT16 sDestX, sDestY, sSrcX, sSrcY;
 	ConvertGridNoToCenterCellXY( sGridNo, &sDestX, &sDestY );
 	ConvertGridNoToCenterCellXY( pSoldier->sGridNo, &sSrcX, &sSrcY );
 
 	// OK, get direction normal
+	vector_3 vDirNormal;
 	vDirNormal.x = (float)(sDestX - sSrcX);
 	vDirNormal.y = (float)(sDestY - sSrcY);
 	vDirNormal.z = 0;
@@ -1765,8 +1726,8 @@ void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridN
 	pSoldier->pThrowParams->dY = (float)sSrcY;
 
 
-	sStartZ = GET_SOLDIER_THROW_HEIGHT( pSoldier->bLevel );
-	usLauncher = GetLauncherFromLaunchable( pItem->usItem );
+	INT16 sStartZ = GET_SOLDIER_THROW_HEIGHT( pSoldier->bLevel );
+	const UINT16 usLauncher = GetLauncherFromLaunchable( pItem->usItem );
 	if ( fArmed && usLauncher == MORTAR )
 	{
 		// Start at 0....
