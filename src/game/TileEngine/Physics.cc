@@ -422,19 +422,6 @@ static void PhysicsIntegrate(REAL_OBJECT* const pObject, const float DeltaTime)
 
 	pObject->Velocity += pObject->Force * (DeltaTime / 60.0f);
 
-	if ( pObject->fPotentialForDebug )
-	{
-		SLOGD("Object {}: Force     {} {} {}", REALOBJ2ID(pObject),
-			pObject->Force.x, pObject->Force.y, pObject->Force.z);
-		SLOGD("Object {}: Velocity  {} {} {}", REALOBJ2ID(pObject),
-			pObject->Velocity.x, pObject->Velocity.y, pObject->Velocity.z);
-		SLOGD("Object {}: Position  {} {} {}", REALOBJ2ID(pObject),
-			pObject->Position.x, pObject->Position.y, pObject->Position.z);
-		SLOGD("Object {}: Delta Pos {} {} {}", REALOBJ2ID(pObject),
-			pObject->OldPosition.x - pObject->Position.x, pObject->OldPosition.y - pObject->Position.y,
-			pObject->OldPosition.z - pObject->Position.z);
-	}
-
 	if ( pObject->Obj.usItem == MORTAR_SHELL && !pObject->fTestObject && pObject->ubActionCode == THROW_ARM_ITEM )
 	{
 		// Start soud if we have reached our max height
@@ -921,17 +908,6 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 			// Save collision velocity
 			pObject->CollisionVelocity = pObject->OldVelocity;
-
-			if ( pObject->fPotentialForDebug )
-			{
-				SLOGD("Object {}: Collision {}", REALOBJ2ID(pObject), iCollisionCode);
-				SLOGD("Object {}: Collision Normal {} {} {}", REALOBJ2ID(pObject),
-					vTemp.x, vTemp.y, vTemp.z);
-				SLOGD("Object {}: Collision OldPos {} {} {}", REALOBJ2ID(pObject),
-					pObject->Position.x, pObject->Position.y, pObject->Position.z);
-				SLOGD("Object {}: Collision Velocity {} {} {}", REALOBJ2ID(pObject),
-					pObject->CollisionVelocity.x, pObject->CollisionVelocity.y, pObject->CollisionVelocity.z);
-			}
 		}
 		else
 		{
@@ -1072,11 +1048,6 @@ static BOOLEAN PhysicsMoveObject(REAL_OBJECT* pObject)
 		}
 
 		pObject->sGridNo = sNewGridNo;
-
-		if ( pObject->fPotentialForDebug )
-		{
-			SLOGD("Object {}d: uiNumTilesMoved: {}", REALOBJ2ID(pObject), pObject->uiNumTilesMoved);
-		}
 	}
 
 	if ( pObject->fVisible )

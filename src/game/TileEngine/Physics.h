@@ -9,6 +9,9 @@
 
 extern UINT32 guiNumObjectSlots;
 
+// Note: to reduce padding, the order of the members differs a little from the
+// original order which is still used (and relevant) in LoadSaveRealObject.
+
 struct REAL_OBJECT
 {
 	BOOLEAN      fAllocated;
@@ -34,7 +37,6 @@ struct REAL_OBJECT
 	vector_3     CollisionVelocity;
 	float        CollisionElasticity;
 
-	INT16        sGridNo;
 	LEVELNODE    *pNode;
 	LEVELNODE    *pShadow;
 
@@ -46,10 +48,11 @@ struct REAL_OBJECT
 	FLOAT        dLifeSpan;
 	OBJECTTYPE   Obj;
 	SOLDIERTYPE* owner;
-	INT16        sFirstGridNo;
+	SOLDIERTYPE* target;
+	GridNo       sGridNo;
+	GridNo       sFirstGridNo;
 	BOOLEAN      fFirstTimeMoved;
 	UINT8        ubActionCode;
-	SOLDIERTYPE* target;
 	BOOLEAN      fDropItem;
 	UINT32       uiNumTilesMoved;
 	BOOLEAN      fCatchGood;
@@ -59,10 +62,9 @@ struct REAL_OBJECT
 	BOOLEAN      fEndedWithCollisionPositionSet;
 	vector_3     EndedWithCollisionPosition;
 	BOOLEAN      fHaveHitGround;
-	BOOLEAN      fPotentialForDebug;
-	INT16        sLevelNodeGridNo;
-	UINT32       uiSoundID;
 	UINT8        ubLastTargetTakenDamage;
+	GridNo       sLevelNodeGridNo;
+	UINT32       uiSoundID;
 };
 
 
