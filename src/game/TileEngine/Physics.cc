@@ -296,8 +296,6 @@ static void HandleArmedObjectImpact(REAL_OBJECT* pObject);
 
 static BOOLEAN PhysicsUpdateLife(REAL_OBJECT* pObject, float DeltaTime)
 {
-	UINT8 bLevel = 0;
-
 	pObject->dLifeSpan += DeltaTime;
 
 	// End life if time has ran out or we are stationary
@@ -318,8 +316,6 @@ static BOOLEAN PhysicsUpdateLife(REAL_OBJECT* pObject, float DeltaTime)
 
 	if ( !pObject->fAlive )
 	{
-		pObject->fAlive = FALSE;
-
 		if ( !pObject->fTestObject )
 		{
 			if ( pObject->uiSoundID != NO_SAMPLE )
@@ -339,10 +335,7 @@ static BOOLEAN PhysicsUpdateLife(REAL_OBJECT* pObject, float DeltaTime)
 					if ( pObject->fDropItem )
 					{
 						// ATE: If we have collided with roof last...
-						if ( pObject->iOldCollisionCode == COLLISION_ROOF )
-						{
-							bLevel = 1;
-						}
+						const UINT8 bLevel = pObject->iOldCollisionCode == COLLISION_ROOF ? 1 : 0;
 
 						// ATE; If an armed object, don't add....
 						if ( pObject->ubActionCode != THROW_ARM_ITEM )
@@ -569,7 +562,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 	{
 		iCollisionCode = CheckForCollision( dX, dY, dZ, dDeltaX, dDeltaY, dDeltaZ, &usStructureID, &dNormalX, &dNormalY, &dNormalZ );
 	}
-	else if ( pObject->fTestObject == TEST_OBJECT_NO_COLLISIONS )
+	else // pObject->fTestObject == TEST_OBJECT_NO_COLLISIONS
 	{
 		iCollisionCode = COLLISION_NONE;
 
@@ -933,8 +926,6 @@ static BOOLEAN CheckForCatchObject(REAL_OBJECT* pObject);
 
 static BOOLEAN PhysicsMoveObject(REAL_OBJECT* pObject)
 {
-	LEVELNODE *pNode;
-
 	//Determine new gridno
 	const GridNo sNewGridNo = GridNoFromVector_3(pObject->Position);
 
@@ -970,7 +961,7 @@ static BOOLEAN PhysicsMoveObject(REAL_OBJECT* pObject)
 				if ( sNewGridNo != pObject->sGridNo )
 				{
 					ANITILE_PARAMS	AniParams{};
-					AniParams.sGridNo = (INT16)sNewGridNo;
+					AniParams.sGridNo = sNewGridNo;
 					AniParams.ubLevelID = ANI_STRUCT_LEVEL;
 					AniParams.sDelay = (INT16)( 100 + PreRandom( 100 ) );
 					AniParams.sStartFrame = 0;
@@ -1000,10 +991,9 @@ static BOOLEAN PhysicsMoveObject(REAL_OBJECT* pObject)
 
 					// Now get graphic index
 					INT16 const sTileIndex = GetTileGraphicForItem(GCM->getItem(pObject->Obj.usItem));
-					//sTileIndex = BULLETTILE1;
 
 					// Set new gridno, add
-					pNode = AddStructToTail( sNewGridNo, sTileIndex );
+					LEVELNODE *pNode = AddStructToTail( sNewGridNo, sTileIndex );
 					pNode->ubShadeLevel=DEFAULT_SHADE_LEVEL;
 					pNode->ubNaturalShadeLevel=DEFAULT_SHADE_LEVEL;
 					pNode->uiFlags |= ( LEVELNODE_USEABSOLUTEPOS | LEVELNODE_IGNOREHEIGHT | LEVELNODE_PHYSICSOBJECT | LEVELNODE_DYNAMIC );
@@ -1081,8 +1071,6 @@ static vector_3 FindBestForceForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT1
 {
 	vector_3 vDirNormal, vPosition, vForce;
 	INT16    sDestX, sDestY, sSrcX, sSrcY;
-	float    dRange;
-	float    dTestRange, dTestDiff;
 	INT32    iNumChecks = 0;
 
 	// Get XY from gridno
@@ -1104,7 +1092,7 @@ static vector_3 FindBestForceForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT1
 	vDirNormal.z = sinf( dzDegrees );
 
 	// Get range
-	dRange = (float)GetRangeInCellCoordsFromGridNoDiff( sGridNo, sSrcGridNo );
+	const float dRange = (float)GetRangeInCellCoordsFromGridNoDiff( sGridNo, sSrcGridNo );
 
 	//calculate force needed
 	float dForce = 12 * ( sqrtf( ( GRAVITY * dRange ) / sinf( 2 * dzDegrees ) ) );
@@ -1115,17 +1103,16 @@ static vector_3 FindBestForceForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT1
 		// now di a binary search to find best value....
 		iNumChecks++;
 
-
 		// Now use a force
 		vForce = vDirNormal * dForce;
 
-		dTestRange = CalculateObjectTrajectory( sEndZ, pItem, &vPosition, &vForce, psGridNo );
+		const float dTestRange = CalculateObjectTrajectory( sEndZ, pItem, &vPosition, &vForce, psGridNo );
 
 		// What's the diff?
-		dTestDiff = dTestRange - dRange;
+		const float dTestDiff = dTestRange - dRange;
 
 		// How have we done?
-		// < 5% off...
+		// < 1% off...
 		if ( fabs( ( dTestDiff / dRange ) ) < .01 )
 		{
 			break;
@@ -1273,13 +1260,6 @@ static void FindTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 sStartZ, INT16
 // return range
 static FLOAT CalculateObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE* pItem, vector_3* vPosition, vector_3* vForce, INT16* psFinalGridNo)
 {
-	FLOAT dDiffX, dDiffY;
-
-	if ( psFinalGridNo )
-	{
-		(*psFinalGridNo) = NOWHERE;
-	}
-
 	REAL_OBJECT* const pObject = CreatePhysicalObject(pItem, -1, vPosition->x, vPosition->y, vPosition->z, vForce->x, vForce->y, vForce->z, NULL, NO_THROW_ACTION, 0);
 
 	// Set some special values...
@@ -1296,9 +1276,9 @@ static FLOAT CalculateObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE* pItem, 
 
 	PhysicsDeleteObject( pObject );
 
-	// get new x, y, z values
-	dDiffX = ( pObject->TestTargetPosition.x - vPosition->x );
-	dDiffY = ( pObject->TestTargetPosition.y - vPosition->y );
+	// get new x, y values
+	const float dDiffX = pObject->TestTargetPosition.x - vPosition->x;
+	const float dDiffY = pObject->TestTargetPosition.y - vPosition->y;
 
 	if ( psFinalGridNo )
 	{
@@ -1319,7 +1299,6 @@ static INT32 ChanceToGetThroughObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE
 	pObject->fTestPositionNotSet = TRUE;
 	pObject->TestZTarget = sTargetZ;
 	pObject->fVisible = FALSE;
-	//pObject->fPotentialForDebug = TRUE;
 
 	// Alrighty, move this beast until it dies....
 	while( pObject->fAlive )
@@ -1633,7 +1612,7 @@ void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridN
 		SLOGD("Throw miss by: {}", bMissBy);
 
 		// Default to max radius...
-		INT8 bMaxRadius = 5;
+		INT8 bMaxRadius = MAX_MISS_RADIUS;
 
 		// scale if pyth spaces away is too far
 		if ( PythSpacesAway( sGridNo, pSoldier->sGridNo ) < 3 ) // 3 = bMaxRadius / 1.5, rounded down
@@ -1797,17 +1776,15 @@ static BOOLEAN CheckForCatchObject(REAL_OBJECT* pObject)
 
 static BOOLEAN AttemptToCatchObject(REAL_OBJECT* pObject)
 {
-	UINT8 ubChanceToCatch;
-
 	// OK, get chance to catch
 	// base it on...? CC? Dexterity?
-	ubChanceToCatch = 50 + EffectiveDexterity(pObject->target) / 2;
+	const UINT8 ubChanceToCatch = 50 + EffectiveDexterity(pObject->target) / 2;
 
 	SLOGD("Chance To Catch: {}", ubChanceToCatch);
 
 	pObject->fCatchCheckDone = TRUE;
 
-	if ( PreRandom( 100 ) > ubChanceToCatch )
+	if ( PreChance( ubChanceToCatch ) )
 	{
 		return( FALSE );
 	}
@@ -1820,9 +1797,6 @@ static BOOLEAN AttemptToCatchObject(REAL_OBJECT* pObject)
 
 static BOOLEAN DoCatchObject(REAL_OBJECT* pObject)
 {
-	BOOLEAN fGoodCatch = FALSE;
-	UINT16  usItem;
-
 	// Get intended target
 	SOLDIERTYPE* const pSoldier = pObject->target;
 
@@ -1852,10 +1826,10 @@ static BOOLEAN DoCatchObject(REAL_OBJECT* pObject)
 	}
 
 	// Get item
-	usItem = pObject->Obj.usItem;
+	const UINT16 usItem = pObject->Obj.usItem;
 
 	// Transfer object
-	fGoodCatch = AutoPlaceObject( pSoldier, &(pObject->Obj), TRUE );
+	const BOOLEAN fGoodCatch = AutoPlaceObject( pSoldier, &(pObject->Obj), TRUE );
 
 	// Report success....
 	if ( fGoodCatch )
@@ -1877,8 +1851,6 @@ static void HandleArmedObjectImpact(REAL_OBJECT* pObject)
 	INT16      sZ;
 	BOOLEAN    fDoImpact = FALSE;
 	BOOLEAN    fCheckForDuds = FALSE;
-	OBJECTTYPE *pObj;
-	INT32      iTrapped = 0;
 	UINT16     usFlags = 0;
 	INT8       bLevel = 0;
 
@@ -1886,7 +1858,7 @@ static void HandleArmedObjectImpact(REAL_OBJECT* pObject)
 	sZ = (INT16)CONVERT_HEIGHTUNITS_TO_PIXELS( (INT16)( pObject->Position.z ) ) - gpWorldLevelData[ pObject->sGridNo ].sHeight;
 
 	// get OBJECTTYPE
-	pObj = &(pObject->Obj);
+	OBJECTTYPE * const pObj = &(pObject->Obj);
 
 	// ATE: Make sure number of objects is 1...
 	pObj->ubNumberOfObjects = 1;
@@ -1919,16 +1891,17 @@ static void HandleArmedObjectImpact(REAL_OBJECT* pObject)
 		}
 		else	// didn't go off!
 		{
+			bool trapped = false;
 	#ifdef TESTDUDEXPLOSIVES
 			if ( 1 )
 	#else
 			if ( pObj->bStatus[0] >= USABLE && PreRandom(100) < (UINT32) pObj->bStatus[0] + PreRandom( 50 ) )
 	#endif
 			{
-				iTrapped = PreRandom( 4 ) + 2;
+				trapped = true;
 			}
 
-			if ( iTrapped )
+			if ( trapped )
 			{
 				// Start timed bomb...
 				usFlags |= WORLD_ITEM_ARMED_BOMB;
@@ -2052,20 +2025,11 @@ void LoadPhysicsTableFromSavedGameFile(HWFILE const hFile)
 
 static UINT16 RandomGridFromRadius(INT16 sSweetGridNo, INT8 ubMinRadius, INT8 ubMaxRadius)
 {
-	INT16  sX, sY;
-	INT16  sGridNo;
-	INT32  leftmost;
-	UINT32 cnt = 0;
-
-	if ( ubMaxRadius == 0 || ubMinRadius == 0 )
+	// Maximum of 50 attempts to find a random GridNo
+	for (int cnt = 0; cnt < 50; ++cnt)
 	{
-		return( sSweetGridNo );
-	}
-
-	for (;;)
-	{
-		sX = (UINT16)PreRandom( ubMaxRadius );
-		sY = (UINT16)PreRandom( ubMaxRadius );
+		INT16 sX = static_cast<INT16>(PreRandom( ubMaxRadius ));
+		INT16 sY = static_cast<INT16>(PreRandom( ubMaxRadius ));
 
 		if ( ( sX < ubMinRadius || sY < ubMinRadius ) && ubMaxRadius != ubMinRadius )
 		{
@@ -2082,21 +2046,19 @@ static UINT16 RandomGridFromRadius(INT16 sSweetGridNo, INT8 ubMinRadius, INT8 ub
 			sY = sY * -1;
 		}
 
-		leftmost = ( ( sSweetGridNo + ( WORLD_COLS * sY ) )/ WORLD_COLS ) * WORLD_COLS;
+		const GridNo leftmost = ( ( sSweetGridNo + ( WORLD_COLS * sY ) )/ WORLD_COLS ) * WORLD_COLS;
 
-		sGridNo = sSweetGridNo + ( WORLD_COLS * sY ) + sX;
+		const GridNo sGridNo = sSweetGridNo + ( WORLD_COLS * sY ) + sX;
 
-		if ( sGridNo == sSweetGridNo )
-		{
-			continue;
-		}
-
-		if (++cnt > 50) return NOWHERE;
-
+		// Ensure we do not return a GridNo on the opposite side of the map
 		if ( sGridNo >=0 && sGridNo < WORLD_MAX &&
 			sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS ) )
 		{
 			return sGridNo;
 		}
 	}
+
+	// Nothing found, return the original GridNo, our caller doesn't expect NOWHERE.
+	SLOGW("No matching random GridNo found");
+	return sSweetGridNo;
 }

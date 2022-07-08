@@ -170,6 +170,8 @@ static void shutdownGame()
 	SDL_Quit();
 }
 
+static bool SetGlobalLocale(const char* name);
+
 /** Deinitialize the game an exit. */
 static void deinitGameAndExit()
 {
