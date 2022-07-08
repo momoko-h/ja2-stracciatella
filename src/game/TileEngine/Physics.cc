@@ -168,15 +168,13 @@ REAL_OBJECT* CreatePhysicalObject(OBJECTTYPE const* const pGameObj, float const 
 }
 
 
-static BOOLEAN RemoveRealObject(REAL_OBJECT* const o)
+static void RemoveRealObject(REAL_OBJECT* const o)
 {
-	CHECKF(ObjectSlots <= o && o < endof(ObjectSlots));
+	Assert(ObjectSlots <= o && o < endof(ObjectSlots));
 
 	o->fAllocated = FALSE;
 
 	RecountObjectSlots();
-
-	return( TRUE );
 }
 
 
@@ -226,9 +224,9 @@ void RemoveAllPhysicsObjects( )
 }
 
 
-static BOOLEAN PhysicsComputeForces(REAL_OBJECT* pObject);
+static void    PhysicsComputeForces(REAL_OBJECT* pObject);
 static BOOLEAN PhysicsHandleCollisions(REAL_OBJECT* pObject, INT32* piCollisionID, float DeltaTime);
-static BOOLEAN PhysicsIntegrate(REAL_OBJECT* pObject, float DeltaTime);
+static void    PhysicsIntegrate(REAL_OBJECT* pObject, float DeltaTime);
 static BOOLEAN PhysicsMoveObject(REAL_OBJECT* pObject);
 static BOOLEAN PhysicsUpdateLife(REAL_OBJECT* pObject, float DeltaTime);
 
@@ -242,10 +240,7 @@ static void SimulateObject(REAL_OBJECT* pObject, const float deltaT)
 
 	if ( pObject->fAlive )
 	{
-		if ( !PhysicsComputeForces( pObject ) )
-		{
-			return;
-		}
+		PhysicsComputeForces( pObject );
 
 		float CurrentTime = 0;
 
@@ -254,10 +249,7 @@ static void SimulateObject(REAL_OBJECT* pObject, const float deltaT)
 
 		while( CurrentTime < deltaT )
 		{
-			if ( !PhysicsIntegrate( pObject, DeltaTime ) )
-			{
-				break;
-			}
+			PhysicsIntegrate( pObject, DeltaTime );
 
 			INT32 iCollisionID;
 			if ( !PhysicsHandleCollisions( pObject, &iCollisionID, DeltaTime  ) )
@@ -281,7 +273,7 @@ static void SimulateObject(REAL_OBJECT* pObject, const float deltaT)
 }
 
 
-static BOOLEAN PhysicsComputeForces(REAL_OBJECT* pObject)
+static void PhysicsComputeForces(REAL_OBJECT* const pObject)
 {
 	// Calculate forces
 	pObject->Force = pObject->InitialForce;
@@ -296,8 +288,6 @@ static BOOLEAN PhysicsComputeForces(REAL_OBJECT* pObject)
 		pObject->Force += pObject->Velocity * -pObject->AppliedMu;
 		pObject->fApplyFriction = FALSE;
 	}
-
-	return( TRUE );
 }
 
 
@@ -416,7 +406,7 @@ static BOOLEAN PhysicsUpdateLife(REAL_OBJECT* pObject, float DeltaTime)
 }
 
 
-static BOOLEAN PhysicsIntegrate(REAL_OBJECT* pObject, float DeltaTime)
+static void PhysicsIntegrate(REAL_OBJECT* const pObject, const float DeltaTime)
 {
 	// Save old position
 	pObject->OldPosition = pObject->Position;
@@ -456,8 +446,6 @@ static BOOLEAN PhysicsIntegrate(REAL_OBJECT* pObject, float DeltaTime)
 			}
 		}
 	}
-
-	return( TRUE );
 }
 
 
