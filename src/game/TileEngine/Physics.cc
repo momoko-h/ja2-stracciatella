@@ -79,7 +79,6 @@ UINT32  guiNumObjectSlots = 0;
 #define EPSILONP				(float)0.01
 #define EPSILONPZ				3
 
-#define CALCULATE_OBJECT_MASS( m )		( (float)( m * 2 ) )
 #define SCALE_VERT_VAL_TO_HORZ( f )		( ( f / HEIGHT_UNITS ) * CELL_X_SIZE )
 #define SCALE_HORZ_VAL_TO_VERT( f )		( ( f / CELL_X_SIZE ) * HEIGHT_UNITS )
 
@@ -128,20 +127,11 @@ REAL_OBJECT* CreatePhysicalObject(OBJECTTYPE const* const pGameObj, float const 
 	*o = REAL_OBJECT{};
 
 	o->Obj = *pGameObj;
-
-	FLOAT mass = CALCULATE_OBJECT_MASS(GCM->getItem(pGameObj->usItem)->getWeight());
-	if (mass == 0) mass = 10;
-
-	// OK, mass determines the smoothness of the physics integration
-	// For gameplay, we will use mass for maybe max throw distance
-	mass = 60;
-
 	o->dLifeLength             = dLifeLength;
 	o->fAllocated              = TRUE;
 	o->fAlive                  = TRUE;
 	o->fApplyFriction          = FALSE;
 	o->uiSoundID               = NO_SAMPLE;
-	o->OneOverMass             = 1 / mass;
 	o->Position.x              = xPos;
 	o->Position.y              = yPos;
 	o->Position.z              = zPos;
@@ -449,7 +439,7 @@ static BOOLEAN PhysicsIntegrate(REAL_OBJECT* pObject, float DeltaTime)
 		pObject->TestTargetPosition = pObject->Position;
 	}
 
-	pObject->Velocity += pObject->Force * (DeltaTime * pObject->OneOverMass);
+	pObject->Velocity += pObject->Force * (DeltaTime / 60.0f);
 
 	if ( pObject->fPotentialForDebug )
 	{
