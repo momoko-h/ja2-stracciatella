@@ -62,26 +62,33 @@
 
 #define MAX_INTEGRATIONS			8
 
-#define TIME_MULTI				1.8
-
+constexpr float TIME_MULTI = 1.8f;
 constexpr float DELTA_T = TIME_MULTI;
-
-
-#define GRAVITY					( 9.8 * 2.5 )
+constexpr float GRAVITY = 9.8 * 2.5;
 
 
 #define NUM_OBJECT_SLOTS			50
 static REAL_OBJECT ObjectSlots[NUM_OBJECT_SLOTS];
 UINT32  guiNumObjectSlots = 0;
 
-#define EPSILONV				0.5
-#define EPSILONP				(float)0.01
+constexpr float EPSILONV = 0.5f;
+constexpr float EPSILONP = 0.01f;
 
 #define SCALE_VERT_VAL_TO_HORZ( f )		( ( f / HEIGHT_UNITS ) * CELL_X_SIZE )
 #define SCALE_HORZ_VAL_TO_VERT( f )		( ( f / CELL_X_SIZE ) * HEIGHT_UNITS )
 
 
 #define REALOBJ2ID(o) 				((o) - ObjectSlots)
+
+
+static GridNo GridNoFromVector_3(vector_3 const& v)
+{
+	const INT16 x = static_cast<INT16>(v.x) / CELL_X_SIZE;
+	const INT16 y = static_cast<INT16>(v.y) / CELL_Y_SIZE;
+	const GridNo gn = MAPROWCOLTOPOS(y, x);
+	// Translate MAPROWCOLTOPOS's invalid value to NOWHERE if necessary
+	return gn != -1 ? gn : NOWHERE;
+}
 
 
 /// OBJECT POOL FUNCTIONS
@@ -144,7 +151,7 @@ REAL_OBJECT* CreatePhysicalObject(OBJECTTYPE const* const pGameObj, float const 
 	o->InitialForce.y          = SCALE_VERT_VAL_TO_HORZ(yForce);
 	o->InitialForce.z          = zForce;
 	o->InitialForce            *= 1.5f / TIME_MULTI;
-	o->sGridNo                 = MAPROWCOLTOPOS(((INT16)yPos / CELL_Y_SIZE), ((INT16)xPos / CELL_X_SIZE));
+	o->sGridNo                 = GridNoFromVector_3(o->Position);
 	o->pNode                   = 0;
 	o->pShadow                 = 0;
 
@@ -226,43 +233,35 @@ static BOOLEAN PhysicsMoveObject(REAL_OBJECT* pObject);
 static BOOLEAN PhysicsUpdateLife(REAL_OBJECT* pObject, float DeltaTime);
 
 
-static void SimulateObject(REAL_OBJECT* pObject, float deltaT)
+static void SimulateObject(REAL_OBJECT* pObject, const float deltaT)
 {
-	float   DeltaTime = 0;
-	float   CurrentTime = 0;
-	float   TargetTime = DeltaTime;
-	INT32   iCollisionID;
-	BOOLEAN fEndThisObject = FALSE;
-
-	if ( !PhysicsUpdateLife( pObject, (float)deltaT ) )
+	if ( !PhysicsUpdateLife( pObject, deltaT ) )
 	{
 		return;
 	}
 
 	if ( pObject->fAlive )
 	{
-		CurrentTime = 0;
-		TargetTime = (float)deltaT;
-
-		// Do subtime here....
-		DeltaTime = (float)deltaT / (float)10;
-
 		if ( !PhysicsComputeForces( pObject ) )
 		{
 			return;
 		}
 
-		while( CurrentTime < TargetTime )
+		float CurrentTime = 0;
+
+		// Do subtime here....
+		const float DeltaTime = deltaT / 10.0f;
+
+		while( CurrentTime < deltaT )
 		{
 			if ( !PhysicsIntegrate( pObject, DeltaTime ) )
 			{
-				fEndThisObject = TRUE;
 				break;
 			}
 
+			INT32 iCollisionID;
 			if ( !PhysicsHandleCollisions( pObject, &iCollisionID, DeltaTime  ) )
 			{
-				fEndThisObject = TRUE;
 				break;
 			}
 
@@ -274,16 +273,10 @@ static void SimulateObject(REAL_OBJECT* pObject, float deltaT)
 			CurrentTime += DeltaTime;
 		}
 
-		if ( fEndThisObject )
+		if ( CurrentTime >= deltaT )
 		{
-			return;
+			PhysicsMoveObject( pObject );
 		}
-
-		if ( !PhysicsMoveObject( pObject ) )
-		{
-			return;
-		}
-
 	}
 }
 
@@ -293,7 +286,7 @@ static BOOLEAN PhysicsComputeForces(REAL_OBJECT* pObject)
 	// Calculate forces
 	pObject->Force = pObject->InitialForce;
 
-	pObject->Force.z -= (float)GRAVITY;
+	pObject->Force.z -= GRAVITY;
 
 	// Set intial force to zero
 	pObject->InitialForce *= 0;
@@ -469,7 +462,7 @@ static BOOLEAN PhysicsIntegrate(REAL_OBJECT* pObject, float DeltaTime)
 
 
 static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisionID);
-static void PhysicsResolveCollision(REAL_OBJECT* pObject, vector_3* pVelocity, vector_3* pNormal, float CoefficientOfRestitution);
+static void PhysicsResolveCollision(REAL_OBJECT* pObject, vector_3 const& pVelocity, vector_3 const& pNormal, float CoefficientOfRestitution);
 
 
 static BOOLEAN PhysicsHandleCollisions(REAL_OBJECT* pObject, INT32* piCollisionID, float DeltaTime)
@@ -517,7 +510,7 @@ static BOOLEAN PhysicsHandleCollisions(REAL_OBJECT* pObject, INT32* piCollisionI
 			pObject->OldPosition.y = pObject->Position.x - dDeltaY;
 			pObject->OldPosition.z = pObject->Position.z - dDeltaZ;
 
-			PhysicsResolveCollision( pObject, &(pObject->CollisionVelocity), &(pObject->CollisionNormal), pObject->CollisionElasticity );
+			PhysicsResolveCollision( pObject, pObject->CollisionVelocity, pObject->CollisionNormal, pObject->CollisionElasticity );
 		}
 
 		if ( pObject->Position.z < 0 )
@@ -584,7 +577,6 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 	FLOAT    dElasity = 1;
 	UINT16   usStructureID;
 	FLOAT    dNormalX, dNormalY, dNormalZ;
-	INT16    sGridNo;
 
 	// Checkf for collisions
 	dX = pObject->Position.x;
@@ -780,8 +772,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 				// Break window!
 				SLOGD("Object {}: Collision Window", REALOBJ2ID(pObject));
 
-				sGridNo = MAPROWCOLTOPOS( ( (INT16)pObject->Position.y / CELL_Y_SIZE ), ( (INT16)pObject->Position.x / CELL_X_SIZE ) );
-
+				const GridNo sGridNo = GridNoFromVector_3(pObject->Position);
 				WindowHit(sGridNo, usStructureID, FALSE, TRUE);
 			}
 			*piCollisionID = COLLISION_NONE;
@@ -800,7 +791,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			vTemp = { 0, 0, -1 };
 
 			pObject->fApplyFriction = TRUE;
-			pObject->AppliedMu = (float)(0.34 * TIME_MULTI );
+			pObject->AppliedMu = 0.34f * TIME_MULTI;
 
 			dElasity = 1.3f;
 
@@ -820,9 +811,9 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 			// Continue going...
 			pObject->fApplyFriction = TRUE;
-			pObject->AppliedMu = (float)(1.54 * TIME_MULTI );
+			pObject->AppliedMu = 1.54f * TIME_MULTI;
 
-			sGridNo = MAPROWCOLTOPOS( ( (INT16)pObject->Position.y / CELL_Y_SIZE ), ( (INT16)pObject->Position.x / CELL_X_SIZE ) );
+			const GridNo sGridNo = GridNoFromVector_3(pObject->Position);
 
 			// Make thing unalive...
 			pObject->fAlive = FALSE;
@@ -877,7 +868,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			vTemp = { 0, 0, -1 };
 
 			pObject->fApplyFriction = TRUE;
-			pObject->AppliedMu = (float)(0.54 * TIME_MULTI );
+			pObject->AppliedMu = 0.54f * TIME_MULTI;
 
 			dElasity = 1.4f;
 
@@ -896,7 +887,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			vTemp = { 0, 0, -1 };
 
 			pObject->fApplyFriction = TRUE;
-			pObject->AppliedMu = (float)(0.54 * TIME_MULTI );
+			pObject->AppliedMu = 0.54f * TIME_MULTI;
 
 			dElasity = 1.2f;
 
@@ -966,10 +957,10 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 }
 
 
-static void PhysicsResolveCollision(REAL_OBJECT* pObject, vector_3* pVelocity, vector_3* pNormal, float CoefficientOfRestitution)
+static void PhysicsResolveCollision(REAL_OBJECT* pObject, vector_3 const& pVelocity, vector_3 const& pNormal, float CoefficientOfRestitution)
 {
-	const float Impulse = -CoefficientOfRestitution * (*pVelocity * *pNormal);
-	pObject->Velocity += *pNormal * Impulse;
+	const float Impulse = -CoefficientOfRestitution * (pVelocity * pNormal);
+	pObject->Velocity += pNormal * Impulse;
 }
 
 
@@ -979,10 +970,9 @@ static BOOLEAN CheckForCatchObject(REAL_OBJECT* pObject);
 static BOOLEAN PhysicsMoveObject(REAL_OBJECT* pObject)
 {
 	LEVELNODE *pNode;
-	INT16     sNewGridNo;
 
 	//Determine new gridno
-	sNewGridNo = MAPROWCOLTOPOS( ( (INT16)pObject->Position.y / CELL_Y_SIZE ), ( (INT16)pObject->Position.x / CELL_X_SIZE ) );
+	const GridNo sNewGridNo = GridNoFromVector_3(pObject->Position);
 
 	if ( pObject->fFirstTimeMoved )
 	{
@@ -991,7 +981,7 @@ static BOOLEAN PhysicsMoveObject(REAL_OBJECT* pObject)
 	}
 
 	// CHECK FOR RANGE< IF INVALID, REMOVE!
-	if ( sNewGridNo == -1 )
+	if ( sNewGridNo == NOWHERE )
 	{
 		PhysicsDeleteObject( pObject );
 		return( FALSE );
@@ -1132,9 +1122,7 @@ static vector_3 FindBestForceForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT1
 {
 	vector_3 vDirNormal, vPosition, vForce;
 	INT16    sDestX, sDestY, sSrcX, sSrcY;
-	float    dForce = 20;
 	float    dRange;
-	float    dPercentDiff = 0;
 	float    dTestRange, dTestDiff;
 	INT32    iNumChecks = 0;
 
@@ -1160,9 +1148,7 @@ static vector_3 FindBestForceForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT1
 	dRange = (float)GetRangeInCellCoordsFromGridNoDiff( sGridNo, sSrcGridNo );
 
 	//calculate force needed
-	{
-		dForce = (float)( 12 * ( sqrt( ( GRAVITY * dRange ) / sin( 2 * dzDegrees ) ) ) );
-	}
+	float dForce = 12 * ( sqrtf( ( GRAVITY * dRange ) / sinf( 2 * dzDegrees ) ) );
 
 	do
 	{
@@ -1192,18 +1178,12 @@ static vector_3 FindBestForceForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT1
 		}
 
 		// What is the Percentage difference?
-		dPercentDiff = dForce * ( dTestDiff / dRange );
+		const float dPercentDiff = dForce * ( dTestDiff / dRange );
 
 		// Adjust force accordingly
 		dForce = dForce - ( ( dPercentDiff ) / 2 );
 
 	} while( TRUE );
-
-	// OK, we have our force, calculate change to get through without collide
-	//if ( ChanceToGetThroughObjectTrajectory( sEndZ, pItem, &vPosition, &vForce, NULL ) == 0 )
-	{
-		//ScreenMsg( FONT_MCOLOR_LTYELLOW, MSG_INTERFACE, L"Chance to get through throw is 0." );
-	}
 
 	if ( pdMagForce )
 	{
@@ -1219,9 +1199,7 @@ static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 s
 {
 	vector_3 vDirNormal, vPosition;
 	INT16    sDestX, sDestY, sSrcX, sSrcY;
-	float    dRange;
-	float    dzDegrees = ( (float)PI/8 );
-	float    dPercentDiff = 0;
+	float    dzDegrees = PI / 8;
 	float    dTestRange, dTestDiff;
 	INT32    iNumChecks = 0;
 
@@ -1245,7 +1223,7 @@ static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 s
 	vDirNormal.z = sinf( dzDegrees );
 
 	// Get range
-	dRange = (float)GetRangeInCellCoordsFromGridNoDiff( sGridNo, sSrcGridNo );
+	const float dRange = (float)GetRangeInCellCoordsFromGridNoDiff( sGridNo, sSrcGridNo );
 
 	do
 	{
@@ -1274,7 +1252,7 @@ static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 s
 		}
 
 		// What is the Percentage difference?
-		dPercentDiff = dzDegrees * ( dTestDiff / dRange );
+		const float dPercentDiff = dzDegrees * ( dTestDiff / dRange );
 
 		// Adjust degrees accordingly
 		dzDegrees = dzDegrees - ( dPercentDiff / 2 );
@@ -1292,17 +1270,10 @@ static float FindBestAngleForTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 s
 			return 0;
 		}
 
-
 		// From degrees, calculate Z portion of normal
 		vDirNormal.z = sinf( dzDegrees );
 
 	} while( TRUE );
-
-	// OK, we have our force, calculate change to get through without collide
-	//if ( ChanceToGetThroughObjectTrajectory( sEndZ, pItem, &vPosition, &vForce ) == 0 )
-	//{
-	//	ScreenMsg( FONT_MCOLOR_LTYELLOW, MSG_INTERFACE, L"Chance to get through throw is 0." );
-	//}
 
 	return( dzDegrees );
 }
@@ -1344,7 +1315,6 @@ static void FindTrajectory(INT16 sSrcGridNo, INT16 sGridNo, INT16 sStartZ, INT16
 static FLOAT CalculateObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE* pItem, vector_3* vPosition, vector_3* vForce, INT16* psFinalGridNo)
 {
 	FLOAT dDiffX, dDiffY;
-	INT16 sGridNo;
 
 	if ( psFinalGridNo )
 	{
@@ -1365,9 +1335,6 @@ static FLOAT CalculateObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE* pItem, 
 		SimulateObject( pObject, DELTA_T );
 	}
 
-	// Calculate gridno from last position
-	sGridNo = MAPROWCOLTOPOS( ( (INT16)pObject->Position.y / CELL_Y_SIZE ), ( (INT16)pObject->Position.x / CELL_X_SIZE ) );
-
 	PhysicsDeleteObject( pObject );
 
 	// get new x, y, z values
@@ -1376,7 +1343,8 @@ static FLOAT CalculateObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE* pItem, 
 
 	if ( psFinalGridNo )
 	{
-		(*psFinalGridNo) = sGridNo;
+		// Calculate gridno from last position
+		*psFinalGridNo = GridNoFromVector_3(pObject->Position);
 	}
 
 	return std::hypot<float>(dDiffX, dDiffY);
@@ -1404,16 +1372,8 @@ static INT32 ChanceToGetThroughObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE
 	if ( psNewGridNo != NULL )
 	{
 		// Calculate gridno from last position
-
 		// If NOT from UI, use exact collision position
-		if ( fFromUI )
-		{
-			(*psNewGridNo) = MAPROWCOLTOPOS( ( (INT16)pObject->Position.y / CELL_Y_SIZE ), ( (INT16)pObject->Position.x / CELL_X_SIZE ) );
-		}
-		else
-		{
-			(*psNewGridNo) = MAPROWCOLTOPOS( ( (INT16)pObject->EndedWithCollisionPosition.y / CELL_Y_SIZE ), ( (INT16)pObject->EndedWithCollisionPosition.x / CELL_X_SIZE ) );
-		}
+		*psNewGridNo = GridNoFromVector_3(fFromUI ? pObject->Position : pObject->EndedWithCollisionPosition);
 
 		(*pbLevel) = GET_OBJECT_LEVEL( pObject->EndedWithCollisionPosition.z - CONVERT_PIXELS_TO_HEIGHTUNITS( gpWorldLevelData[ (*psNewGridNo) ].sHeight ) );
 	}
@@ -1421,11 +1381,7 @@ static INT32 ChanceToGetThroughObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE
 	PhysicsDeleteObject( pObject );
 
 	// See If we collided
-	if ( pObject->fTestEndedWithCollision )
-	{
-		return( 0 );
-	}
-	return( 100 );
+	return pObject->fTestEndedWithCollision ? 0 : 100;
 }
 
 
@@ -1547,7 +1503,7 @@ static void CalculateLaunchItemBasicParams(const SOLDIERTYPE* pSoldier, const OB
 		if ( fMortar || fGLauncher )
 		{
 			// find min force
-			dMinForce = CalculateForceFromRange( (INT16)( sMinRange / 10 ), (FLOAT)( PI / 4 ) );
+			dMinForce = CalculateForceFromRange( sMinRange / 10, PI / 4 );
 
 			if ( dMagForce < dMinForce )
 			{
@@ -1726,7 +1682,6 @@ void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridN
 		bMissBy = 0;
 	}
 
-	//if ( 0 )
 	if ( bMissBy > 0 )
 	{
 		// Max the miss variance
@@ -1748,7 +1703,7 @@ void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridN
 		bMaxRadius = 5;
 
 		// scale if pyth spaces away is too far
-		if ( PythSpacesAway( sGridNo, pSoldier->sGridNo ) < ( (float)bMaxRadius / 1.5f ) )
+		if ( PythSpacesAway( sGridNo, pSoldier->sGridNo ) < 3 ) // 3 = bMaxRadius / 1.5, rounded down
 		{
 			bMaxRadius = PythSpacesAway( sGridNo, pSoldier->sGridNo ) / 2;
 		}
