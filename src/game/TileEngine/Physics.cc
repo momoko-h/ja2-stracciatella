@@ -40,7 +40,7 @@
 #include "Logger.h"
 
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 #include <stdexcept>
 
 #define NO_TEST_OBJECT				0
@@ -50,7 +50,6 @@
 
 #define OUTDOORS_START_ANGLE			(FLOAT)( PI/4 )
 #define INDOORS_START_ANGLE			(FLOAT)( PI/30 )
-//#define INDOORS_START_ANGLE			(FLOAT)( 0 )
 #define GLAUNCHER_START_ANGLE			(FLOAT)( PI/8 )
 #define GLAUNCHER_HIGHER_LEVEL_START_ANGLE	(FLOAT)( PI/6 )
 
@@ -65,22 +64,16 @@
 
 #define TIME_MULTI				1.8
 
-//#define TIME_MULTI				2.2
-
 
 #define DELTA_T					( 1.0 * TIME_MULTI )
 
 
 #define GRAVITY					( 9.8 * 2.5 )
-//#define GRAVITY				( 9.8 * 2.8 )
 
 
 #define NUM_OBJECT_SLOTS			50
 static REAL_OBJECT ObjectSlots[NUM_OBJECT_SLOTS];
 UINT32  guiNumObjectSlots = 0;
-BOOLEAN fDampingActive = FALSE;
-//real   Kdl = (float)0.5; // LINEAR DAMPENING ( WIND RESISTANCE )
-float   Kdl = (float)( 0.1 * TIME_MULTI ); // LINEAR DAMPENING ( WIND RESISTANCE )
 
 #define EPSILONV				0.5
 #define EPSILONP				(float)0.01
@@ -321,11 +314,6 @@ static BOOLEAN PhysicsComputeForces(REAL_OBJECT* pObject)
 	{
 		pObject->Force += pObject->Velocity * -pObject->AppliedMu;
 		pObject->fApplyFriction = FALSE;
-	}
-
-	if( fDampingActive )
-	{
-		pObject->Force += pObject->Velocity * -Kdl;
 	}
 
 	return( TRUE );
