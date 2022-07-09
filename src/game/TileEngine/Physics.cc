@@ -42,11 +42,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
-
-#define NO_TEST_OBJECT				0
-#define TEST_OBJECT_NO_COLLISIONS		1
-#define TEST_OBJECT_ANY_COLLISION		2
-#define TEST_OBJECT_NOTWALLROOF_COLLISIONS	3
+#include <vector>
 
 #define OUTDOORS_START_ANGLE			(FLOAT)( PI/4 )
 #define INDOORS_START_ANGLE			(FLOAT)( PI/30 )
@@ -136,6 +132,7 @@ REAL_OBJECT* CreatePhysicalObject(OBJECTTYPE const* const pGameObj, float const 
 	o->fAllocated              = TRUE;
 	o->fAlive                  = TRUE;
 	o->fApplyFriction          = FALSE;
+	o->fTestObject             = TEST_OBJECT::NONE;
 	o->uiSoundID               = NO_SAMPLE;
 	o->Position.x              = xPos;
 	o->Position.y              = yPos;
@@ -316,7 +313,7 @@ static BOOLEAN PhysicsUpdateLife(REAL_OBJECT* pObject, float DeltaTime)
 
 	if ( !pObject->fAlive )
 	{
-		if ( !pObject->fTestObject )
+		if ( pObject->fTestObject == TEST_OBJECT::NONE )
 		{
 			if ( pObject->uiSoundID != NO_SAMPLE )
 			{
@@ -356,7 +353,7 @@ static BOOLEAN PhysicsUpdateLife(REAL_OBJECT* pObject, float DeltaTime)
 				MakeNoise(pObject->owner, pObject->sGridNo, 0, 9 + PreRandom(9), NOISE_GRENADE_IMPACT);
 			}
 
-			if ( !pObject->fTestObject && pObject->iOldCollisionCode == COLLISION_GROUND )
+			if ( pObject->fTestObject == TEST_OBJECT::NONE && pObject->iOldCollisionCode == COLLISION_GROUND )
 			{
 				PlayLocationJA2Sample(pObject->sGridNo, THROW_IMPACT_2, MIDVOLUME, 1);
 			}
@@ -415,7 +412,7 @@ static void PhysicsIntegrate(REAL_OBJECT* const pObject, const float DeltaTime)
 
 	pObject->Velocity += pObject->Force * (DeltaTime / 60.0f);
 
-	if ( pObject->Obj.usItem == MORTAR_SHELL && !pObject->fTestObject && pObject->ubActionCode == THROW_ARM_ITEM )
+	if ( pObject->Obj.usItem == MORTAR_SHELL && pObject->fTestObject == TEST_OBJECT::NONE && pObject->ubActionCode == THROW_ARM_ITEM )
 	{
 		// Start soud if we have reached our max height
 		if ( pObject->OldVelocity.z >= 0 && pObject->Velocity.z < 0 )
@@ -542,7 +539,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 	FLOAT    dDeltaX, dDeltaY, dDeltaZ, dX, dY, dZ;
 	INT32    iCollisionCode = COLLISION_NONE;
 	BOOLEAN  fDoCollision = FALSE;
-	FLOAT    dElasity = 1;
+	float    elasticity = 1;
 	UINT16   usStructureID;
 	FLOAT    dNormalX, dNormalY, dNormalZ;
 
@@ -558,7 +555,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 	dDeltaZ = dZ - pObject->OldPosition.z;
 
 	// SKIP FIRST GRIDNO, WE'LL COLLIDE WITH OURSELVES....
-	if ( pObject->fTestObject != TEST_OBJECT_NO_COLLISIONS )
+	if ( pObject->fTestObject != TEST_OBJECT::NO_COLLISIONS )
 	{
 		iCollisionCode = CheckForCollision( dX, dY, dZ, dDeltaX, dDeltaY, dDeltaZ, &usStructureID, &dNormalX, &dNormalY, &dNormalZ );
 	}
@@ -588,20 +585,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 		}
 	}
 
-
-	// If a test object and we have collided with something ( should only be ground ( or roof? ) )
-	// Or destination?
-	if ( pObject->fTestObject == TEST_OBJECT_ANY_COLLISION )
-	{
-		if ( iCollisionCode != COLLISION_GROUND && iCollisionCode != COLLISION_ROOF && iCollisionCode != COLLISION_WATER && iCollisionCode != COLLISION_NONE )
-		{
-			pObject->fTestEndedWithCollision = TRUE;
-			pObject->fAlive = FALSE;
-			return( FALSE );
-		}
-	}
-
-	if ( pObject->fTestObject == TEST_OBJECT_NOTWALLROOF_COLLISIONS )
+	if ( pObject->fTestObject == TEST_OBJECT::NOTWALLROOF_COLLISIONS )
 	{
 		// So we don't collide with ourselves.....
 		if ( iCollisionCode != COLLISION_WATER && iCollisionCode != COLLISION_GROUND && iCollisionCode != COLLISION_NONE &&
@@ -687,7 +671,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 	}
 
 
-	if ( pObject->fTestObject != TEST_OBJECT_NOTWALLROOF_COLLISIONS )
+	if ( pObject->fTestObject != TEST_OBJECT::NOTWALLROOF_COLLISIONS )
 	{
 		if ( iCollisionCode != COLLISION_WATER && iCollisionCode != COLLISION_GROUND && iCollisionCode != COLLISION_NONE &&
 			iCollisionCode != COLLISION_ROOF && iCollisionCode != COLLISION_INTERIOR_ROOF &&
@@ -735,7 +719,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 		if ( iCollisionCode == COLLISION_WINDOW_NORTHWEST || iCollisionCode == COLLISION_WINDOW_NORTHEAST || iCollisionCode == COLLISION_WINDOW_SOUTHWEST || iCollisionCode == COLLISION_WINDOW_SOUTHEAST )
 		{
-			if ( !pObject->fTestObject )
+			if ( pObject->fTestObject == TEST_OBJECT::NONE )
 			{
 				// Break window!
 				SLOGD("Object {}: Collision Window", REALOBJ2ID(pObject));
@@ -761,11 +745,11 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			pObject->fApplyFriction = TRUE;
 			pObject->AppliedMu = 0.34f * TIME_MULTI;
 
-			dElasity = 1.3f;
+			elasticity = 1.3f;
 
 			fDoCollision = TRUE;
 
-			if ( !pObject->fTestObject && !pObject->fHaveHitGround )
+			if ( pObject->fTestObject == TEST_OBJECT::NONE && !pObject->fHaveHitGround )
 			{
 				PlayLocationJA2Sample(pObject->sGridNo, THROW_IMPACT_2, MIDVOLUME, 1);
 			}
@@ -789,7 +773,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			// If first time...
 			if ( pObject->fVisible )
 			{
-				if ( pObject->fTestObject == NO_TEST_OBJECT )
+				if ( pObject->fTestObject == TEST_OBJECT::NONE )
 				{
 					// Make invisible
 					pObject->fVisible = FALSE;
@@ -838,7 +822,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			pObject->fApplyFriction = TRUE;
 			pObject->AppliedMu = 0.54f * TIME_MULTI;
 
-			dElasity = 1.4f;
+			elasticity = 1.4f;
 
 			fDoCollision = TRUE;
 
@@ -857,7 +841,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			pObject->fApplyFriction = TRUE;
 			pObject->AppliedMu = 0.54f * TIME_MULTI;
 
-			dElasity = 1.2f;
+			elasticity = 1.2f;
 
 			fDoCollision = TRUE;
 
@@ -870,7 +854,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 			fDoCollision = TRUE;
 
-			dElasity = 1.1f;
+			elasticity = 1.1f;
 		}
 		else
 		{
@@ -890,14 +874,14 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 			fDoCollision = TRUE;
 
-			dElasity = 1.1f;
+			elasticity = 1.1f;
 		}
 
 		if ( fDoCollision )
 		{
 			pObject->CollisionNormal = vTemp;
-			pObject->CollisionElasticity  = dElasity;
-			pObject->iOldCollisionCode  = iCollisionCode;
+			pObject->CollisionElasticity = elasticity;
+			pObject->iOldCollisionCode = iCollisionCode;
 
 			// Save collision velocity
 			pObject->CollisionVelocity = pObject->OldVelocity;
@@ -1263,7 +1247,7 @@ static FLOAT CalculateObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE* pItem, 
 	REAL_OBJECT* const pObject = CreatePhysicalObject(pItem, -1, vPosition->x, vPosition->y, vPosition->z, vForce->x, vForce->y, vForce->z, NULL, NO_THROW_ACTION, 0);
 
 	// Set some special values...
-	pObject->fTestObject = TEST_OBJECT_NO_COLLISIONS;
+	pObject->fTestObject = TEST_OBJECT::NO_COLLISIONS;
 	pObject->TestZTarget = sTargetZ;
 	pObject->fTestPositionNotSet = TRUE;
 	pObject->fVisible = FALSE;
@@ -1295,7 +1279,7 @@ static INT32 ChanceToGetThroughObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE
 	REAL_OBJECT* const pObject = CreatePhysicalObject(pItem, -1, vPosition->x, vPosition->y, vPosition->z, vForce->x, vForce->y, vForce->z, NULL, NO_THROW_ACTION, 0);
 
 	// Set some special values...
-	pObject->fTestObject = TEST_OBJECT_NOTWALLROOF_COLLISIONS;
+	pObject->fTestObject = TEST_OBJECT::NOTWALLROOF_COLLISIONS;
 	pObject->fTestPositionNotSet = TRUE;
 	pObject->TestZTarget = sTargetZ;
 	pObject->fVisible = FALSE;
@@ -1591,7 +1575,7 @@ static FLOAT CalculateSoldierMaxForce(const SOLDIERTYPE* pSoldier, const OBJECTT
 #define MAX_MISS_RADIUS	5
 
 
-static UINT16 RandomGridFromRadius(INT16 sSweetGridNo, INT8 ubMinRadius, INT8 ubMaxRadius);
+static GridNo RandomGridFromRadius(GridNo sSweetGridNo, INT8 ubMinRadius, INT8 ubMaxRadius);
 
 
 void CalculateLaunchItemParamsForThrow(SOLDIERTYPE* const pSoldier, INT16 sGridNo, const UINT8 ubLevel, const INT16 sEndZ, OBJECTTYPE* const pItem, INT8 bMissBy, const UINT8 ubActionCode, SOLDIERTYPE* const target)
@@ -1692,7 +1676,7 @@ static BOOLEAN DoCatchObject(REAL_OBJECT* pObject);
 static BOOLEAN CheckForCatcher(REAL_OBJECT* const o, UINT16 const structure_id)
 {
 	// Do we want to catch?
-	if (o->fTestObject  != NO_TEST_OBJECT)          return FALSE;
+	if (o->fTestObject  != TEST_OBJECT::NONE)       return FALSE;
 	if (o->ubActionCode != THROW_TARGET_MERC_CATCH) return FALSE;
 	// Is it a guy?
 	if (structure_id    >= INVALID_STRUCTURE_ID)    return FALSE;
@@ -1708,7 +1692,7 @@ static BOOLEAN CheckForCatcher(REAL_OBJECT* const o, UINT16 const structure_id)
 static void CheckForObjectHittingMerc(REAL_OBJECT* const o, UINT16 const structure_id)
 {
 	// Do we want to catch?
-	if (o->fTestObject != NO_TEST_OBJECT)             return;
+	if (o->fTestObject != TEST_OBJECT::NONE)          return;
 	// Is it a guy?
 	if (structure_id   >= INVALID_STRUCTURE_ID)       return;
 	if (structure_id   == o->ubLastTargetTakenDamage) return;
@@ -1730,7 +1714,7 @@ static BOOLEAN CheckForCatchObject(REAL_OBJECT* pObject)
 	UINT32 uiSpacesAway;
 
 	// Do we want to catch?
-	if ( pObject->fTestObject ==  NO_TEST_OBJECT )
+	if ( pObject->fTestObject ==  TEST_OBJECT::NONE )
 	{
 		if ( pObject->ubActionCode == THROW_TARGET_MERC_CATCH )
 		{
@@ -2023,42 +2007,36 @@ void LoadPhysicsTableFromSavedGameFile(HWFILE const hFile)
 }
 
 
-static UINT16 RandomGridFromRadius(INT16 sSweetGridNo, INT8 ubMinRadius, INT8 ubMaxRadius)
+static GridNo RandomGridFromRadius(const GridNo sSweetGridNo, const INT8 ubMinRadius, const INT8 ubMaxRadius)
 {
-	// Maximum of 50 attempts to find a random GridNo
-	for (int cnt = 0; cnt < 50; ++cnt)
+	// Build a vector of all GridNo around the sweet gridno in the radius
+	// determined by ubMinRadius and ubMaxRadius.
+
+	std::vector<GridNo> possibleGridNos;
+
+	const int sweetX = sSweetGridNo % WORLD_COLS;
+	const int sweetY = sSweetGridNo / WORLD_COLS;
+
+	const auto push = [&] (const int x, const int y)
 	{
-		INT16 sX = static_cast<INT16>(PreRandom( ubMaxRadius ));
-		INT16 sY = static_cast<INT16>(PreRandom( ubMaxRadius ));
-
-		if ( ( sX < ubMinRadius || sY < ubMinRadius ) && ubMaxRadius != ubMinRadius )
+		if (x >= 0 && x < WORLD_COLS && y >= 0 && y < WORLD_ROWS)
 		{
-			continue;
+			possibleGridNos.push_back(x + y * WORLD_COLS);
 		}
+	};
 
-		if ( PreRandom( 2 ) == 0 )
+	for (int x = ubMinRadius; x <= ubMaxRadius; ++x)
+	{
+		for (int y = ubMinRadius; y <= ubMaxRadius; ++y)
 		{
-			sX = sX * -1;
-		}
-
-		if ( PreRandom( 2 ) == 0 )
-		{
-			sY = sY * -1;
-		}
-
-		const GridNo leftmost = ( ( sSweetGridNo + ( WORLD_COLS * sY ) )/ WORLD_COLS ) * WORLD_COLS;
-
-		const GridNo sGridNo = sSweetGridNo + ( WORLD_COLS * sY ) + sX;
-
-		// Ensure we do not return a GridNo on the opposite side of the map
-		if ( sGridNo >=0 && sGridNo < WORLD_MAX &&
-			sGridNo >= leftmost && sGridNo < ( leftmost + WORLD_COLS ) )
-		{
-			return sGridNo;
+			push(sweetX - x, sweetY - y);
+			push(sweetX - x, sweetY + y);
+			push(sweetX + x, sweetY - y);
+			push(sweetX + x, sweetY + y);
 		}
 	}
 
-	// Nothing found, return the original GridNo, our caller doesn't expect NOWHERE.
-	SLOGW("No matching random GridNo found");
-	return sSweetGridNo;
+	// Return a random GridNo from the vector
+	std::shuffle(possibleGridNos.begin(), possibleGridNos.end(), gRandomEngine);
+	return possibleGridNos[0];
 }

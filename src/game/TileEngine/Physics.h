@@ -9,6 +9,13 @@
 
 extern UINT32 guiNumObjectSlots;
 
+enum class TEST_OBJECT : INT8
+{
+	NONE = 0,
+	NO_COLLISIONS,
+	NOTWALLROOF_COLLISIONS
+};
+
 // Note: to reduce padding, the order of the members differs a little from the
 // original order which is still used (and relevant) in LoadSaveRealObject.
 
@@ -19,7 +26,7 @@ struct REAL_OBJECT
 	BOOLEAN      fApplyFriction;
 	BOOLEAN      fVisible;
 	BOOLEAN      fInWater;
-	BOOLEAN      fTestObject;
+	TEST_OBJECT  fTestObject;
 	BOOLEAN      fTestEndedWithCollision;
 	BOOLEAN      fTestPositionNotSet;
 
