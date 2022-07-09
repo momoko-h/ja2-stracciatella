@@ -59,16 +59,13 @@
 #define MAX_INTEGRATIONS			8
 
 constexpr float TIME_MULTI = 1.8f;
-constexpr float DELTA_T = TIME_MULTI;
+constexpr float ΔT = TIME_MULTI;
 constexpr float GRAVITY = 9.8 * 2.5;
 
 
 #define NUM_OBJECT_SLOTS			50
 static REAL_OBJECT ObjectSlots[NUM_OBJECT_SLOTS];
 UINT32  guiNumObjectSlots = 0;
-
-constexpr float EPSILONV = 0.5f;
-constexpr float EPSILONP = 0.01f;
 
 #define SCALE_VERT_VAL_TO_HORZ( f )		( ( f / HEIGHT_UNITS ) * CELL_X_SIZE )
 #define SCALE_HORZ_VAL_TO_VERT( f )		( ( f / CELL_X_SIZE ) * HEIGHT_UNITS )
@@ -196,7 +193,7 @@ void SimulateWorld(  )
 				// Get object
 				pObject = &( ObjectSlots[ cnt ] );
 
-				SimulateObject( pObject, DELTA_T );
+				SimulateObject( pObject, ΔT );
 			}
 		}
 	}
@@ -282,7 +279,7 @@ static void PhysicsComputeForces(REAL_OBJECT* const pObject)
 
 	if ( pObject->fApplyFriction )
 	{
-		pObject->Force += pObject->Velocity * -pObject->AppliedMu;
+		pObject->Force += pObject->Velocity * -pObject->Appliedµ;
 		pObject->fApplyFriction = FALSE;
 	}
 }
@@ -432,18 +429,14 @@ static void PhysicsResolveCollision(REAL_OBJECT* pObject, vector_3 const& pVeloc
 
 static BOOLEAN PhysicsHandleCollisions(REAL_OBJECT* pObject, INT32* piCollisionID, float DeltaTime)
 {
-	FLOAT dDeltaX, dDeltaY, dDeltaZ;
-
-
 	if ( PhysicsCheckForCollisions( pObject, piCollisionID ) )
 	{
+		constexpr float εV = 0.5f; // epsilon of velocity
+		const float ΔX = pObject->Position.x - pObject->OldPosition.x;
+		const float ΔY = pObject->Position.y - pObject->OldPosition.y;
+		const float ΔZ = pObject->Position.z - pObject->OldPosition.z;
 
-		dDeltaX = pObject->Position.x - pObject->OldPosition.x;
-		dDeltaY = pObject->Position.y - pObject->OldPosition.y;
-		dDeltaZ = pObject->Position.z - pObject->OldPosition.z;
-
-		if ( dDeltaX <= EPSILONV && dDeltaX >= -EPSILONV &&
-			dDeltaY <= EPSILONV && dDeltaY >= -EPSILONV )
+		if ( ΔX <= εV && ΔX >= -εV && ΔY <= εV && ΔY >= -εV )
 		{
 			pObject->sConsecutiveZeroVelocityCollisions++;
 		}
@@ -455,7 +448,6 @@ static BOOLEAN PhysicsHandleCollisions(REAL_OBJECT* pObject, INT32* piCollisionI
 			pObject->Velocity.y = 0;
 
 			// Check that we are not colliding with structure z
-			//if ( *piCollisionID == COLLISION_STRUCTURE_Z || *piCollisionID == COLLISION_ROOF )
 			if ( *piCollisionID == COLLISION_STRUCTURE_Z || *piCollisionID == COLLISION_ROOF || *piCollisionID == COLLISION_GROUND )
 			{
 				pObject->Velocity.z = 0;
@@ -471,9 +463,9 @@ static BOOLEAN PhysicsHandleCollisions(REAL_OBJECT* pObject, INT32* piCollisionI
 			// Set position back to before collision
 			pObject->Position = pObject->OldPosition;
 			// Set old position!
-			pObject->OldPosition.x = pObject->Position.y - dDeltaX;
-			pObject->OldPosition.y = pObject->Position.x - dDeltaY;
-			pObject->OldPosition.z = pObject->Position.z - dDeltaZ;
+			pObject->OldPosition.x = pObject->Position.y - ΔX;
+			pObject->OldPosition.y = pObject->Position.x - ΔY;
+			pObject->OldPosition.z = pObject->Position.z - ΔZ;
 
 			PhysicsResolveCollision( pObject, pObject->CollisionVelocity, pObject->CollisionNormal, pObject->CollisionElasticity );
 		}
@@ -484,19 +476,7 @@ static BOOLEAN PhysicsHandleCollisions(REAL_OBJECT* pObject, INT32* piCollisionI
 		}
 		//otherwise, continue falling downwards!
 
-		// TO STOP?
-
-		// Check for delta position values
-		if (dDeltaZ <= EPSILONP && dDeltaZ >= -EPSILONP &&
-			dDeltaY <= EPSILONP && dDeltaY >= -EPSILONP &&
-			dDeltaX <= EPSILONP && dDeltaX >= -EPSILONP)
-		{
-			//pObject->fAlive = FALSE;
-			//return( FALSE );
-		}
-
 		// Check for repeated collisions...
-		//if ( pObject->iOldCollisionCode == COLLISION_ROOF || pObject->iOldCollisionCode == COLLISION_GROUND || pObject->iOldCollisionCode == COLLISION_WATER )
 		{
 			// ATE: This is a safeguard
 			if (pObject->sConsecutiveCollisions > 30)
@@ -536,7 +516,6 @@ static void CheckForObjectHittingMerc(REAL_OBJECT* pObject, UINT16 usStructureID
 
 static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisionID)
 {
-	FLOAT    dDeltaX, dDeltaY, dDeltaZ, dX, dY, dZ;
 	INT32    iCollisionCode = COLLISION_NONE;
 	BOOLEAN  fDoCollision = FALSE;
 	float    elasticity = 1;
@@ -544,27 +523,27 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 	FLOAT    dNormalX, dNormalY, dNormalZ;
 
 	// Checkf for collisions
-	dX = pObject->Position.x;
-	dY = pObject->Position.y;
-	dZ = pObject->Position.z;
+	const float dX = pObject->Position.x;
+	const float dY = pObject->Position.y;
+	const float dZ = pObject->Position.z;
 
 	vector_3 vTemp{0, 0, 0};
 
-	dDeltaX = dX - pObject->OldPosition.x;
-	dDeltaY = dY - pObject->OldPosition.y;
-	dDeltaZ = dZ - pObject->OldPosition.z;
+	const float ΔX = dX - pObject->OldPosition.x;
+	const float ΔY = dY - pObject->OldPosition.y;
+	const float ΔZ = dZ - pObject->OldPosition.z;
 
 	// SKIP FIRST GRIDNO, WE'LL COLLIDE WITH OURSELVES....
 	if ( pObject->fTestObject != TEST_OBJECT::NO_COLLISIONS )
 	{
-		iCollisionCode = CheckForCollision( dX, dY, dZ, dDeltaX, dDeltaY, dDeltaZ, &usStructureID, &dNormalX, &dNormalY, &dNormalZ );
+		iCollisionCode = CheckForCollision( dX, dY, dZ, ΔX, ΔY, ΔZ, &usStructureID, &dNormalX, &dNormalY, &dNormalZ );
 	}
 	else // pObject->fTestObject == TEST_OBJECT_NO_COLLISIONS
 	{
 		iCollisionCode = COLLISION_NONE;
 
 		// Are we on a downward slope?
-		if ( dZ < pObject->TestZTarget && dDeltaZ < 0 )
+		if ( dZ < pObject->TestZTarget && ΔZ < 0 )
 		{
 			if (pObject->fTestPositionNotSet )
 			{
@@ -743,7 +722,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			vTemp = { 0, 0, -1 };
 
 			pObject->fApplyFriction = TRUE;
-			pObject->AppliedMu = 0.34f * TIME_MULTI;
+			pObject->Appliedµ = 0.34f * TIME_MULTI;
 
 			elasticity = 1.3f;
 
@@ -763,7 +742,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 			// Continue going...
 			pObject->fApplyFriction = TRUE;
-			pObject->AppliedMu = 1.54f * TIME_MULTI;
+			pObject->Appliedµ = 1.54f * TIME_MULTI;
 
 			const GridNo sGridNo = GridNoFromVector_3(pObject->Position);
 
@@ -820,7 +799,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			vTemp = { 0, 0, -1 };
 
 			pObject->fApplyFriction = TRUE;
-			pObject->AppliedMu = 0.54f * TIME_MULTI;
+			pObject->Appliedµ = 0.54f * TIME_MULTI;
 
 			elasticity = 1.4f;
 
@@ -839,7 +818,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 			vTemp = { 0, 0, -1 };
 
 			pObject->fApplyFriction = TRUE;
-			pObject->AppliedMu = 0.54f * TIME_MULTI;
+			pObject->Appliedµ = 0.54f * TIME_MULTI;
 
 			elasticity = 1.2f;
 
@@ -865,7 +844,7 @@ static BOOLEAN PhysicsCheckForCollisions(REAL_OBJECT* pObject, INT32* piCollisio
 
 			CheckForObjectHittingMerc( pObject, usStructureID );
 
-			vector_3 vIncident{ dDeltaX, dDeltaY, 0 };
+			vector_3 vIncident{ ΔX, ΔY, 0 };
 			vIncident.normalize();
 
 			vTemp.x = -1 * vIncident.x;
@@ -1255,7 +1234,7 @@ static FLOAT CalculateObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE* pItem, 
 	// Alrighty, move this beast until it dies....
 	while( pObject->fAlive )
 	{
-		SimulateObject( pObject, DELTA_T );
+		SimulateObject( pObject, ΔT );
 	}
 
 	PhysicsDeleteObject( pObject );
@@ -1287,7 +1266,7 @@ static INT32 ChanceToGetThroughObjectTrajectory(INT16 sTargetZ, const OBJECTTYPE
 	// Alrighty, move this beast until it dies....
 	while( pObject->fAlive )
 	{
-		SimulateObject( pObject, DELTA_T );
+		SimulateObject( pObject, ΔT );
 	}
 
 

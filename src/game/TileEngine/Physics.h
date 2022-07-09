@@ -31,7 +31,7 @@ struct REAL_OBJECT
 	BOOLEAN      fTestPositionNotSet;
 
 	float        TestZTarget;
-	float        AppliedMu;
+	float        Appliedµ;
 
 	vector_3     Position;
 	vector_3     TestTargetPosition;
