@@ -773,7 +773,7 @@ enum
 };
 
 
-enum
+enum MiscStrings
 {
 	STR_LOSES_1_WISDOM,
 	STR_LOSES_1_DEX,

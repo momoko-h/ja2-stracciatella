@@ -221,8 +221,6 @@ OBJECTTYPE *gpItemDescObject = NULL;
 static BOOLEAN gfItemDescObjectIsAttachment = FALSE;
 static ST::string gzItemName;
 static ST::string gzItemDesc;
-static ST::string gzItemPros;
-static ST::string gzItemCons;
 static INT16 gsInvDescX;
 static INT16 gsInvDescY;
 static UINT8 gubItemDescStatusIndex;
@@ -432,238 +430,114 @@ static SGPVObject *guiSmallInventoryGraphicMissingBigPocket;
 static std::map<ST::string, SGPVObject*> allInventoryGraphics;
 const ST::string guiBigInventoryGraphicMissingPath = "sti/interface/inventory/inventory-graphic-not-found-big.sti";
 
-static BOOLEAN AttemptToAddSubstring(ST::string& zDest, const ST::string& zTemp, UINT32* puiStringLength, UINT32 uiPixLimit)
-{
-	UINT32 uiRequiredStringLength, uiTempStringLength;
 
-	uiTempStringLength = StringPixLength( zTemp, ITEMDESC_FONT );
-	uiRequiredStringLength = *puiStringLength + uiTempStringLength;
-	if (!zDest.empty())
+// Helper class for the GenerateProsString and GenerateConsString functions
+class MaybeAdd
+{
+	ST::string mStr;
+	int        mStrWidth{0};  // Width of the current string in pixels
+	int        mPixLimit;     // Maximum allowed width in pixels
+
+	bool AttemptToAddSubstring(const ST::string& zTemp);
+
+public:
+	MaybeAdd(const int pixLimit) : mPixLimit(pixLimit) {}
+	bool operator()(const bool doAdd, const MiscStrings strIndex);
+	operator ST::string() { return mStr; }
+};
+
+
+bool MaybeAdd::operator()(const bool doAdd, const MiscStrings strIndex)
+{
+	return doAdd ? AttemptToAddSubstring(g_langRes->Message[strIndex]) : true;
+}
+
+
+bool MaybeAdd::AttemptToAddSubstring(const ST::string& zTemp)
+{
+	const int tempStringLength = StringPixLength(zTemp, ITEMDESC_FONT);
+	int requiredStringLength = mStrWidth + tempStringLength;
+	if (!mStr.empty())
 	{
-		uiRequiredStringLength += StringPixLength( COMMA_AND_SPACE, ITEMDESC_FONT );
+		requiredStringLength += StringPixLength(COMMA_AND_SPACE, ITEMDESC_FONT);
 	}
-	if (uiRequiredStringLength < uiPixLimit)
+	if (requiredStringLength < mPixLimit)
 	{
-		if (!zDest.empty())
+		if (!mStr.empty())
 		{
-			zDest += COMMA_AND_SPACE;
+			mStr += COMMA_AND_SPACE;
 		}
-		zDest += zTemp;
-		*puiStringLength = uiRequiredStringLength;
-		return( TRUE );
+		mStr += zTemp;
+		mStrWidth = requiredStringLength;
+		return true;
 	}
 	else
 	{
-		zDest += DOTDOTDOT;
-		return( FALSE );
+		mStr += DOTDOTDOT;
+		return false;
 	}
 }
 
 
-static void GenerateProsString(ST::string& zItemPros, const OBJECTTYPE& o, UINT32 uiPixLimit)
+static ST::string GenerateProsString(const OBJECTTYPE& o, const int iPixLimit)
 {
-	UINT32 uiStringLength = 0;
-	ST::string zTemp;
-	UINT16 usItem = o.usItem;
-	UINT8 ubWeight;
+	const UINT16 usItem = o.usItem;
+	MaybeAdd maybeAdd{iPixLimit};
 
-	zItemPros = ST::null;
-
-	ubWeight = GCM->getItem(usItem)->getWeight();
+	UINT8 ubWeight = GCM->getItem(usItem)->getWeight();
 	if (GCM->getItem(usItem)->getItemClass() == IC_GUN)
 	{
 		ubWeight += GCM->getItem(o.usGunAmmoItem)->getWeight();
 	}
 
-	if (GCM->getItem(usItem)->getWeight() <= EXCEPTIONAL_WEIGHT)
+	if (!maybeAdd(GCM->getItem(usItem)->getWeight() <= EXCEPTIONAL_WEIGHT, STR_LIGHT)
+	 || !maybeAdd(GCM->getItem(usItem)->getPerPocket() >= 1, STR_SMALL) // fits in a small pocket
+	 || !maybeAdd(GunRange(o) >= EXCEPTIONAL_RANGE, STR_LONG_RANGE)
+	 || !maybeAdd(GCM->getWeapon(usItem)->ubImpact >= EXCEPTIONAL_DAMAGE, STR_HIGH_DAMAGE)
+	 || !maybeAdd(BaseAPsToShootOrStab(DEFAULT_APS, DEFAULT_AIMSKILL, o) <= EXCEPTIONAL_AP_COST, STR_QUICK_FIRING)
+	 || !maybeAdd(GCM->getWeapon(usItem)->ubShotsPerBurst >= EXCEPTIONAL_BURST_SIZE || usItem == G11, STR_FAST_BURST)
+	 || !maybeAdd(GCM->getWeapon(usItem)->ubMagSize > EXCEPTIONAL_MAGAZINE, STR_LARGE_AMMO_CAPACITY)
+	 || !maybeAdd(GCM->getItem(usItem)->getReliability() >= EXCEPTIONAL_RELIABILITY, STR_RELIABLE)
+	 || !maybeAdd(GCM->getItem(usItem)->getRepairEase() >= EXCEPTIONAL_REPAIR_EASE, STR_EASY_TO_REPAIR))
 	{
-		zTemp = g_langRes->Message[STR_LIGHT];
-		if ( ! AttemptToAddSubstring( zItemPros, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
+		return maybeAdd;
 	}
 
-	if (GCM->getItem(usItem)->getPerPocket() >= 1) // fits in a small pocket
-	{
-		zTemp = g_langRes->Message[STR_SMALL];
-		if ( ! AttemptToAddSubstring( zItemPros, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
+	// empty string, so display "None"
+	maybeAdd(ST::string(maybeAdd).empty(), STR_NONE);
 
-	if (GunRange(o) >= EXCEPTIONAL_RANGE)
-	{
-		zTemp = g_langRes->Message[STR_LONG_RANGE];
-		if ( ! AttemptToAddSubstring( zItemPros, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if (GCM->getWeapon(usItem)->ubImpact >= EXCEPTIONAL_DAMAGE)
-	{
-		zTemp = g_langRes->Message[STR_HIGH_DAMAGE];
-		if ( ! AttemptToAddSubstring( zItemPros, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if (BaseAPsToShootOrStab(DEFAULT_APS, DEFAULT_AIMSKILL, *gpItemDescObject) <= EXCEPTIONAL_AP_COST)
-	{
-		zTemp = g_langRes->Message[STR_QUICK_FIRING];
-		if ( ! AttemptToAddSubstring( zItemPros, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if (GCM->getWeapon(usItem)->ubShotsPerBurst >= EXCEPTIONAL_BURST_SIZE || usItem == G11)
-	{
-		zTemp = g_langRes->Message[STR_FAST_BURST];
-		if ( ! AttemptToAddSubstring( zItemPros, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if (GCM->getWeapon(usItem)->ubMagSize > EXCEPTIONAL_MAGAZINE)
-	{
-		zTemp = g_langRes->Message[STR_LARGE_AMMO_CAPACITY];
-		if ( ! AttemptToAddSubstring( zItemPros, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if ( GCM->getItem(usItem)->getReliability() >= EXCEPTIONAL_RELIABILITY )
-	{
-		zTemp = g_langRes->Message[STR_RELIABLE];
-		if ( ! AttemptToAddSubstring( zItemPros, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if ( GCM->getItem(usItem)->getRepairEase() >= EXCEPTIONAL_REPAIR_EASE )
-	{
-		zTemp = g_langRes->Message[STR_EASY_TO_REPAIR];
-		if ( ! AttemptToAddSubstring( zItemPros, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if ( zItemPros[0] == 0 )
-	{
-		// empty string, so display "None"
-		if ( ! AttemptToAddSubstring( zItemPros, g_langRes->Message[ STR_NONE ], &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
+	return maybeAdd;
 }
 
 
-static void GenerateConsString(ST::string& zItemCons, const OBJECTTYPE& o, UINT32 uiPixLimit)
+static ST::string GenerateConsString(const OBJECTTYPE& o, const int iPixLimit)
 {
-	UINT32 uiStringLength = 0;
-	ST::string zTemp;
-	UINT8 ubWeight;
-	UINT16 usItem = o.usItem;
-
-	zItemCons = ST::null;
+	const UINT16 usItem = o.usItem;
+	MaybeAdd maybeAdd{iPixLimit};
 
 	// calculate the weight of the item plus ammunition but not including any attachments
-	ubWeight = GCM->getItem(usItem)->getWeight();
+	UINT8 ubWeight = GCM->getItem(usItem)->getWeight();
 	if (GCM->getItem(usItem)->getItemClass() == IC_GUN)
 	{
 		ubWeight += GCM->getItem(o.usGunAmmoItem)->getWeight();
 	}
 
-	if (ubWeight >= BAD_WEIGHT)
+	if (!maybeAdd(ubWeight >= BAD_WEIGHT, STR_HEAVY)
+	 || !maybeAdd(GunRange(o) <= BAD_RANGE, STR_SHORT_RANGE)
+	 || !maybeAdd(GCM->getWeapon(usItem)->ubImpact <= BAD_DAMAGE, STR_LOW_DAMAGE)
+	 || !maybeAdd(BaseAPsToShootOrStab(DEFAULT_APS, DEFAULT_AIMSKILL, o) >= BAD_AP_COST, STR_SLOW_FIRING)
+	 || !maybeAdd(GCM->getWeapon(usItem)->ubShotsPerBurst == 0, STR_NO_BURST)
+	 || !maybeAdd(GCM->getWeapon(usItem)->ubMagSize < BAD_MAGAZINE, STR_SMALL_AMMO_CAPACITY)
+	 || !maybeAdd(GCM->getItem(usItem)->getReliability() <= BAD_RELIABILITY, STR_UNRELIABLE)
+	 || !maybeAdd(GCM->getItem(usItem)->getRepairEase() <= BAD_REPAIR_EASE, STR_HARD_TO_REPAIR))
 	{
-		zTemp = g_langRes->Message[STR_HEAVY];
-		if ( ! AttemptToAddSubstring( zItemCons, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
+		return maybeAdd;
 	}
 
-	if (GunRange(o) <= BAD_RANGE)
-	{
-		zTemp = g_langRes->Message[STR_SHORT_RANGE];
-		if ( ! AttemptToAddSubstring( zItemCons, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
+	// empty string, so display "None"
+	maybeAdd(ST::string(maybeAdd).empty(), STR_NONE);
 
-	if (GCM->getWeapon(usItem)->ubImpact <= BAD_DAMAGE)
-	{
-		zTemp = g_langRes->Message[STR_LOW_DAMAGE];
-		if ( ! AttemptToAddSubstring( zItemCons, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if (BaseAPsToShootOrStab(DEFAULT_APS, DEFAULT_AIMSKILL, *gpItemDescObject) >= BAD_AP_COST)
-	{
-		zTemp = g_langRes->Message[STR_SLOW_FIRING];
-		if ( ! AttemptToAddSubstring( zItemCons, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if (GCM->getWeapon(usItem)->ubShotsPerBurst == 0)
-	{
-		zTemp = g_langRes->Message[STR_NO_BURST];
-		if ( ! AttemptToAddSubstring( zItemCons, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if (GCM->getWeapon(usItem)->ubMagSize < BAD_MAGAZINE)
-	{
-		zTemp = g_langRes->Message[STR_SMALL_AMMO_CAPACITY];
-		if ( ! AttemptToAddSubstring( zItemCons, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if ( GCM->getItem(usItem)->getReliability() <= BAD_RELIABILITY )
-	{
-		zTemp = g_langRes->Message[STR_UNRELIABLE];
-		if ( ! AttemptToAddSubstring( zItemCons, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-	if ( GCM->getItem(usItem)->getRepairEase() <= BAD_REPAIR_EASE )
-	{
-		zTemp = g_langRes->Message[STR_HARD_TO_REPAIR];
-		if ( ! AttemptToAddSubstring( zItemCons, zTemp, &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
-
-
-	if ( zItemCons[0] == 0 )
-	{
-		// empty string, so display "None"
-		if ( ! AttemptToAddSubstring( zItemCons, g_langRes->Message[ STR_NONE ], &uiStringLength, uiPixLimit ) )
-		{
-			return;
-		}
-	}
+	return maybeAdd;
 }
 
 
@@ -1872,12 +1746,12 @@ void InternalInitItemDescriptionBox(OBJECTTYPE* const o, const INT16 sX, const I
 			if (i == 0)
 			{
 				label = gzProsLabel;
-				GenerateProsString(FullItemTemp, *o, 1000);
+				FullItemTemp = GenerateProsString(*o, 1000);
 			}
 			else
 			{
 				label = gzConsLabel;
-				GenerateConsString(FullItemTemp, *o, 1000);
+				FullItemTemp = GenerateConsString(*o, 1000);
 			}
 			ST::string text = ST::format("{} {}", label, FullItemTemp);
 			r->SetFastHelpText(text);
@@ -2403,11 +2277,8 @@ void RenderItemDescriptionBox(void)
 			x += pros_cons_indent;
 			w -= pros_cons_indent + StringPixLength(DOTDOTDOT, ITEMDESC_FONT);
 
-			GenerateProsString(gzItemPros, obj, w);
-			MPrint(x, y, gzItemPros);
-
-			GenerateConsString(gzItemCons, obj, w);
-			MPrint(x, y + h, gzItemCons);
+			MPrint(x, y, GenerateProsString(obj, w));
+			MPrint(x, y + h, GenerateConsString(obj, w));
 		}
 	}
 
