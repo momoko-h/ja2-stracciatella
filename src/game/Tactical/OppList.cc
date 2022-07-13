@@ -2494,13 +2494,12 @@ void RadioSightings(SOLDIERTYPE* const pSoldier, SOLDIERTYPE* const about, UINT8
 {
 	INT32   iLoop;
 	UINT8   start,end,revealedEnemies = 0,unknownEnemies = 0;
-	//UINT8   oppIsCivilian;
-	INT8    *pPersOL,*pbPublOL; //,dayQuote;
+	INT8    *pPersOL,*pbPublOL;
 	BOOLEAN fContactSeen;
 	BOOLEAN fSawCreatureForFirstTime = FALSE;
 
-	SLOGD("RADIO SIGHTINGS: for {} about {}",
-		pSoldier->ubID, SOLDIER2ID(about));
+	SLOGD("RADIO SIGHTINGS: for {} about {}{}",
+		pSoldier->ubID, SOLDIER2ID(about), about == EVERYBODY ? " (everybody)" : "");
 
 	gTacticalStatus.Team[pSoldier->bTeam].last_merc_to_radio = pSoldier;
 
@@ -2528,13 +2527,11 @@ void RadioSightings(SOLDIERTYPE* const pSoldier, SOLDIERTYPE* const about, UINT8
 	for (iLoop = start; iLoop < end; iLoop++,pOpponent++,pPersOL++,pbPublOL++)
 	{
 		fContactSeen = FALSE;
-		SLOGD("RS: checking {}", pOpponent->ubID);
-
 
 		// make sure this merc is active, here & still alive (unconscious OK)
 		if (!pOpponent->bActive || !pOpponent->bInSector || !pOpponent->bLife)
 		{
-			SLOGD("RS: inactive/notInSector/life {}", pOpponent->ubID);
+			// Do not report these opponents to reduce debug spam
 			continue; // skip to the next merc
 		}
 
@@ -2542,14 +2539,14 @@ void RadioSightings(SOLDIERTYPE* const pSoldier, SOLDIERTYPE* const about, UINT8
 		// NEW: Apr. 21 '96: must allow ALL non-humans to get radioed about
 		if ((pSoldier->bSide == pOpponent->bSide) && (pOpponent->uiStatusFlags & SOLDIER_PC))
 		{
-			SLOGD("RS: same side {}", pSoldier->bSide);
+			SLOGD("RS: {} is on the same side {}", pOpponent->ubID, pSoldier->bSide);
 			continue; // skip to the next merc
 		}
 
 		// if we personally don't know a thing about this opponent
 		if (*pPersOL == NOT_HEARD_OR_SEEN)
 		{
-			SLOGD("RS: not heard or seen");
+			SLOGD("RS: {} not heard or seen", pOpponent->ubID);
 			continue; // skip to the next opponent
 		}
 
@@ -2557,10 +2554,10 @@ void RadioSightings(SOLDIERTYPE* const pSoldier, SOLDIERTYPE* const about, UINT8
 		if ((!gubKnowledgeValue[*pbPublOL - OLDEST_HEARD_VALUE][*pPersOL - OLDEST_HEARD_VALUE]) &&
 			(*pbPublOL != *pPersOL))
 		{
-			SLOGD("RS: no new knowledge per {} pub {}", *pPersOL, *pbPublOL);
+			SLOGD("RS: {} no new knowledge per {} pub {}", pOpponent->ubID, *pPersOL, *pbPublOL);
 			continue; // skip to the next opponent
 		}
-		SLOGD("RS: made it!");
+		SLOGD("RS: new sighting of {}", pOpponent->ubID);
 
 		// if it's our merc, and he currently sees this opponent
 		if (IsOnOurTeam(*pSoldier) &&
