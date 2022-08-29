@@ -3290,7 +3290,6 @@ INT16 FindAdjacentGridEx(SOLDIERTYPE* pSoldier, INT16 sGridNo, UINT8* pubDirecti
 	INT32 cnt;
 	INT16 sClosest=NOWHERE, sSpot;
 	INT16 sCloseGridNo=NOWHERE;
-	UINT8 ubDir;
 	STRUCTURE *pDoor;
 	//STRUCTURE *pWall;
 	UINT8    ubWallOrientation;
@@ -3491,7 +3490,7 @@ INT16 FindAdjacentGridEx(SOLDIERTYPE* pSoldier, INT16 sGridNo, UINT8* pubDirecti
 		}
 
 		// don't store path, just measure it
-		ubDir = (UINT8)GetDirectionToGridNoFromGridNo( sSpot, sGridNo );
+		UINT8 const ubDir = GetDirectionToGridNoFromGridNo(sSpot, sGridNo);
 
 		if (NewOKDestinationAndDirection(pSoldier, sSpot, ubDir, TRUE, pSoldier->bLevel) > 0 &&
 				(sDistance = PlotPath(pSoldier, sSpot, NO_COPYROUTE, NO_PLOT, pSoldier->usUIMovementMode, pSoldier->bActionPoints)) > 0)
@@ -3530,10 +3529,9 @@ INT16 FindAdjacentGridEx(SOLDIERTYPE* pSoldier, INT16 sGridNo, UINT8* pubDirecti
 	else
 	{
 		// Calculate direction if our gridno is different....
-		ubDir = (UINT8)GetDirectionToGridNoFromGridNo( sCloseGridNo, sGridNo );
 		if (pubDirection)
 		{
-			*pubDirection = ubDir;
+			*pubDirection = GetDirectionToGridNoFromGridNo(sCloseGridNo, sGridNo);
 		}
 	}
 	//if ( psAdjustedGridNo != NULL )
@@ -3560,7 +3558,6 @@ INT16 FindNextToAdjacentGridEx( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 *pub
 	INT32     cnt;
 	INT16     sClosest=WORLD_MAX, sSpot, sSpot2;
 	INT16     sCloseGridNo=NOWHERE;
-	UINT8     ubDir;
 	STRUCTURE *pDoor;
 	UINT8     ubWallOrientation;
 	BOOLEAN   fCheckGivenGridNo = TRUE;
@@ -3690,13 +3687,12 @@ INT16 FindNextToAdjacentGridEx( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 *pub
 		{
 			if (pubDirection)
 			{
-				*pubDirection = (UINT8)GetDirectionFromGridNo(sGridNo, pSoldier);
+				*pubDirection = GetDirectionFromGridNo(sGridNo, pSoldier);
 			}
-			//*pubDirection = pSoldier->bDirection;
 			return( sSpot );
 		}
 
-		ubDir = GetDirectionToGridNoFromGridNo(sSpot, sGridNo);
+		UINT8 const ubDir = GetDirectionToGridNoFromGridNo(sSpot, sGridNo);
 
 		// don't store path, just measure it
 		if (NewOKDestinationAndDirection(pSoldier, sSpot, ubDir, TRUE, pSoldier->bLevel) > 0 &&
@@ -3741,10 +3737,9 @@ INT16 FindNextToAdjacentGridEx( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 *pub
 	else
 	{
 		// Calculate direction if our gridno is different....
-		ubDir = (UINT8)GetDirectionToGridNoFromGridNo( sCloseGridNo, sGridNo );
 		if (pubDirection)
 		{
-			*pubDirection = ubDir;
+			*pubDirection = GetDirectionToGridNoFromGridNo(sCloseGridNo, sGridNo);
 		}
 	}
 

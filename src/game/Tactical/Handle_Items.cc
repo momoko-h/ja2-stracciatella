@@ -881,8 +881,8 @@ ItemHandleResult HandleItem(SOLDIERTYPE* const s, INT16 usGridNo, const INT8 bLe
 		// Check if these is room to place mortar!
 		if (usHandItem == MORTAR)
 		{
-			const UINT8 ubDirection  = (UINT8)GetDirectionFromGridNo(sTargetGridNo, s);
-			const INT16 sCheckGridNo = NewGridNo((UINT16)s->sGridNo, DirectionInc(ubDirection));
+			const UINT8 ubDirection = GetDirectionFromGridNo(sTargetGridNo, s);
+			const GridNo sCheckGridNo = NewGridNo(s->sGridNo, DirectionInc(ubDirection));
 			if (!OKFallDirection(s, sCheckGridNo, s->bLevel, ubDirection, s->usAnimState))
 			{
 				return ITEM_HANDLE_NOROOM;
@@ -1008,7 +1008,6 @@ void SoldierHandleDropItem( SOLDIERTYPE *pSoldier )
 void HandleSoldierThrowItem( SOLDIERTYPE *pSoldier, INT16 sGridNo )
 {
 	// Determine what to do
-	UINT8 ubDirection;
 
 	// Set attacker to NOBODY, since it's not a combat attack
 	pSoldier->target = NULL;
@@ -1026,7 +1025,7 @@ void HandleSoldierThrowItem( SOLDIERTYPE *pSoldier, INT16 sGridNo )
 			else
 			{
 				// CHANGE DIRECTION AT LEAST
-				ubDirection = (UINT8)GetDirectionFromGridNo( sGridNo, pSoldier );
+				UINT8 const ubDirection = GetDirectionFromGridNo(sGridNo, pSoldier);
 
 				SoldierGotoStationaryStance( pSoldier );
 
@@ -1065,7 +1064,7 @@ void HandleSoldierThrowItem( SOLDIERTYPE *pSoldier, INT16 sGridNo )
 			else
 			{
 				// OK, go from prone/crouch to stand first!
-				ubDirection = (UINT8)GetDirectionFromGridNo( sGridNo, pSoldier );
+				UINT8 const ubDirection = GetDirectionFromGridNo(sGridNo, pSoldier);
 				EVENT_SetSoldierDesiredDirectionForward(pSoldier, ubDirection);
 
 				ChangeSoldierState( pSoldier, THROW_ITEM, 0 , FALSE );

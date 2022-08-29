@@ -947,10 +947,12 @@ void  DeletePaletteData(void);
 // UTILITY FUNCTUIONS
 void MoveMerc( SOLDIERTYPE *pSoldier, FLOAT dMovementChange, FLOAT dAngle, BOOLEAN fCheckRange );
 void MoveMercFacingDirection( SOLDIERTYPE *pSoldier, BOOLEAN fReverse, FLOAT dMovementDist );
-INT16 GetDirectionFromGridNo(INT16 sGridNo, const SOLDIERTYPE* pSoldier);
+
+// Get the direction from the soldier's current position TO the given gridno.
+UINT8 GetDirectionFromGridNo(GridNo to, const SOLDIERTYPE* pSoldier);
 UINT8 atan8( INT16 sXPos, INT16 sYPos, INT16 sXPos2, INT16 sYPos2 );
 INT8 CalcActionPoints(const SOLDIERTYPE*);
-INT16 GetDirectionToGridNoFromGridNo( INT16 sGridNoDest, INT16 sGridNoSrc );
+UINT8 GetDirectionToGridNoFromGridNo(GridNo from, GridNo to);
 void ReleaseSoldiersAttacker( SOLDIERTYPE *pSoldier );
 BOOLEAN MercInWater(const SOLDIERTYPE* pSoldier);
 UINT16 GetMoveStateBasedOnStance(const SOLDIERTYPE*, UINT8 ubStanceHeight);

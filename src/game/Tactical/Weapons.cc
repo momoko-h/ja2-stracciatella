@@ -3866,14 +3866,13 @@ void ChangeWeaponMode(SOLDIERTYPE* const s)
 
 void DishoutQueenSwipeDamage( SOLDIERTYPE *pQueenSoldier )
 {
-	static const INT8 bValidDishoutDirs[3][3] =
+	static const UINT8 bValidDishoutDirs[3][3] =
 	{
-		{ NORTH, NORTHEAST, -1 },
-		{ EAST,  SOUTHEAST, -1 },
-		{ SOUTH, -1,        -1 }
+		{ NORTH, NORTHEAST, 255 },
+		{ EAST,  SOUTHEAST, 255 },
+		{ SOUTH, 255,       255 }
 	};
 
-	INT8  bDir;
 	INT32 iChance;
 	INT32 iImpact;
 	INT32 iHitBy;
@@ -3891,12 +3890,11 @@ void DishoutQueenSwipeDamage( SOLDIERTYPE *pQueenSoldier )
 			if ( GetRangeInCellCoordsFromGridNoDiff( pQueenSoldier->sGridNo, pSoldier->sGridNo ) <= GCM->getWeapon( CREATURE_QUEEN_TENTACLES)->usRange )
 			{
 				// get direction
-				bDir = (INT8)GetDirectionFromGridNo( pSoldier->sGridNo, pQueenSoldier );
+				UINT8 const ubDir = GetDirectionFromGridNo( pSoldier->sGridNo, pQueenSoldier );
 
-				//
 				for (UINT32 cnt2 = 0; cnt2 < 2; ++cnt2)
 				{
-					if ( bValidDishoutDirs[ pQueenSoldier->uiPendingActionData1 ][ cnt2 ] == bDir )
+					if (bValidDishoutDirs[pQueenSoldier->uiPendingActionData1][cnt2] == ubDir )
 					{
 						iChance = CalcChanceToStab( pQueenSoldier, pSoldier, 0 );
 
@@ -3907,7 +3905,7 @@ void DishoutQueenSwipeDamage( SOLDIERTYPE *pQueenSoldier )
 						{
 							// Hit!
 							iImpact = HTHImpact( pQueenSoldier, pSoldier, iHitBy, TRUE );
-							EVENT_SoldierGotHit(pSoldier, CREATURE_QUEEN_TENTACLES, iImpact, iImpact, OppositeDirection(bDir), 50, pQueenSoldier, 0, ANIM_CROUCH, 0);
+							EVENT_SoldierGotHit(pSoldier, CREATURE_QUEEN_TENTACLES, iImpact, iImpact, OppositeDirection(ubDir), 50, pQueenSoldier, 0, ANIM_CROUCH, 0);
 						}
 					}
 				}

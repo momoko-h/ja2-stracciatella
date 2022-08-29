@@ -3728,7 +3728,7 @@ static ScreenID UIHandleLCOnTerrain(UI_EVENT* pUIEvent)
 	const GridNo pos = GetMouseMapPos();
 
 	// Get direction from mouse pos
-	const INT16 sFacingDir = GetDirectionFromGridNo(pos, sel);
+	const UINT8 sFacingDir = GetDirectionFromGridNo(pos, sel);
 
 	// Set # of APs
 	gsCurrentActionPoints = (sFacingDir == sel->bDirection ? 0 : GetAPsToLook(sel));
@@ -3755,7 +3755,7 @@ static ScreenID UIHandleLCChangeToLook(UI_EVENT* pUIEvent)
 static BOOLEAN MakeSoldierTurn(SOLDIERTYPE* const pSoldier, const GridNo pos)
 {
 	// Get direction from mouse pos
-	const INT16 sFacingDir = GetDirectionFromGridNo(pos, pSoldier);
+	const UINT8 sFacingDir = GetDirectionFromGridNo(pos, pSoldier);
 
 	if ( sFacingDir != pSoldier->bDirection )
 	{
@@ -4360,7 +4360,7 @@ static ScreenID UIHandleJumpOver(UI_EVENT* pUIEvent)
 	selSoldier->removePendingAction();
 
 	// Get direction to goto....
-	const INT8 bDirection = GetDirectionFromGridNo(usMapPos, sel);
+	const UINT8 bDirection = GetDirectionFromGridNo(usMapPos, sel);
 
 	sel->fDontChargeTurningAPs = TRUE;
 	EVENT_SetSoldierDesiredDirection(sel, bDirection);

@@ -1272,7 +1272,7 @@ static INT8 CreatureDecideActionBlack(SOLDIERTYPE* pSoldier)
 				}
 				else if (GetAPsToLook( pSoldier ) <= pSoldier->bActionPoints) // turn to face enemy
 				{
-					const INT8 bDirection = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, sClosestOpponent);
+					UINT8 const bDirection = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, sClosestOpponent);
 
 					// if we're not facing towards him
 					if (pSoldier->bDirection != bDirection && ValidCreatureTurn( pSoldier, bDirection ) )
@@ -1509,11 +1509,8 @@ static INT8 CrowDecideActionRed(SOLDIERTYPE* pSoldier)
 
 static INT8 CrowDecideActionGreen(SOLDIERTYPE* pSoldier)
 {
-	INT16 sCorpseGridNo;
-	INT16 sFacingDir;
-
 	// Look for a corse!
-	sCorpseGridNo = FindNearestRottingCorpse( pSoldier );
+	GridNo const sCorpseGridNo = FindNearestRottingCorpse( pSoldier );
 
 	if ( sCorpseGridNo != NOWHERE )
 	{
@@ -1521,11 +1518,11 @@ static INT8 CrowDecideActionGreen(SOLDIERTYPE* pSoldier)
 		if ( SpacesAway( pSoldier->sGridNo, sCorpseGridNo ) < 2 )
 		{
 			// Change facing
-			sFacingDir = GetDirectionFromGridNo( sCorpseGridNo, pSoldier );
+			UINT8 const ubFacingDir = GetDirectionFromGridNo(sCorpseGridNo, pSoldier);
 
-			if ( sFacingDir != pSoldier->bDirection )
+			if (ubFacingDir != pSoldier->bDirection )
 			{
-				pSoldier->usActionData = sFacingDir;
+				pSoldier->usActionData = ubFacingDir;
 				return(AI_ACTION_CHANGE_FACING);
 			}
 			else if (!gfTurnBasedAI)

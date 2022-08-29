@@ -169,10 +169,9 @@ void CalcBestShot(SOLDIERTYPE *pSoldier, ATTACKTYPE *pBestShot)
 			if ( pStructureFileRef )
 			{
 				UINT16 usStructureID;
-				INT8   bDir;
 
 				// must make sure that structure data can be added in the direction of the target
-				bDir = (INT8) GetDirectionToGridNoFromGridNo( pSoldier->sGridNo, pOpponent->sGridNo );
+				UINT8 const bDir = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, pOpponent->sGridNo);
 
 				// ATE: Only if we have a levelnode...
 				if ( pSoldier->pLevelNode != NULL && pSoldier->pLevelNode->pStructureData != NULL )
@@ -1708,7 +1707,7 @@ static INT8 CountAdjacentSpreadTargets(SOLDIERTYPE* pSoldier, INT16 sFirstTarget
 {
 	// return the number of people next to this guy for burst-spread purposes
 
-	INT8 bDirLoop, bDir, bCheckDir, bTargetIndex, bTargets;
+	INT8 bDirLoop, bCheckDir, bTargetIndex, bTargets;
 	INT16 sTarget;
 	SOLDIERTYPE *pTargets[5] = {NULL};
 
@@ -1722,7 +1721,7 @@ static INT8 CountAdjacentSpreadTargets(SOLDIERTYPE* pSoldier, INT16 sFirstTarget
 	}
 	bTargets = 1;
 
-	bDir = (INT8) GetDirectionToGridNoFromGridNo( pSoldier->sGridNo, sFirstTarget );
+	UINT8 const bDir = GetDirectionToGridNoFromGridNo( pSoldier->sGridNo, sFirstTarget );
 
 	for (bDirLoop = 0; bDirLoop < 8; bDirLoop++)
 	{
@@ -1835,7 +1834,7 @@ static INT8 CountAdjacentSpreadTargets(SOLDIERTYPE* pSoldier, INT16 sFirstTarget
 
 INT16 CalcSpreadBurst( SOLDIERTYPE * pSoldier, INT16 sFirstTarget, INT8 bTargetLevel )
 {
-	INT8	bDirLoop, bDir, bCheckDir, bTargetIndex = 0, bLoop, bTargets;
+	INT8	bDirLoop, bCheckDir, bTargetIndex = 0, bLoop, bTargets;
 	INT16	sTarget;
 	SOLDIERTYPE* pTargets[5] = {NULL};
 	INT8 bAdjacents, bOtherAdjacents;
@@ -1851,7 +1850,7 @@ INT16 CalcSpreadBurst( SOLDIERTYPE * pSoldier, INT16 sFirstTarget, INT8 bTargetL
 	bTargets = 1;
 	bAdjacents = CountAdjacentSpreadTargets( pSoldier, sFirstTarget, bTargetLevel );
 
-	bDir = (INT8) GetDirectionToGridNoFromGridNo( pSoldier->sGridNo, sFirstTarget );
+	UINT8 const bDir = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, sFirstTarget);
 
 	for (bDirLoop = 0; bDirLoop < 8; bDirLoop++)
 	{

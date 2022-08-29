@@ -459,8 +459,6 @@ void CalcNewActionPoints( SOLDIERTYPE *pSoldier )
 
 void	DoNinjaAttack( SOLDIERTYPE *pSoldier )
 {
-	//UINT32 uiMercFlags;
-	UINT8  ubTDirection;
 	UINT8  ubTargetStance;
 
 	const SOLDIERTYPE* const pTSoldier = WhoIsThere2(pSoldier->sTargetGridNo, pSoldier->bLevel);
@@ -487,7 +485,7 @@ void	DoNinjaAttack( SOLDIERTYPE *pSoldier )
 				{
 					if ( !( pTSoldier->uiStatusFlags & ( SOLDIER_MONSTER | SOLDIER_ANIMAL | SOLDIER_VEHICLE ) ) )
 					{
-						ubTDirection = (UINT8)GetDirectionFromGridNo( pSoldier->sGridNo, pTSoldier );
+						UINT8 const ubTDirection = GetDirectionFromGridNo(pSoldier->sGridNo, pTSoldier);
 						SendSoldierSetDesiredDirectionEvent( pTSoldier, ubTDirection );
 					}
 				}
@@ -2443,7 +2441,7 @@ UINT16 GetMoveStateBasedOnStance(const SOLDIERTYPE* const s, const UINT8 ubStanc
 
 BOOLEAN SoldierReadyWeapon(SOLDIERTYPE* const pSoldier, const GridNo tgt_pos, const BOOLEAN fEndReady)
 {
-	const INT16 sFacingDir = GetDirectionFromGridNo(tgt_pos, pSoldier);
+	const UINT8 sFacingDir = GetDirectionFromGridNo(tgt_pos, pSoldier);
 	return InternalSoldierReadyWeapon(pSoldier, sFacingDir, fEndReady);
 }
 
@@ -6235,7 +6233,7 @@ void MoveMerc( SOLDIERTYPE *pSoldier, FLOAT dMovementChange, FLOAT dAngle, BOOLE
 	BOOLEAN fStop = FALSE;
 
 	// Find delta Movement for X pos
-	dDeltaPos = (FLOAT) (dMovementChange * sin( dAngle ));
+	dDeltaPos = dMovementChange * sinf(dAngle);
 
 	// Find new position
 	dXPos = pSoldier->dXPos + dDeltaPos;
@@ -6287,7 +6285,7 @@ void MoveMerc( SOLDIERTYPE *pSoldier, FLOAT dMovementChange, FLOAT dAngle, BOOLE
 	}
 
 	// Find delta Movement for Y pos
-	dDeltaPos = (FLOAT) (dMovementChange * cos( dAngle ));
+	dDeltaPos = dMovementChange * cosf(dAngle);
 
 	// Find new pos
 	dYPos = pSoldier->dYPos + dDeltaPos;
@@ -6343,22 +6341,21 @@ void MoveMerc( SOLDIERTYPE *pSoldier, FLOAT dMovementChange, FLOAT dAngle, BOOLE
 }
 
 
-INT16 GetDirectionFromGridNo(const INT16 sGridNo, const SOLDIERTYPE* const s)
+UINT8 GetDirectionFromGridNo(GridNo const to, const SOLDIERTYPE* const s)
 {
-	return GetDirectionToGridNoFromGridNo(s->sGridNo, sGridNo);
+	return GetDirectionToGridNoFromGridNo(s->sGridNo, to);
 }
 
 
-INT16 GetDirectionToGridNoFromGridNo( INT16 sGridNoDest, INT16 sGridNoSrc )
+UINT8 GetDirectionToGridNoFromGridNo(GridNo const from, GridNo const to)
 {
-	INT16 sXPos2, sYPos2;
-	INT16 sXPos, sYPos;
+	INT16 fromX, fromY;
+	INT16 toX, toY;
 
-	ConvertGridNoToXY( sGridNoSrc, &sXPos, &sYPos );
-	ConvertGridNoToXY( sGridNoDest, &sXPos2, &sYPos2 );
+	ConvertGridNoToXY(from, &fromX, &fromY);
+	ConvertGridNoToXY(to, &toX, &toY);
 
-	return( atan8( sXPos2, sYPos2, sXPos, sYPos ) );
-
+	return atan8(fromX, fromY, toX, toY);
 }
 
 
@@ -6596,9 +6593,6 @@ void EVENT_SoldierBeginGiveItem( SOLDIERTYPE *pSoldier )
 
 void EVENT_SoldierBeginBladeAttack( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 ubDirection )
 {
-	//UINT32 uiMercFlags;
-	UINT8 ubTDirection;
-
 	// Increment the number of people busy doing stuff because of an attack
 	//if (gTacticalStatus.uiFlags & INCOMBAT)
 	//{
@@ -6692,7 +6686,7 @@ void EVENT_SoldierBeginBladeAttack( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 
 								CancelAIAction(pTSoldier);
 							}
 
-							ubTDirection = (UINT8)GetDirectionFromGridNo( pSoldier->sGridNo, pTSoldier );
+							UINT8 const ubTDirection = GetDirectionFromGridNo( pSoldier->sGridNo, pTSoldier );
 							SendSoldierSetDesiredDirectionEvent( pTSoldier, ubTDirection );
 						}
 					}
@@ -6742,14 +6736,10 @@ void EVENT_SoldierBeginBladeAttack( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 
 
 void EVENT_SoldierBeginPunchAttack( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 ubDirection )
 {
-	//UINT32 uiMercFlags;
-	UINT8 ubTDirection;
 	BOOLEAN fChangeDirection = FALSE;
-	UINT16	usItem;
 
 	// Get item in hand...
-	usItem = pSoldier->inv[ HANDPOS ].usItem;
-
+	UINT16 const usItem = pSoldier->inv[ HANDPOS ].usItem;
 
 	// Increment the number of people busy doing stuff because of an attack
 	//if (gTacticalStatus.uiFlags & INCOMBAT)
@@ -6818,7 +6808,7 @@ void EVENT_SoldierBeginPunchAttack( SOLDIERTYPE *pSoldier, INT16 sGridNo, UINT8 
 							CancelAIAction(pTSoldier);
 						}
 
-						ubTDirection = (UINT8)GetDirectionFromGridNo( pSoldier->sGridNo, pTSoldier );
+						UINT8 const ubTDirection = GetDirectionFromGridNo( pSoldier->sGridNo, pTSoldier );
 						SendSoldierSetDesiredDirectionEvent( pTSoldier, ubTDirection );
 					}
 				}
@@ -8142,17 +8132,15 @@ void PositionSoldierLight( SOLDIERTYPE *pSoldier )
 
 void PickPickupAnimation( SOLDIERTYPE *pSoldier, INT32 iItemIndex, INT16 sGridNo, INT8 bZLevel )
 {
-	INT8      bDirection;
 	STRUCTURE *pStructure;
 	BOOLEAN   fDoNormalPickup = TRUE;
-
 
 	// OK, Given the gridno, determine if it's the same one or different....
 	if ( sGridNo != pSoldier->sGridNo )
 	{
 		// Get direction to face....
-		bDirection = (INT8)GetDirectionFromGridNo( sGridNo, pSoldier );
-		pSoldier->ubPendingDirection = bDirection;
+		UINT8 const ubDirection = GetDirectionFromGridNo(sGridNo, pSoldier);
+		pSoldier->ubPendingDirection = ubDirection;
 
 		// Change to pickup animation
 		EVENT_InitNewSoldierAnim( pSoldier, ADJACENT_GET_ITEM, 0 , FALSE );
@@ -8198,29 +8186,30 @@ void PickPickupAnimation( SOLDIERTYPE *pSoldier, INT32 iItemIndex, INT16 sGridNo
 							fDoNormalPickup = FALSE;
 
 							// OK, look at orientation
+							UINT8 ubDirection;
 							switch( pStructure->ubWallOrientation )
 							{
 								case OUTSIDE_TOP_LEFT:
 								case INSIDE_TOP_LEFT:
 
-									bDirection = (INT8)NORTH;
+									ubDirection = NORTH;
 									break;
 
 								case OUTSIDE_TOP_RIGHT:
 								case INSIDE_TOP_RIGHT:
 
-									bDirection = (INT8)WEST;
+									ubDirection = WEST;
 									break;
 
 								default:
 
-									bDirection = pSoldier->bDirection;
+									ubDirection = pSoldier->bDirection;
 									break;
 							}
 
 							//pSoldier->ubPendingDirection = bDirection;
-							EVENT_SetSoldierDesiredDirection( pSoldier, bDirection );
-							EVENT_SetSoldierDirection( pSoldier, bDirection );
+							EVENT_SetSoldierDesiredDirection(pSoldier, ubDirection);
+							EVENT_SetSoldierDirection(pSoldier, ubDirection);
 
 							// Change to pickup animation
 							EVENT_InitNewSoldierAnim( pSoldier, ADJACENT_GET_ITEM, 0 , FALSE );
@@ -8594,7 +8583,7 @@ BOOLEAN PlayerSoldierStartTalking( SOLDIERTYPE *pSoldier, UINT8 ubTargetID, BOOL
 	// Deduct points from our guy....
 	DeductPoints( pSoldier, sAPCost, 0 );
 
-	INT16 const sFacingDir = GetDirectionFromGridNo(tgt.sGridNo, pSoldier);
+	UINT8 const sFacingDir = GetDirectionFromGridNo(tgt.sGridNo, pSoldier);
 
 	// Set our guy facing
 	SendSoldierSetDesiredDirectionEvent( pSoldier, sFacingDir );

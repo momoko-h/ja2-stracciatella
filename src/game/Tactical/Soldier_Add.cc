@@ -1033,7 +1033,7 @@ static void InternalAddSoldierToSector(SOLDIERTYPE* const s, BOOLEAN calculate_d
 				if (sExitGridNo != NOWHERE)
 				{
 					// We found one, calculate direction
-					direction = (UINT8)GetDirectionToGridNoFromGridNo(sExitGridNo, gridno);
+					direction = GetDirectionToGridNoFromGridNo(sExitGridNo, gridno);
 				}
 			}
 		}

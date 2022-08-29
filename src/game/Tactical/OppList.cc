@@ -918,7 +918,7 @@ INT16 DistanceVisible(const SOLDIERTYPE* pSoldier, INT8 bFacingDir, INT8 bSubjec
 	{
 		// always calculate direction for tanks so we have something to work with
 		bFacingDir = pSoldier->bDesiredDirection;
-		bSubjectDir = (INT8) GetDirectionToGridNoFromGridNo( pSoldier->sGridNo, sSubjectGridNo );
+		bSubjectDir = GetDirectionToGridNoFromGridNo( pSoldier->sGridNo, sSubjectGridNo );
 		//bSubjectDir = atan8(pSoldier->sX,pSoldier->sY,pOpponent->sX,pOpponent->sY);
 	}
 

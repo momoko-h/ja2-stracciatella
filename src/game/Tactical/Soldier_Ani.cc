@@ -734,7 +734,7 @@ BOOLEAN AdjustToNextAnimationFrame( SOLDIERTYPE *pSoldier )
 					{
 						if ( pSoldier->sSpreadLocations[ pSoldier->fDoSpread - 1 ] != 0 )
 						{
-							EVENT_SetSoldierDirection( pSoldier, (INT8)GetDirectionToGridNoFromGridNo( pSoldier->sGridNo, pSoldier->sSpreadLocations[ pSoldier->fDoSpread - 1 ] ) );
+							EVENT_SetSoldierDirection(pSoldier, GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, pSoldier->sSpreadLocations[pSoldier->fDoSpread - 1]));
 							EVENT_SetSoldierDesiredDirection( pSoldier, pSoldier->bDirection );
 						}
 					}
@@ -3091,7 +3091,7 @@ static void CheckForAndHandleSoldierIncompacitated(SOLDIERTYPE* pSoldier)
 	if ( pSoldier->usAnimState == GENERIC_HIT_STAND || pSoldier->usAnimState == STANDING_BURST_HIT ||
 		pSoldier->usAnimState == RIFLE_STAND_HIT || pSoldier->usAnimState == CIV_COWER_HIT )
 	{
-		INT8    bTestDirection = pSoldier->bDirection;
+		UINT8   bTestDirection = pSoldier->bDirection;
 		BOOLEAN fForceDirection = FALSE;
 
 		// TRY FALLING BACKWARDS, ( ONLY IF WE ARE A MERC! )
@@ -3109,7 +3109,7 @@ static void CheckForAndHandleSoldierIncompacitated(SOLDIERTYPE* pSoldier)
 			if (attacker != NULL)
 			{
 				// Find direction!
-				bTestDirection = (INT8)GetDirectionFromGridNo(attacker->sGridNo, pSoldier);
+				bTestDirection = GetDirectionFromGridNo(attacker->sGridNo, pSoldier);
 				fForceDirection = TRUE;
 			}
 

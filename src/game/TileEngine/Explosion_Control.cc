@@ -747,9 +747,6 @@ static void ExplosiveDamageGridNo(const INT16 sGridNo, const INT16 sWoundAmt, co
 
 static BOOLEAN DamageSoldierFromBlast(SOLDIERTYPE* const pSoldier, SOLDIERTYPE* const owner, const INT16 sBombGridNo, const INT16 sWoundAmt, const INT16 sBreathAmt, const UINT32 uiDist, const UINT16 usItem)
 {
-	INT16 sNewWoundAmt = 0;
-	UINT8		ubDirection;
-
 	if (!pSoldier->bActive || !pSoldier->bInSector || !pSoldier->bLife )
 		return( FALSE );
 
@@ -760,13 +757,13 @@ static BOOLEAN DamageSoldierFromBlast(SOLDIERTYPE* const pSoldier, SOLDIERTYPE* 
 	}
 
 	// Direction to center of explosion
-	ubDirection = (UINT8)GetDirectionFromGridNo( sBombGridNo, pSoldier );
+	UINT8 const ubDirection = GetDirectionFromGridNo(sBombGridNo, pSoldier);
 
 	// Increment attack counter...
 	gTacticalStatus.ubAttackBusyCount++;
 	SLOGD("Incrementing Attack: Explosion dishing out damage, Count now {}", gTacticalStatus.ubAttackBusyCount);
 
-	sNewWoundAmt = sWoundAmt - std::min(int(sWoundAmt), 35) * ArmourVersusExplosivesPercent(pSoldier) / 100;
+	INT16 sNewWoundAmt = sWoundAmt - std::min(int(sWoundAmt), 35) * ArmourVersusExplosivesPercent(pSoldier) / 100;
 	if ( sNewWoundAmt < 0 )
 	{
 		sNewWoundAmt = 0;

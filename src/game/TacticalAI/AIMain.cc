@@ -1764,10 +1764,9 @@ INT8 ExecuteAction(SOLDIERTYPE *pSoldier)
 		case AI_ACTION_LOCK_DOOR:
 			{
 				STRUCTURE *pStructure;
-				INT8      bDirection;
 				INT16     sDoorGridNo;
 
-				bDirection = (INT8) GetDirectionFromGridNo( pSoldier->usActionData, pSoldier );
+				UINT8 const bDirection = GetDirectionFromGridNo(pSoldier->usActionData, pSoldier);
 				if (bDirection == EAST || bDirection == SOUTH)
 				{
 					sDoorGridNo = pSoldier->sGridNo;

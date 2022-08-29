@@ -1786,7 +1786,6 @@ static BOOLEAN BulletHitMerc(BULLET* pBullet, STRUCTURE* pStructure, BOOLEAN fIn
 	INT32 iImpact, iDamage;
 	FLOAT dZPosRelToMerc;
 	UINT8 ubHitLocation = AIM_SHOT_RANDOM;
-	UINT8 ubAttackDirection;
 	UINT8 ubAmmoType;
 	UINT32 uiChanceThrough;
 	UINT8 ubSpecial = FIRE_WEAPON_NO_SPECIAL;
@@ -1852,7 +1851,7 @@ static BOOLEAN BulletHitMerc(BULLET* pBullet, STRUCTURE* pStructure, BOOLEAN fIn
 			// adult monster types have a weak spot
 			if (ADULTFEMALEMONSTER <= tgt.ubBodyType && tgt.ubBodyType <= YAM_MONSTER)
 			{
-				ubAttackDirection = (UINT8)GetDirectionToGridNoFromGridNo( pBullet->pFirer->sGridNo, tgt.sGridNo);
+				UINT8 const ubAttackDirection = GetDirectionToGridNoFromGridNo(pBullet->pFirer->sGridNo, tgt.sGridNo);
 				if (ubAttackDirection == tgt.bDirection ||
 					ubAttackDirection == OneCCDirection(tgt.bDirection) ||
 					ubAttackDirection == OneCDirection(tgt.bDirection))
@@ -1935,10 +1934,8 @@ static BOOLEAN BulletHitMerc(BULLET* pBullet, STRUCTURE* pStructure, BOOLEAN fIn
 
 		if (ubAmmoType == AMMO_MONSTER && (ubHitLocation == AIM_SHOT_HEAD) && !(tgt.uiStatusFlags & SOLDIER_MONSTER))
 		{
-			UINT8 ubOppositeDirection;
-
-			ubAttackDirection   = (UINT8)GetDirectionToGridNoFromGridNo(pBullet->pFirer->sGridNo, tgt.sGridNo);
-			ubOppositeDirection = OppositeDirection(ubAttackDirection);
+			UINT8 const ubAttackDirection = GetDirectionToGridNoFromGridNo(pBullet->pFirer->sGridNo, tgt.sGridNo);
+			UINT8 const ubOppositeDirection = OppositeDirection(ubAttackDirection);
 
 			if (ubOppositeDirection != tgt.bDirection &&
 				ubAttackDirection != OneCCDirection(tgt.bDirection) &&
@@ -2091,8 +2088,8 @@ static BOOLEAN BulletHitMerc(BULLET* pBullet, STRUCTURE* pStructure, BOOLEAN fIn
 	}
 
 	// breath loss is based on original impact of bullet
-	INT16  const breath_loss   = (iImpact * BP_GET_WOUNDED * (tgt.bBreathMax * 100 - tgt.sBreathRed)) / 10000;
-	UINT16 const hit_direction = GetDirectionFromGridNo(pFirer->sGridNo, &tgt);
+	INT16 const breath_loss   = (iImpact * BP_GET_WOUNDED * (tgt.bBreathMax * 100 - tgt.sBreathRed)) / 10000;
+	UINT8 const hit_direction = GetDirectionFromGridNo(pFirer->sGridNo, &tgt);
 
 	// now check to see if the bullet goes THROUGH this person! (not vehicles)
 	if (!(tgt.uiStatusFlags & SOLDIER_VEHICLE) &&

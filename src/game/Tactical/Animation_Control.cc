@@ -2632,11 +2632,9 @@ UINT16 DetermineSoldierAnimationSurface(const SOLDIERTYPE* pSoldier, UINT16 usAn
 	// If we are a queen, pick the 'real' anim surface....
 	if ( usAnimSurface == QUEENMONSTERSPIT_SW )
 	{
-		INT8 bDir;
-
 		// Assume a target gridno is here.... get direction...
 		// ATE: use +2 in gridno because here head is far from body
-		bDir = (INT8)GetDirectionToGridNoFromGridNo( (INT16)( pSoldier->sGridNo + 2 ), pSoldier->sTargetGridNo );
+		UINT8 const bDir = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo + 2, pSoldier->sTargetGridNo);
 
 		return( gusQueenMonsterSpitAnimPerDir[bDir] );
 	}

@@ -3252,7 +3252,6 @@ static bool IsValidAmmoToReloadRobot(SOLDIERTYPE const& s, OBJECTTYPE const& amm
 BOOLEAN HandleItemPointerClick( UINT16 usMapPos )
 {
 	// Determine what to do
-	UINT8 ubDirection;
 	UINT16 usItem;
 	INT16 sAPCost;
 	UINT8 ubThrowActionCode=0;
@@ -3498,7 +3497,7 @@ BOOLEAN HandleItemPointerClick( UINT16 usMapPos )
 						gpItemPointerSoldier->sPendingActionData2 = usMapPos;
 
 						// Turn towards.....gridno
-						EVENT_SetSoldierDesiredDirectionForward(gpItemPointerSoldier, (INT8)GetDirectionFromGridNo(usMapPos, gpItemPointerSoldier));
+						EVENT_SetSoldierDesiredDirectionForward(gpItemPointerSoldier, GetDirectionFromGridNo(usMapPos, gpItemPointerSoldier));
 
 						EVENT_InitNewSoldierAnim( gpItemPointerSoldier, DROP_ADJACENT_OBJECT, 0 , FALSE );
 						break;
@@ -3570,10 +3569,8 @@ BOOLEAN HandleItemPointerClick( UINT16 usMapPos )
 
 						// OK, make guys turn towards each other and do animation...
 						{
-							UINT8 ubFacingDirection;
-
 							// Get direction to face.....
-							ubFacingDirection = (UINT8)GetDirectionFromGridNo( gpItemPointerSoldier->sGridNo, pSoldier );
+							UINT8 const ubFacingDirection = GetDirectionFromGridNo(gpItemPointerSoldier->sGridNo, pSoldier);
 
 							// Stop merc first....
 							EVENT_StopMerc(pSoldier);
@@ -3661,7 +3658,7 @@ BOOLEAN HandleItemPointerClick( UINT16 usMapPos )
 						}
 
 						// Get direction
-						ubDirection = (UINT8)GetDirectionFromGridNo( gpItemPointerSoldier->sGridNo, pSoldier );
+						UINT8 const ubDirection = GetDirectionFromGridNo(gpItemPointerSoldier->sGridNo, pSoldier);
 
 						// ATE: Goto stationary...
 						SoldierGotoStationaryStance( pSoldier );
@@ -3673,7 +3670,7 @@ BOOLEAN HandleItemPointerClick( UINT16 usMapPos )
 			}
 
 			// CHANGE DIRECTION AT LEAST
-			ubDirection = (UINT8)GetDirectionFromGridNo( sGridNo, gpItemPointerSoldier );
+			UINT8 const ubDirection = GetDirectionFromGridNo(sGridNo, gpItemPointerSoldier);
 			EVENT_SetSoldierDesiredDirection( gpItemPointerSoldier, ubDirection );
 			gpItemPointerSoldier->fTurningUntilDone = TRUE;
 

@@ -1454,7 +1454,7 @@ INT8 DecideActionRed(SOLDIERTYPE *pSoldier, UINT8 ubUnconsciousOK)
 	INT8 bActionReturned;
 	INT32 iDummy;
 	INT16 iChance,sClosestOpponent,sClosestFriend;
-	INT16 sClosestDisturbance, sDistVisible, sCheckGridNo;
+	INT16 sClosestDisturbance, sDistVisible;
 	INT8 bInWater, bInDeepWater, bInGas;
 	INT8 bSeekPts = 0, bHelpPts = 0, bHidePts = 0, bWatchPts = 0;
 	INT8	bHighestWatchLoc;
@@ -1720,7 +1720,7 @@ INT8 DecideActionRed(SOLDIERTYPE *pSoldier, UINT8 ubUnconsciousOK)
 				const UINT8 ubOpponentDir = GetDirectionFromGridNo(BestThrow.sTarget, pSoldier);
 
 				// Get new gridno!
-				sCheckGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( ubOpponentDir ) );
+				GridNo sCheckGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(ubOpponentDir));
 
 				if ( !OKFallDirection( pSoldier, sCheckGridNo, pSoldier->bLevel, ubOpponentDir, pSoldier->usAnimState ) )
 				{
@@ -2457,7 +2457,6 @@ static INT8 DecideActionBlack(SOLDIERTYPE* pSoldier)
 	UINT8	ubStanceCost;
 	BOOLEAN fChangeStanceFirst; // before firing
 	BOOLEAN fClimb;
-	UINT8	ubOpponentDir;
 	INT16	sCheckGridNo;
 
 	BOOLEAN fAllowCoverCheck = FALSE;
@@ -2852,10 +2851,10 @@ static INT8 DecideActionBlack(SOLDIERTYPE* pSoldier)
 			{
 				if ( pSoldier->inv[ BestThrow.bWeaponIn ].usItem == MORTAR )
 				{
-					ubOpponentDir = (UINT8)GetDirectionFromGridNo( BestThrow.sTarget, pSoldier );
+					UINT8 const ubOpponentDir = GetDirectionFromGridNo( BestThrow.sTarget, pSoldier );
 
 					// Get new gridno!
-					sCheckGridNo = NewGridNo( (UINT16)pSoldier->sGridNo, DirectionInc( ubOpponentDir ) );
+					sCheckGridNo = NewGridNo(pSoldier->sGridNo, DirectionInc(ubOpponentDir));
 
 					if ( !OKFallDirection( pSoldier, sCheckGridNo, pSoldier->bLevel, ubOpponentDir, pSoldier->usAnimState ) )
 					{
@@ -3185,7 +3184,7 @@ static INT8 DecideActionBlack(SOLDIERTYPE* pSoldier)
 				if ( (INT32)PreRandom( 100 ) < iChance || GetRangeInCellCoordsFromGridNoDiff( pSoldier->sGridNo, BestAttack.sTarget ) <= MIN_PRONE_RANGE )
 				{
 					// first get the direction, as we will need to pass that in to ShootingStanceChange
-					const INT8 bDirection = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, BestAttack.sTarget);
+					UINT8 const bDirection = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, BestAttack.sTarget);
 
 					ubBestStance = ShootingStanceChange( pSoldier, &BestAttack, bDirection );
 					if (ubBestStance != 0)
@@ -3461,7 +3460,7 @@ static INT8 DecideActionBlack(SOLDIERTYPE* pSoldier)
 						// if we have a closest seen opponent
 						if (sClosestOpponent != NOWHERE)
 						{
-							const INT8 bDirection = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, sClosestOpponent);
+							UINT8 const bDirection = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, sClosestOpponent);
 
 							// if we're not facing towards him
 							if (pSoldier->bDirection != bDirection)
@@ -3514,7 +3513,7 @@ static INT8 DecideActionBlack(SOLDIERTYPE* pSoldier)
 			// if we have a closest reachable opponent
 			if (sClosestOpponent != NOWHERE)
 			{
-				const INT8 bDirection = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, sClosestOpponent);
+				UINT8 const bDirection = GetDirectionToGridNoFromGridNo(pSoldier->sGridNo, sClosestOpponent);
 
 				// if we're not facing towards him
 				if ( pSoldier->bDirection != bDirection && InternalIsValidStance( pSoldier, bDirection, gAnimControl[ pSoldier->usAnimState ].ubEndHeight ) )
