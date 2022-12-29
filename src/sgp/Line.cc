@@ -345,3 +345,12 @@ void RectangleDraw(BOOLEAN const fClip, int const XStart, int const YStart, int 
 	LineDraw(fClip, XStart, YStart, XStart, YEnd,   Color, ScreenPtr);
 	LineDraw(fClip, XEnd,   YStart, XEnd,   YEnd,   Color, ScreenPtr);
 }
+
+
+void LineDraw(bool fClip, int XStart, int YStart, int XEnd, int YEnd, rgba32 Color, UINT16* ScreenPtr)
+{
+	LineDraw(fClip, XStart, YStart, XEnd, YEnd, Color.asRGB565(), ScreenPtr);
+}
+
+
+decltype(rgba32::rgb565PixelFormat) rgba32::rgb565PixelFormat{SDL_AllocFormat(SDL_PIXELFORMAT_RGB565), SDL_FreeFormat};

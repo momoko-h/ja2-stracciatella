@@ -1,6 +1,7 @@
 #ifndef ___LINE___H
 #define ___LINE___H
 
+#include "RGBA32.h"
 #include "Types.h"
 
 
@@ -23,5 +24,7 @@ void SetClippingRegionAndImageWidth(int iImageWidth, int iClipStartX, int iClipS
 void PixelDraw(BOOLEAN fClip, INT32 xp, INT32 yp, INT16 sColor, UINT16* pScreen);
 void LineDraw(BOOLEAN fClip, int XStart, int YStart, int XEnd, int YEnd, short Color, UINT16* ScreenPtr);
 void RectangleDraw(BOOLEAN fClip, int XStart, int YStart, int XEnd, int YEnd, short Color, UINT16* ScreenPtr);
+
+void LineDraw(bool fClip, int XStart, int YStart, int XEnd, int YEnd, rgba32 Color, UINT16* ScreenPtr);
 
 #endif
