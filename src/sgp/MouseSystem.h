@@ -12,7 +12,9 @@
 
 #pragma once
 
+#include <functional>
 #include <optional>
+#include <utility>
 
 #include "JA2Types.h"
 #include "Types.h"
@@ -51,7 +53,7 @@ struct MOUSE_REGION
 	template<size_t index>
 	constexpr void SetUserData(INT32 const data) { static_assert(index < 4); user.data[index] = data; }
 
-	bool HasFastHelp() { return FastHelpRect != nullptr; }
+	bool HasFastHelp() const noexcept { return FastHelpRect != nullptr; }
 
 	INT16 X() const { return RegionTopLeftX; }
 	INT16 Y() const { return RegionTopLeftY; }
@@ -234,11 +236,16 @@ void MouseSystemHook(UINT16 type, UINT32 button, UINT16 x, UINT16 y);
 class MouseRegion : private MOUSE_REGION
 {
 	public:
-		MouseRegion(UINT16 const x, UINT16 const y, UINT16 const w, UINT16 const h, INT8 const priority, UINT16 const cursor, MOUSE_CALLBACK const movecallback, MOUSE_CALLBACK const buttoncallback)
+		MouseRegion(UINT16 const x, UINT16 const y, UINT16 const w, UINT16 const h, INT8 const priority, UINT16 const cursor, MOUSE_CALLBACK movecallback, MOUSE_CALLBACK buttoncallback)
 		{
-			MOUSE_REGION* const r = this;
-			*r = MOUSE_REGION{};
-			MSYS_DefineRegion(r, x, y, x + w, y + h, priority, cursor, movecallback, buttoncallback);
+			MSYS_DefineRegion(this, x, y, x + w, y + h, priority,
+			                  cursor, std::move(movecallback), std::move(buttoncallback));
+		}
+
+		MouseRegion(SGPRect rect, INT8 const priority, UINT16 const cursor, MOUSE_CALLBACK movecallback, MOUSE_CALLBACK buttoncallback)
+		{
+			MSYS_DefineRegion(this, rect.iLeft, rect.iTop, rect.iRight, rect.iBottom, priority,
+			                  cursor, std::move(movecallback), std::move(buttoncallback));
 		}
 
 		~MouseRegion()
@@ -262,3 +269,7 @@ class MouseRegion : private MOUSE_REGION
 		using MOUSE_REGION::SetUserPtr;
 		using MOUSE_REGION::uiFlags;
 };
+
+// Add a protective mouse region over the entire screen that prevents move or
+// click events to be reported for all regions with a lower priority.
+std::unique_ptr<MouseRegion> AddCoverRegion(INT8 priority, UINT16 cursor);

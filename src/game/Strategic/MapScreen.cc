@@ -2652,14 +2652,14 @@ static bool HandleKeyESC()
 		fShowTownInfo = FALSE;
 		CreateDestroyScreenMaskForAssignmentAndContractMenus();
 	}
-	else if (InKeyRingPopup())
+	else if (IsPopupActive())
 	{
-		DeleteKeyRingPopup( );
+		DeletePopups();
 		fTeamPanelDirty = TRUE;
 	}
 	else if (fShowInventoryFlag)
 	{
-		if (!fMapInventoryItem && !InItemStackPopup())
+		if (!fMapInventoryItem)
 		{
 			fEndShowInventoryFlag = TRUE;
 		}

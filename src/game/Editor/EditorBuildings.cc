@@ -498,7 +498,7 @@ enum{
 	NUM_DOOR_BUTTONS
 };
 static GUIButtonRef iDoorButton[NUM_DOOR_BUTTONS];
-static MOUSE_REGION DoorRegion;
+static std::unique_ptr<MouseRegion> DoorRegion;
 
 
 static void DoorCancelCallback(GUI_BUTTON* btn, UINT32 reason);
@@ -513,7 +513,7 @@ void InitDoorEditing(INT32 const map_idx)
 	gfEditingDoor = TRUE;
 	iDoorMapIndex = map_idx;
 	DisableEditorTaskbar();
-	MSYS_DefineRegion(&DoorRegion, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, MSYS_PRIORITY_HIGH - 2, 0, MSYS_NO_CALLBACK, MSYS_NO_CALLBACK);
+	DoorRegion = AddCoverRegion(MSYS_PRIORITY_HIGH - 2, 0);
 	iDoorButton[DOOR_BACKGROUND] = CreateLabel(ST::null, 0, 0, 0, 200, 130, 240, 100, MSYS_PRIORITY_HIGH - 1);
 	iDoorButton[DOOR_OKAY]       = CreateTextButton("Okay",   FONT12POINT1, FONT_BLACK, FONT_BLACK, 330, 195, 50, 30, MSYS_PRIORITY_HIGH, DoorOkayCallback);
 	iDoorButton[DOOR_CANCEL]     = CreateTextButton("Cancel", FONT12POINT1, FONT_BLACK, FONT_BLACK, 385, 195, 50, 30, MSYS_PRIORITY_HIGH, DoorCancelCallback);
@@ -538,12 +538,10 @@ void ExtractAndUpdateDoorInfo()
 {
 	LEVELNODE* pNode;
 	INT32 num;
-	DOOR door;
 	BOOLEAN fCursor = FALSE;
 	BOOLEAN fCursorExists = FALSE;
 
-	door = DOOR{};
-
+	DOOR door{};
 	door.sGridNo = (INT16)iDoorMapIndex;
 
 	num = std::min(GetNumericStrictValueFromField( 0 ), NUM_LOCKS-1);
@@ -638,7 +636,7 @@ void RenderDoorEditingWindow()
 void KillDoorEditing()
 {
 	EnableEditorTaskbar();
-	MSYS_RemoveRegion(&DoorRegion);
+	DoorRegion.reset();
 	FOR_EACH(GUIButtonRef, i, iDoorButton) RemoveButton(*i);
 	gfEditingDoor = FALSE;
 	KillTextInputMode();

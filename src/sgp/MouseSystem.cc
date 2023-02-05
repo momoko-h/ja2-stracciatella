@@ -680,7 +680,7 @@ static void MSYS_UpdateMouseRegion(void)
 
 
 /* Inits a MOUSE_REGION structure for use with the mouse system */
-void MSYS_DefineRegion(MOUSE_REGION* const r, UINT16 const tlx, UINT16 const tly, UINT16 const brx, UINT16 const bry, INT8 priority, UINT16 const crsr, MOUSE_CALLBACK const movecallback, MOUSE_CALLBACK const buttoncallback)
+void MSYS_DefineRegion(MOUSE_REGION* const r, UINT16 const tlx, UINT16 const tly, UINT16 const brx, UINT16 const bry, INT8 priority, UINT16 const crsr, MOUSE_CALLBACK movecallback, MOUSE_CALLBACK buttoncallback)
 {
 	if (priority <= MSYS_PRIORITY_LOWEST) priority = MSYS_PRIORITY_LOWEST;
 
@@ -696,8 +696,8 @@ void MSYS_DefineRegion(MOUSE_REGION* const r, UINT16 const tlx, UINT16 const tly
 	r->RelativeYPos       = 0;
 	r->ButtonState        = 0;
 	r->Cursor             = crsr;
-	r->MovementCallback   = movecallback;
-	r->ButtonCallback     = buttoncallback;
+	r->MovementCallback   = std::move(movecallback);
+	r->ButtonCallback     = std::move(buttoncallback);
 	r->FastHelpTimer      = 0;
 	r->FastHelpText       = ST::null;
 	r->FastHelpRect       = nullptr;
@@ -968,4 +968,10 @@ MOUSE_CALLBACK MouseCallbackPrimarySecondary(
 )
 {
 	return CallbackPrimarySecondary<MOUSE_REGION, MSYS_REGION_ENABLED>(primaryAction, secondaryAction, allEvents, triggerPrimaryOnMouseDown);
+}
+
+std::unique_ptr<MouseRegion> AddCoverRegion(INT8 const priority, UINT16 cursor)
+{
+	// Cover the entire screen with an inactive region to prevent click events
+	return std::make_unique<MouseRegion>(g_ui.m_entireScreenRect, priority, cursor, MSYS_NO_CALLBACK, MSYS_NO_CALLBACK);
 }

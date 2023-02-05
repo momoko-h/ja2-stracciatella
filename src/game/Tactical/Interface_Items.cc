@@ -865,7 +865,7 @@ static void INVRenderINVPanelItem(SOLDIERTYPE const& s, INT16 const pocket, Dirt
 
 void HandleRenderInvSlots(SOLDIERTYPE const& s, DirtyLevel const dirty_level)
 {
-	if (InItemDescriptionBox() || InItemStackPopup() || InKeyRingPopup()) return;
+	if (InItemDescriptionBox() || IsPopupActive()) return;
 
 	for (INT32 i = 0; i != NUM_INV_SLOTS; ++i)
 	{
@@ -3701,6 +3701,12 @@ BOOLEAN InKeyRingPopup( )
 }
 
 
+bool IsPopupActive()
+{
+	return gfInKeyRingPopup || gfInItemStackPopup;
+}
+
+
 static void ItemPopupFullRegionCallbackPrimary(MOUSE_REGION* pRegion, UINT32 iReason);
 static void ItemPopupFullRegionCallbackSecondary(MOUSE_REGION* pRegion, UINT32 iReason);
 static void ItemPopupRegionCallbackPrimary(MOUSE_REGION* pRegion, UINT32 iReason);
@@ -3807,8 +3813,10 @@ void InitItemStackPopup(SOLDIERTYPE* const pSoldier, UINT8 const ubPosition, INT
 
 
 	// Build a mouse region here that is over any others.....
-	MSYS_DefineRegion(&gItemPopupRegion, gsItemPopupInvX, gsItemPopupInvY, gsItemPopupInvX + gsItemPopupInvWidth, gsItemPopupInvY + gsItemPopupInvHeight, MSYS_PRIORITY_HIGH, MSYS_NO_CURSOR, MSYS_NO_CALLBACK, MouseCallbackPrimarySecondary(ItemPopupFullRegionCallbackPrimary, ItemPopupFullRegionCallbackSecondary));
-
+	MSYS_DefineRegion(&gItemPopupRegion, gsItemPopupInvX, gsItemPopupInvY, gsItemPopupInvX + gsItemPopupInvWidth,
+		gsItemPopupInvY + gsItemPopupInvHeight, MSYS_PRIORITY_HIGH + 1, MSYS_NO_CURSOR, MSYS_NO_CALLBACK,
+		MouseCallbackPrimarySecondary(ItemPopupFullRegionCallbackPrimary, ItemPopupFullRegionCallbackSecondary));
+	gItemPopupRegion.SetUserPtr(AddCoverRegion(MSYS_PRIORITY_HIGH, CURSOR_NORMAL).release());
 
 	//Disable all faces
 	SetAllAutoFacesInactive( );
@@ -3891,32 +3899,37 @@ void RenderItemStackPopup( BOOLEAN fFullRender )
 }
 
 
+// Cleanup code that is common to both item and key ring popups
+static void DeletePopupCommon()
+{
+	delete guiItemPopupBoxes;
+	guiItemPopupBoxes = nullptr;
+	delete gItemPopupRegion.GetUserPtr<MouseRegion>();
+	MSYS_RemoveRegion(&gItemPopupRegion);
+
+	fInterfacePanelDirty = DIRTYLEVEL2;
+
+	if (guiCurrentItemDescriptionScreen != MAP_SCREEN)
+	{
+		EnableSMPanelButtons(TRUE, FALSE);
+	}
+
+	FreeMouseCursor();
+}
+
+
 static void DeleteItemStackPopup(void)
 {
-	INT32 cnt;
-
-	DeleteVideoObject(guiItemPopupBoxes);
-
-	MSYS_RemoveRegion( &gItemPopupRegion);
-
+	if (!gfInItemStackPopup) return;
 
 	gfInItemStackPopup = FALSE;
 
-	for ( cnt = 0; cnt < gubNumItemPopups; cnt++ )
+	for (int cnt = 0; cnt < gubNumItemPopups; ++cnt)
 	{
 		MSYS_RemoveRegion( &gItemPopupRegions[cnt]);
 	}
 
-
-	fInterfacePanelDirty = DIRTYLEVEL2;
-
-	if( guiCurrentItemDescriptionScreen != MAP_SCREEN )
-	{
-		EnableSMPanelButtons( TRUE, FALSE );
-	}
-
-	FreeMouseCursor( );
-
+	DeletePopupCommon();
 }
 
 
@@ -3970,10 +3983,11 @@ void InitKeyRingPopup(SOLDIERTYPE* const pSoldier, INT16 const sInvX, INT16 cons
 		MSYS_SetRegionUserData( &gKeyRingRegions[cnt], 0, cnt );
 	}
 
-
 	// Build a mouse region here that is over any others.....
-	MSYS_DefineRegion(&gItemPopupRegion, sInvX, sInvY, sInvX + sInvWidth, sInvY + sInvHeight, MSYS_PRIORITY_HIGH, MSYS_NO_CURSOR, MSYS_NO_CALLBACK, MouseCallbackPrimarySecondary(ItemPopupFullRegionCallbackPrimary, ItemPopupFullRegionCallbackSecondary));
-
+	MSYS_DefineRegion(&gItemPopupRegion, sInvX, sInvY, sInvX + sInvWidth, sInvY + sInvHeight,
+		MSYS_PRIORITY_HIGH + 1, MSYS_NO_CURSOR, MSYS_NO_CALLBACK,
+		MouseCallbackPrimarySecondary(ItemPopupFullRegionCallbackPrimary, ItemPopupFullRegionCallbackSecondary));
+	gItemPopupRegion.SetUserPtr(AddCoverRegion(MSYS_PRIORITY_HIGH, CURSOR_NORMAL).release());
 
 	//Disable all faces
 	SetAllAutoFacesInactive( );
@@ -4013,8 +4027,7 @@ void RenderKeyRingPopup(const BOOLEAN fFullRender)
 		}
 	}
 
-	OBJECTTYPE o;
-	o = OBJECTTYPE{};
+	OBJECTTYPE o{};
 	o.bStatus[0] = 100;
 
 	ETRLEObject const& pTrav = guiItemPopupBoxes->SubregionProperties(0);
@@ -4069,26 +4082,32 @@ void DeleteKeyRingPopup(void)
 {
 	if (!gfInKeyRingPopup) return;
 
-	DeleteVideoObject(guiItemPopupBoxes);
-
-	MSYS_RemoveRegion(&gItemPopupRegion);
-
 	gfInKeyRingPopup = FALSE;
 
-	for (INT32 i = 0; i < NUMBER_KEYS_ON_KEYRING; i++)
+	for (auto & region : gKeyRingRegions)
 	{
-		MSYS_RemoveRegion(&gKeyRingRegions[i]);
+		MSYS_RemoveRegion(&region);
 	}
 
-	fInterfacePanelDirty = DIRTYLEVEL2;
-
-	if (guiCurrentItemDescriptionScreen != MAP_SCREEN)
-	{
-		EnableSMPanelButtons(TRUE, FALSE);
-	}
-
-	FreeMouseCursor();
+	DeletePopupCommon();
 }
+
+
+bool DeletePopups()
+{
+	if (gfInKeyRingPopup)
+	{
+		DeleteKeyRingPopup();
+		return true;
+	}
+	if (gfInItemStackPopup)
+	{
+		DeleteItemStackPopup();
+		return true;
+	}
+	return false;
+}
+
 
 std::pair<const SGPVObject*, UINT8> GetFallbackSmallInventoryGraphicForItem(const ItemModel *item) {
 	if (item->getPerPocket() != 0) {
@@ -4308,16 +4327,7 @@ static void ItemPopupFullRegionCallbackPrimary(MOUSE_REGION* pRegion, UINT32 iRe
 
 static void ItemPopupFullRegionCallbackSecondary(MOUSE_REGION* pRegion, UINT32 iReason)
 {
-	if ( InItemStackPopup( ) )
-	{
-		DeleteItemStackPopup( );
-		fTeamPanelDirty = TRUE;
-	}
-	else
-	{
-		DeleteKeyRingPopup( );
-		fTeamPanelDirty = TRUE;
-	}
+	fTeamPanelDirty = DeletePopups();
 }
 
 #define NUM_PICKUP_SLOTS				6

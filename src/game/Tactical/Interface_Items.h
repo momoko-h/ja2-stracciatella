@@ -91,6 +91,10 @@ void ShutdownKeyRingInterface( void );
 BOOLEAN InKeyRingPopup( void );
 void BeginKeyRingItemPointer( SOLDIERTYPE *pSoldier, UINT8 ubKeyRingPosition );
 
+// Handles either the item stack or the key ring popup.
+bool IsPopupActive();
+// return true if a popup was active, false otherwise.
+bool DeletePopups();
 
 extern OBJECTTYPE*  gpItemPointer;
 extern OBJECTTYPE   gItemPointer;

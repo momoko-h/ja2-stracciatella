@@ -291,7 +291,7 @@ static UINT8 gubRenderHelpScreenTwiceInaRow = 0;
 
 
 // region to mask the background
-static MOUSE_REGION gHelpScreenFullScreenMask;
+static std::unique_ptr<MouseRegion> gHelpScreenFullScreenMask;
 
 
 // region to mask the background
@@ -498,7 +498,7 @@ static void EnterHelpScreen(void)
 	SetSizeAndPropertiesOfHelpScreen();
 
 	//Create a mouse region 'mask' the entrire screen
-	MSYS_DefineRegion(&gHelpScreenFullScreenMask, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, MSYS_PRIORITY_HIGHEST, gHelpScreen.usCursor, MSYS_NO_CALLBACK, MSYS_NO_CALLBACK);
+	gHelpScreenFullScreenMask = AddCoverRegion(MSYS_PRIORITY_HIGHEST, gHelpScreen.usCursor);
 
 	//Create the exit button
 	if( gHelpScreen.bNumberOfButtons != 0 )
@@ -694,7 +694,7 @@ static void ExitHelpScreen(void)
 	gHelpScreen.uiFlags &= ~HELP_SCREEN_ACTIVE;
 
 	//remove the mouse region that blankets
-	MSYS_RemoveRegion( &gHelpScreenFullScreenMask );
+	gHelpScreenFullScreenMask.reset();
 
 	//remove the hepl graphic
 	DeleteVideoObject(guiHelpScreenBackGround);
@@ -1975,7 +1975,6 @@ static void CreateScrollAreaButtons(void)
 	//Get the height and position of the scroll box
 	CalculateHeightAndPositionForHelpScreenScrollBox( &iHeight, &iPosY );
 
-		//Create a mouse region 'mask' the entrire screen
 	MSYS_DefineRegion( &gHelpScreenScrollArea, usPosX, (UINT16)iPosY, (UINT16)(usPosX+usWidth), (UINT16)(iPosY+HLP_SCRN__HEIGHT_OF_SCROLL_AREA), MSYS_PRIORITY_HIGHEST,
 				gHelpScreen.usCursor, SelectHelpScrollAreaMovementCallBack, SelectHelpScrollAreaCallBack );
 

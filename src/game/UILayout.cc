@@ -126,6 +126,7 @@ void UILayout::recalculatePositions()
 	m_tacticalMapCenterY          = (m_VIEWPORT_END_Y - m_VIEWPORT_START_Y) / 2;
 
 	m_worldClippingRect.set(0, 0, m_screenWidth, m_screenHeight - 120);
+	m_entireScreenRect .set(0, 0, m_screenWidth, m_screenHeight);
 
 	m_contractPosition.set(       m_stdScreenOffsetX + 120, m_stdScreenOffsetY +  50);
 	m_attributePosition.set(      m_stdScreenOffsetX + 220, m_stdScreenOffsetY + 150);
@@ -143,7 +144,7 @@ UINT16 UILayout::getTacticalTextBoxX() const
 
 	if ( guiCurrentScreen == MAP_SCREEN )
 	{
-		return STD_SCREEN_X + 110;
+		return m_stdScreenOffsetX + 110;
 	}
 	else
 	{
@@ -156,7 +157,7 @@ UINT16 UILayout::getTacticalTextBoxY() const
 {
 	if ( guiCurrentScreen == MAP_SCREEN )
 	{
-		return DEFAULT_EXTERN_PANEL_Y_POS;
+		return m_stdScreenOffsetY + 40;
 	}
 	else
 	{

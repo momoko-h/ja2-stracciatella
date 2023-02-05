@@ -78,8 +78,7 @@ BOOLEAN	gfEnteringMapScreen					= FALSE;
 SOLDIERTYPE* gPreferredInitialSelectedGuy = NULL;
 
 static BOOLEAN      gfTacticalIsModal             = FALSE;
-static MOUSE_REGION gTacticalDisableRegion;
-static BOOLEAN      gfTacticalDisableRegionActive = FALSE;
+static std::unique_ptr<MouseRegion> gTacticalDisableRegion;
 MODAL_HOOK          gModalDoneCallback;
 BOOLEAN             gfBeginEndTurn = FALSE;
 extern BOOLEAN      gfFirstHeliRun;
@@ -694,11 +693,9 @@ void EnterModalTactical( INT8 bMode )
 
 	if (bMode == TACTICAL_MODAL_NOMOUSE)
 	{
-		if ( !gfTacticalDisableRegionActive )
+		if (!gTacticalDisableRegion)
 		{
-			gfTacticalDisableRegionActive = TRUE;
-
-			MSYS_DefineRegion(&gTacticalDisableRegion, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, MSYS_PRIORITY_HIGH, VIDEO_NO_CURSOR, MSYS_NO_CALLBACK, MSYS_NO_CALLBACK);
+			gTacticalDisableRegion = AddCoverRegion(MSYS_PRIORITY_HIGH, VIDEO_NO_CURSOR);
 		}
 	}
 
@@ -708,13 +705,7 @@ void EnterModalTactical( INT8 bMode )
 
 void EndModalTactical( )
 {
-	if ( gfTacticalDisableRegionActive )
-	{
-		MSYS_RemoveRegion( &gTacticalDisableRegion );
-
-		gfTacticalDisableRegionActive = FALSE;
-	}
-
+	gTacticalDisableRegion.reset();
 
 	if ( gModalDoneCallback != NULL )
 	{

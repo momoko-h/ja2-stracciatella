@@ -1228,7 +1228,7 @@ void RenderSMPanel(DirtyLevel* const dirty_level)
 	if (gSelectSMPanelToMerc) SetSMPanelCurrentMerc(gSelectSMPanelToMerc);
 
 	// ATE: Don't do anything if we are in stack popup and are refreshing stuff
-	if ((InItemStackPopup() || InKeyRingPopup()) && *dirty_level == DIRTYLEVEL1)
+	if (IsPopupActive() && *dirty_level == DIRTYLEVEL1)
 		return;
 
 	if (!gpSMCurrentMerc) return;

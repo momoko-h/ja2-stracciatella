@@ -57,7 +57,7 @@ BOOLEAN gfAutoBandageFailed;
 static GUIButtonRef iEndAutoBandageButton[2];
 
 
-static MOUSE_REGION gAutoBandageRegion;
+static std::unique_ptr<MouseRegion> gAutoBandageRegion;
 
 
 // the lists of the doctor and patient
@@ -313,7 +313,7 @@ void AutoBandage( BOOLEAN fStart )
 		}
 
 		// build a mask
-		MSYS_DefineRegion(&gAutoBandageRegion, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, MSYS_PRIORITY_HIGHEST - 1, CURSOR_NORMAL, MSYS_NO_CALLBACK, MSYS_NO_CALLBACK);
+		gAutoBandageRegion = AddCoverRegion(MSYS_PRIORITY_HIGHEST - 1, CURSOR_NORMAL);
 
 		gfBeginningAutoBandage = TRUE;
 
@@ -363,8 +363,8 @@ void AutoBandage( BOOLEAN fStart )
 
 		DestroyTerminateAutoBandageButton( );
 
-		// build a mask
-		MSYS_RemoveRegion( &gAutoBandageRegion );
+		// remove the mask
+		gAutoBandageRegion.reset();
 
 		// clear faces for auto bandage
 		RemoveFacesForAutoBandage( );

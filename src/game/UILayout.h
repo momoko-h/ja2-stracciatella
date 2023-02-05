@@ -106,6 +106,7 @@ public:
 	UINT16                m_VIEWPORT_WINDOW_END_Y;
 
 	SGPRect               m_worldClippingRect;
+	SGPRect               m_entireScreenRect;
 
 	// Map screen interface
 	SGPPoint              m_versionPosition;

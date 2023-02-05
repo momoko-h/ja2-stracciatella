@@ -134,7 +134,7 @@ static CreditFace gCreditFaces[] =
 };
 
 
-static MOUSE_REGION gCrdtBackgroundRegion;
+static std::unique_ptr<MouseRegion> gCrdtBackgroundRegion;
 static MOUSE_REGION gCrdtMouseRegions[NUM_PEOPLE_IN_CREDITS];
 
 static BOOLEAN g_credits_active;
@@ -219,7 +219,7 @@ try
 	guiGapTillReadNextCredit    = CRDT_SPACE_BN_NODES;
 
 
-	MSYS_DefineRegion(&gCrdtBackgroundRegion, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, MSYS_PRIORITY_NORMAL, CURSOR_NORMAL, MSYS_NO_CALLBACK, MSYS_NO_CALLBACK);
+	gCrdtBackgroundRegion = AddCoverRegion(MSYS_PRIORITY_NORMAL, CURSOR_NORMAL);
 	for (INT32 i = 0; i != lengthof(gCrdtMouseRegions); ++i)
 	{
 		// Make a mouse region
@@ -258,7 +258,7 @@ static void ExitCreditScreen(void)
 
 	while (g_credits_head != NULL) DeleteFirstNode();
 
-	MSYS_RemoveRegion( &gCrdtBackgroundRegion );
+	gCrdtBackgroundRegion.reset();
 	for (size_t i = 0; i != lengthof(gCrdtMouseRegions); ++i)
 	{
 		MSYS_RemoveRegion(&gCrdtMouseRegions[i]);

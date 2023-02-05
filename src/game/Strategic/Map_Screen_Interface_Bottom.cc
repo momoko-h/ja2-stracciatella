@@ -733,7 +733,7 @@ static void EnableDisableBottomButtonsAndRegions(void)
 	if( fShowInventoryFlag )
 	{
 		// and an item is in the cursor
-		EnableButton(giMapInvDoneButton, !fMapInventoryItem && !InKeyRingPopup() && !InItemStackPopup());
+		EnableButton(giMapInvDoneButton, !fMapInventoryItem && !IsPopupActive());
 
 		if( fShowDescriptionFlag )
 		{
@@ -1113,6 +1113,11 @@ BOOLEAN AllowedToExitFromMapscreenTo(ExitToWhere const bExitToWhere)
 	{
 		//dont allow it
 		return( FALSE );
+	}
+
+	if (IsPopupActive())
+	{
+		return false;
 	}
 
 	// OK to go there, passed all the checks
