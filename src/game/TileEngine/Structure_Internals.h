@@ -7,6 +7,7 @@
 //
 
 #include "Types.h"
+#include <memory>
 
 // A few words about the overall structure scheme:
 //
@@ -152,13 +153,14 @@ struct DB_STRUCTURE
 	INT8								bZTileOffsetX;
 	INT8								bZTileOffsetY;
 	BYTE								bUnused[1]; // XXX HACK000B
-}; // 16 bytes
+};
+static_assert(sizeof(DB_STRUCTURE) == 16);
 
 struct DB_STRUCTURE_REF
 {
 	DB_STRUCTURE * 												pDBStructure;
 	DB_STRUCTURE_TILE **									ppTile; // dynamic array
-}; // 8 bytes
+};
 
 struct STRUCTURE
 {
@@ -186,19 +188,19 @@ struct STRUCTURE
 	UINT8													ubVehicleHitLocation;
 	UINT8													ubStructureHeight; // if 0, then unset; otherwise stores height of structure when last calculated
 	UINT8													ubUnused[1]; // XXX HACK000B
-}; // 32 bytes
+};
 
 struct STRUCTURE_FILE_REF
 {
 	STRUCTURE_FILE_REF* pPrev;
 	STRUCTURE_FILE_REF* pNext;
-	AuxObjectData*      pAuxData;
-	RelTileLoc*         pTileLocData;
-	UINT8*              pubStructureData;
+	std::unique_ptr<AuxObjectData const []> pAuxData;
+	std::unique_ptr<RelTileLoc const []>    pTileLocData;
+	std::unique_ptr<UINT8 const []>         pubStructureData;
 	DB_STRUCTURE_REF*   pDBStructureRef; // dynamic array
 	UINT16              usNumberOfStructures;
 	UINT16              usNumberOfStructuresStored;
-}; // 24 bytes
+};
 
 #define STRUCTURE_FILE_CONTAINS_AUXIMAGEDATA		0x01
 #define STRUCTURE_FILE_CONTAINS_STRUCTUREDATA		0x02

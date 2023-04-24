@@ -187,12 +187,6 @@ namespace
 			}
 			delete[] sr;
 		}
-		if (f->pubStructureData) delete[] f->pubStructureData;
-		if (f->pAuxData)
-		{
-			delete[] f->pAuxData;
-			if (f->pTileLocData) delete[] f->pTileLocData;
-		}
 		delete f;
 	}
 }
@@ -292,9 +286,9 @@ static void LoadStructureData(ST::string const& filename, STRUCTURE_FILE_REF* co
 		*structure_data_size = data_size;
 	}
 
-	sfr->pAuxData         = aux_data.Release();
-	sfr->pTileLocData     = tile_loc_data.Release();
-	sfr->pubStructureData = structure_data.Release();
+	sfr->pAuxData         = aux_data.moveToUnique();
+	sfr->pTileLocData     = tile_loc_data.moveToUnique();
+	sfr->pubStructureData = structure_data.moveToUnique();
 }
 
 void NormalizeStructureTiles(DB_STRUCTURE_TILE** pTiles, UINT8 ubNumTiles)
@@ -338,7 +332,7 @@ void NormalizeStructureTiles(DB_STRUCTURE_TILE** pTiles, UINT8 ubNumTiles)
 static void CreateFileStructureArrays(STRUCTURE_FILE_REF* const pFileRef, UINT32 uiDataSize)
 { /* Based on a file chunk, creates all the dynamic arrays for the structure
 	 * definitions contained within */
-	UINT8*                  pCurrent        = pFileRef->pubStructureData;
+	UINT8 const * pCurrent = pFileRef->pubStructureData.get();
 	DB_STRUCTURE_REF* const pDBStructureRef = new DB_STRUCTURE_REF[pFileRef->usNumberOfStructures]{};
 	pFileRef->pDBStructureRef = pDBStructureRef;
 	for (UINT16 usLoop = 0; usLoop < pFileRef->usNumberOfStructuresStored; ++usLoop)
