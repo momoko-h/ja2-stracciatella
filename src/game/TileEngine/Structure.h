@@ -1,7 +1,6 @@
 #ifndef STRUCTURE_H
 #define STRUCTURE_H
 
-#include "AutoObj.h"
 #include "JA2Types.h"
 #include "Structure_Internals.h"
 #include "Overhead_Types.h"
@@ -40,8 +39,9 @@ enum StructureDamageReason
 
 // functions at the structure database level
 STRUCTURE_FILE_REF* LoadStructureFile(ST::string const& fileName);
+/* To delete a single STRUCTURE_FILE_REF simply use operator delete.
+ */
 void FreeAllStructureFiles( void );
-void FreeStructureFile(STRUCTURE_FILE_REF*);
 
 //
 // functions at the structure instance level
@@ -138,7 +138,5 @@ UINT8				StructureFlagToType( UINT32 uiFlag );
 SoundID GetStructureOpenSound(STRUCTURE const*, bool closing);
 
 extern const UINT8 gubMaterialArmour[];
-
-typedef SGP::AutoObj<STRUCTURE_FILE_REF, FreeStructureFile> AutoStructureFileRef;
 
 #endif

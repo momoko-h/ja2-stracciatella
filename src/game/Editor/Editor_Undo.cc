@@ -1,3 +1,4 @@
+#include "AutoObj.h"
 #include "PODObj.h"
 #include "Structure.h"
 #include "TileDef.h"

@@ -38,6 +38,7 @@
 #include <string_theory/string>
 
 #include <stdexcept>
+#include <vector>
 
 
 #ifdef COUNT_PATHS
@@ -62,8 +63,6 @@ UINT8 AtHeight[PROFILE_Z_SIZE] = { 0x01, 0x02, 0x04, 0x08 };
 constexpr UINT16 FIRST_AVAILABLE_STRUCTURE_ID = INVALID_STRUCTURE_ID + 2;
 
 static UINT16 gusNextAvailableStructureID = FIRST_AVAILABLE_STRUCTURE_ID;
-
-static STRUCTURE_FILE_REF* gpStructureFileRefs;
 
 
 static SoundID const guiMaterialHitSound[NUM_MATERIAL_TYPES] =
@@ -173,6 +172,8 @@ static UINT8 FilledTilePositions(DB_STRUCTURE_TILE const* const t)
 // Structure database functions
 //
 
+static std::vector<STRUCTURE_FILE_REF *> gAllStructureFileRefs;
+
 STRUCTURE_FILE_REF::~STRUCTURE_FILE_REF()
 {
 	if (DB_STRUCTURE_REF* const begin = pDBStructureRef)
@@ -184,30 +185,18 @@ STRUCTURE_FILE_REF::~STRUCTURE_FILE_REF()
 		}
 		delete[] begin;
 	}
+
+	gAllStructureFileRefs.erase(
+		std::find(gAllStructureFileRefs.begin(), gAllStructureFileRefs.end(), this));
 }
 
 
 void FreeAllStructureFiles()
 { // Free all of the structure database
-	for (STRUCTURE_FILE_REF* i = gpStructureFileRefs; i; )
+	while (!gAllStructureFileRefs.empty())
 	{
-		delete std::exchange(i, i->pNext);
+		delete gAllStructureFileRefs.back();
 	}
-	gpStructureFileRefs = nullptr;
-}
-
-
-void FreeStructureFile(STRUCTURE_FILE_REF* const sfr)
-{
-	CHECKV(sfr);
-
-	STRUCTURE_FILE_REF* const next = sfr->pNext;
-	STRUCTURE_FILE_REF* const prev = sfr->pPrev;
-	Assert((prev == NULL) == (gpStructureFileRefs == sfr));
-	*(prev != NULL ? &prev->pNext : &gpStructureFileRefs) = next;
-	if (next) next->pPrev = prev;
-
-	delete sfr;
 }
 
 
@@ -379,10 +368,8 @@ STRUCTURE_FILE_REF* LoadStructureFile(ST::string const& filename)
 	UINT32 data_size = 0;
 	LoadStructureData(filename, sfr.get(), &data_size);
 	if (sfr->pubStructureData) CreateFileStructureArrays(sfr.get(), data_size);
-	// Add the file reference to the master list, at the head for convenience
-	if (gpStructureFileRefs) gpStructureFileRefs->pPrev = sfr.get();
-	sfr->pNext = gpStructureFileRefs;
-	gpStructureFileRefs = sfr.get();
+	// Add the file reference to the master list
+	gAllStructureFileRefs.push_back(sfr.get());
 	return sfr.release();
 }
 

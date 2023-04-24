@@ -192,8 +192,6 @@ struct STRUCTURE
 
 struct STRUCTURE_FILE_REF
 {
-	STRUCTURE_FILE_REF* pPrev;
-	STRUCTURE_FILE_REF* pNext;
 	std::unique_ptr<AuxObjectData const []> pAuxData;
 	std::unique_ptr<RelTileLoc const []>    pTileLocData;
 	std::unique_ptr<UINT8 const []>         pubStructureData;
