@@ -200,6 +200,8 @@ struct STRUCTURE_FILE_REF
 	DB_STRUCTURE_REF*   pDBStructureRef; // dynamic array
 	UINT16              usNumberOfStructures;
 	UINT16              usNumberOfStructuresStored;
+
+	~STRUCTURE_FILE_REF();
 };
 
 #define STRUCTURE_FILE_CONTAINS_AUXIMAGEDATA		0x01
