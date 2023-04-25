@@ -133,7 +133,8 @@ struct DB_STRUCTURE_TILE
 	UINT8			fFlags;
 	UINT8			ubVehicleHitLocation;
 	BYTE			bUnused[1]; // XXX HACK000B
-}; // 32 bytes
+};
+static_assert(sizeof(DB_STRUCTURE_TILE) == 32);
 
 #define BASE_TILE 0
 

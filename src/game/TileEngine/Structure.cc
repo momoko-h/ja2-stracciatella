@@ -682,7 +682,7 @@ try
 	 * STRUCTURE elements created in the first stage.  This array gets given to
 	 * the base tile so there is an easy way to remove an entire object from the
 	 * world quickly */
-	SGP::Buffer<STRUCTURE*> structures(pDBStructure->ubNumberOfTiles);
+	std::vector<STRUCTURE *> structures(pDBStructure->ubNumberOfTiles);
 
 	for (UINT8 i = BASE_TILE; i < pDBStructure->ubNumberOfTiles; ++i)
 	{ // for each tile, create the appropriate STRUCTURE struct

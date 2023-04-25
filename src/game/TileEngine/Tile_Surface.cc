@@ -13,6 +13,7 @@
 #include <array>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 #include <string_theory/format>
 
 
@@ -57,14 +58,16 @@ try
 	{
 		// Valid auxiliary data, so move it to TileSurf
 		pTileSurf->pAuxData = reinterpret_cast<AuxObjectData *>(hImage->pAppData.Release());
+		pTileSurf->pTileLocData = nullptr;
 	}
 	else
 	{
 		pTileSurf->pAuxData = NULL;
+		pTileSurf->pTileLocData = nullptr;
 	}
 
 	pTileSurf->vo                = hVObject.release();
-	pTileSurf->pStructureFileRef = pStructureFileRef.release();
+	pTileSurf->pStructureFileRef = std::move(pStructureFileRef);
 	return pTileSurf.release();
 }
 catch (...)
@@ -76,13 +79,9 @@ catch (...)
 
 void DeleteTileSurface(TILE_IMAGERY* const pTileSurf)
 {
-	if ( pTileSurf->pStructureFileRef != NULL )
+	if (!pTileSurf->pStructureFileRef)
 	{
-		delete pTileSurf->pStructureFileRef;
-	}
-	else
-	{
-		// If a structure file exists, it will free the auxdata.
+		// If a structure file exists, it owns the auxdata and will free it.
 		// Since there is no structure file in this instance, we
 		// free it ourselves.
 		if (pTileSurf->pAuxData != NULL)

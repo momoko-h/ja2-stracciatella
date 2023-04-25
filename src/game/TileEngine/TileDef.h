@@ -3,7 +3,7 @@
 
 #include "JA2Types.h"
 #include "TileDat.h"
-
+#include <memory>
 
 // CATEGORY TYPES
 #define NO_TILE				64000
@@ -60,9 +60,9 @@ enum TerrainTypeDefines
 struct TILE_IMAGERY
 {
 	HVOBJECT           vo;
-	AuxObjectData const *pAuxData;
-	RelTileLoc    const *pTileLocData;
-	STRUCTURE_FILE_REF *pStructureFileRef;
+	AuxObjectData const *pAuxData;     // owned by the TILE_IMAGERY if pStructureFileRef is null.
+	RelTileLoc    const *pTileLocData; // only valid if pStructureFileRef is not null.
+	std::unique_ptr<STRUCTURE_FILE_REF> pStructureFileRef;
 	UINT32             fType;
 	UINT8              ubTerrainID;
 	BYTE               bRaisedObjectType;
