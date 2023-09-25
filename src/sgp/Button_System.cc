@@ -14,8 +14,10 @@
 #include "Font_Control.h"
 
 #include <string_theory/string>
-
+#include <iterator>
+#include <set>
 #include <stdexcept>
+#include <utility>
 
 
 // Names of the default generic button image files.
@@ -33,11 +35,6 @@
 
 #define GUI_BTN_NONE           0
 #define GUI_BTN_DUPLICATE_VOBJ 1
-
-
-#define FOR_EACH_BUTTON(iter) \
-	FOR_EACH(GUI_BUTTON*, iter, ButtonList) \
-		if (!*iter) continue; else
 
 
 /* Kris:
@@ -71,7 +68,8 @@ static BUTTON_PICS ButtonPictures[MAX_BUTTON_PICS];
 
 SGPVSurface* ButtonDestBuffer;
 
-GUI_BUTTON* ButtonList[MAX_BUTTONS];
+// Contains pointers to all current GUI_BUTTON instances.
+static std::set<GUI_BUTTON *> gManagedButtons;
 
 
 const ButtonDimensions* GetDimensionsOfButtonPic(const BUTTON_PICS* const pics)
@@ -229,14 +227,14 @@ remove_pic:
 }
 
 
-void EnableButton(GUIButtonRef const b)
+void EnableButton(GUI_BUTTON * const b)
 {
 	CHECKV(b != NULL); // XXX HACK000C
 	b->uiFlags |= BUTTON_ENABLED | BUTTON_DIRTY;
 }
 
 
-void DisableButton(GUIButtonRef const b)
+void DisableButton(GUI_BUTTON * const b)
 {
 	CHECKV(b != NULL); // XXX HACK000C
 	b->uiFlags &= ~BUTTON_ENABLED;
@@ -244,7 +242,7 @@ void DisableButton(GUIButtonRef const b)
 }
 
 
-void EnableButton(GUIButtonRef const b, bool const enable)
+void EnableButton(GUI_BUTTON * const b, bool const enable)
 {
 	enable ? EnableButton(b) : DisableButton(b);
 }
@@ -396,9 +394,9 @@ void InitButtonSystem(void)
 void ShutdownButtonSystem(void)
 {
 	// Kill off all buttons in the system
-	FOR_EACH_BUTTON(i)
+	while (!gManagedButtons.empty())
 	{
-		delete *i;
+		delete *gManagedButtons.begin();
 	}
 	ShutdownButtonImageManager();
 }
@@ -406,23 +404,24 @@ void ShutdownButtonSystem(void)
 
 static void RemoveButtonsMarkedForDeletion(void)
 {
-	FOR_EACH_BUTTON(i)
+	auto btnIt = gManagedButtons.begin();
+	while (btnIt != gManagedButtons.end())
 	{
-		if ((*i)->uiFlags & BUTTON_DELETION_PENDING) delete *i;
+		if ((*btnIt)->uiFlags & BUTTON_DELETION_PENDING)
+		{
+			delete *std::exchange(btnIt, std::next(btnIt));
+		}
+		else
+		{
+			++btnIt;
+		}
 	}
 }
 
 
-void RemoveButton(GUIButtonRef& btn)
+void RemoveButton(GUI_BUTTON *& btn)
 {
-	INT32 const btn_id = btn.ID();
-	btn.Reset();
-
-	CHECKV(0 < btn_id && btn_id < MAX_BUTTONS); // XXX HACK000C
-	AssertMsg(0 < btn_id && btn_id < MAX_BUTTONS, ST::format("ButtonID {} is out of range.", btn_id));
-	GUI_BUTTON* const b = ButtonList[btn_id];
-	CHECKV(b); // XXX HACK000C
-	AssertMsg(b, ST::format("Accessing non-existent button {}.", btn_id));
+	CHECKV(btn); // XXX HACK000C
 
 	/* If we happen to be in the middle of a callback, and attempt to delete a
 	 * button, like deleting a node during list processing, then we delay it till
@@ -430,40 +429,30 @@ void RemoveButton(GUIButtonRef& btn)
 	 */
 	if (gfDelayButtonDeletion)
 	{
-		b->uiFlags |= BUTTON_DELETION_PENDING;
+		btn->uiFlags |= BUTTON_DELETION_PENDING;
 		gfPendingButtonDeletion = TRUE;
-		return;
 	}
-
-	delete b;
-}
-
-
-// Finds the next available button slot.
-static INT32 GetNextButtonNumber(void)
-{
-	/* Never hand out ID 0.  Slot 0 is always a null pointer */
-	for (INT32 x = 1; x < MAX_BUTTONS; x++)
+	else
 	{
-		if (ButtonList[x] == NULL) return x;
+		delete btn;
 	}
-	throw std::runtime_error("No more button slots");
+
+	btn = nullptr;
 }
+
 
 
 static void QuickButtonCallbackMButn(MOUSE_REGION* reg, UINT32 reason);
 static void QuickButtonCallbackMMove(MOUSE_REGION* reg, UINT32 reason);
 
 
-GUI_BUTTON::GUI_BUTTON(UINT32 const flags, INT16 const left, INT16 const top, INT16 const width, INT16 const height, INT8 const priority, GUI_CALLBACK const click, GUI_CALLBACK const move) :
-	IDNum(GetNextButtonNumber()),
+GUI_BUTTON::GUI_BUTTON(UINT32 const flags, INT16 const left, INT16 const top, INT16 const width, INT16 const height, INT8 const priority, GUI_CALLBACK click, GUI_CALLBACK move) :
 	image(0),
 	Area(left, top, width, height, priority, MSYS_STARTING_CURSORVAL, QuickButtonCallbackMMove, QuickButtonCallbackMButn),
-	ClickCallback(click),
-	MoveCallback(move),
+	ClickCallback(std::move(click)),
+	MoveCallback(std::move(move)),
 	uiFlags(BUTTON_DIRTY | BUTTON_ENABLED | flags),
 	uiOldFlags(0),
-	bDisabledStyle(GUI_BUTTON::DISABLED_STYLE_DEFAULT),
 	codepoints(),
 	usFont(0),
 	sForeColor(0),
@@ -485,13 +474,13 @@ GUI_BUTTON::GUI_BUTTON(UINT32 const flags, INT16 const left, INT16 const top, IN
 	bIconYOffset(-1),
 	fShiftImage(TRUE),
 	ubToggleButtonActivated(FALSE),
+	bDisabledStyle(GUI_BUTTON::DISABLED_STYLE_DEFAULT),
 	ubSoundSchemeID(BUTTON_SOUND_SCHEME_NONE)
 {
 	AssertMsg(left >= 0 && top >= 0 && width >= 0 && height >= 0, ST::format("Attempting to create button with invalid coordinates {}{}+{}{}", left, top, width, height));
 
 	Area.SetUserPtr(this);
-
-	ButtonList[IDNum] = this;
+	gManagedButtons.insert(this);
 
 	SpecifyButtonSoundScheme(this, BUTTON_SOUND_SCHEME_GENERIC);
 }
@@ -502,7 +491,7 @@ GUI_BUTTON::~GUI_BUTTON()
 	if (this == gpAnchoredButton)     gpAnchoredButton     = 0;
 	if (this == gpPrevAnchoredButton) gpPrevAnchoredButton = 0;
 
-	ButtonList[IDNum] = 0;
+	gManagedButtons.erase(this);
 
 	if (uiFlags & BUTTON_SELFDELETE_IMAGE)
 	{
@@ -519,26 +508,28 @@ GUI_BUTTON::~GUI_BUTTON()
 static void DefaultMoveCallback(GUI_BUTTON* btn, UINT32 reason);
 
 
-GUIButtonRef CreateIconButton(INT16 Icon, INT16 IconIndex, INT16 xloc, INT16 yloc, INT16 w, INT16 h, INT16 Priority, GUI_CALLBACK ClickCallback)
+GUI_BUTTON * CreateIconButton(INT16 Icon, INT16 IconIndex, INT16 xloc, INT16 yloc, INT16 w, INT16 h, INT16 Priority, GUI_CALLBACK ClickCallback)
 {
 	// if button size is too small, adjust it.
 	if (w < 4) w = 4;
 	if (h < 3) h = 3;
 
-	GUI_BUTTON* const b = new GUI_BUTTON(BUTTON_GENERIC, xloc, yloc, w, h, Priority, ClickCallback, DefaultMoveCallback);
+	auto * const b = new GUI_BUTTON(BUTTON_GENERIC, xloc, yloc, w, h,
+		Priority, std::move(ClickCallback), DefaultMoveCallback);
 	b->icon        = GenericButtonIcons[Icon];
 	b->usIconIndex = IconIndex;
 	return b;
 }
 
 
-GUIButtonRef CreateTextButton(const ST::string& str, SGPFont font, INT16 sForeColor, INT16 sShadowColor, INT16 xloc, INT16 yloc, INT16 w, INT16 h, INT16 Priority, GUI_CALLBACK ClickCallback)
+GUI_BUTTON * CreateTextButton(const ST::string& str, SGPFont font, INT16 sForeColor, INT16 sShadowColor, INT16 xloc, INT16 yloc, INT16 w, INT16 h, INT16 Priority, GUI_CALLBACK ClickCallback)
 {
 	// if button size is too small, adjust it.
 	if (w < 4) w = 4;
 	if (h < 3) h = 3;
 
-	GUI_BUTTON* const b = new GUI_BUTTON(BUTTON_GENERIC, xloc, yloc, w, h, Priority, ClickCallback, DefaultMoveCallback);
+	auto * const b = new GUI_BUTTON(BUTTON_GENERIC, xloc, yloc, w, h,
+		Priority, std::move(ClickCallback), DefaultMoveCallback);
 	b->codepoints   = str.to_utf32();
 	b->usFont       = font;
 	b->sForeColor   = sForeColor;
@@ -547,13 +538,13 @@ GUIButtonRef CreateTextButton(const ST::string& str, SGPFont font, INT16 sForeCo
 }
 
 
-GUIButtonRef CreateHotSpot(INT16 xloc, INT16 yloc, INT16 Width, INT16 Height, INT16 Priority, GUI_CALLBACK ClickCallback)
+GUI_BUTTON * CreateHotSpot(INT16 xloc, INT16 yloc, INT16 Width, INT16 Height, INT16 Priority, GUI_CALLBACK ClickCallback)
 {
 	return new GUI_BUTTON(BUTTON_HOT_SPOT, xloc, yloc, Width, Height, Priority, ClickCallback, DefaultMoveCallback);
 }
 
 
-static GUIButtonRef QuickCreateButtonInternal(BUTTON_PICS* const pics, const INT16 xloc, const INT16 yloc, const INT32 Type, const INT16 Priority, const GUI_CALLBACK MoveCallback, const GUI_CALLBACK ClickCallback)
+static GUI_BUTTON * QuickCreateButtonInternal(BUTTON_PICS* const pics, const INT16 xloc, const INT16 yloc, const INT32 Type, const INT16 Priority, GUI_CALLBACK MoveCallback, GUI_CALLBACK ClickCallback)
 {
 	// Is there a QuickButton image in the given image slot?
 	if (!pics->vobj)
@@ -561,48 +552,51 @@ static GUIButtonRef QuickCreateButtonInternal(BUTTON_PICS* const pics, const INT
 		throw std::runtime_error("QuickCreateButton: Invalid button image");
 	}
 
-	GUI_BUTTON* const b = new GUI_BUTTON((Type & (BUTTON_CHECKBOX | BUTTON_NEWTOGGLE)) | BUTTON_QUICK, xloc, yloc, pics->max.w, pics->max.h, Priority, ClickCallback, MoveCallback);
+	auto * const b = new GUI_BUTTON((Type & (BUTTON_CHECKBOX | BUTTON_NEWTOGGLE)) | BUTTON_QUICK,
+		xloc, yloc, pics->max.w, pics->max.h, Priority,
+		std::move(ClickCallback), std::move(MoveCallback));
 	b->image = pics;
 	return b;
 }
 
 
-GUIButtonRef QuickCreateButton(BUTTON_PICS* const image, const INT16 x, const INT16 y, const INT16 priority, const GUI_CALLBACK click)
+GUI_BUTTON * QuickCreateButton(BUTTON_PICS* const image, const INT16 x, const INT16 y, const INT16 priority, const GUI_CALLBACK click)
 {
 	return QuickCreateButtonInternal(image, x, y, BUTTON_TOGGLE, priority, DefaultMoveCallback, click);
 }
 
 
-GUIButtonRef QuickCreateButtonNoMove(BUTTON_PICS* const image, const INT16 x, const INT16 y, const INT16 priority, const GUI_CALLBACK click)
+GUI_BUTTON * QuickCreateButtonNoMove(BUTTON_PICS* const image, const INT16 x, const INT16 y, const INT16 priority, const GUI_CALLBACK click)
 {
 	return QuickCreateButtonInternal(image, x, y, BUTTON_TOGGLE, priority, MSYS_NO_CALLBACK, click);
 }
 
 
-GUIButtonRef QuickCreateButtonToggle(BUTTON_PICS* const image, const INT16 x, const INT16 y, const INT16 priority, const GUI_CALLBACK click)
+GUI_BUTTON * QuickCreateButtonToggle(BUTTON_PICS* const image, const INT16 x, const INT16 y, const INT16 priority, const GUI_CALLBACK click)
 {
 	return QuickCreateButtonInternal(image, x, y, BUTTON_NEWTOGGLE, priority, MSYS_NO_CALLBACK, click);
 }
 
 
-GUIButtonRef QuickCreateButtonImg(const char* gfx, INT32 grayed, INT32 off_normal, INT32 off_hilite, INT32 on_normal, INT32 on_hilite, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click)
+GUI_BUTTON * QuickCreateButtonImg(const char* gfx, INT32 grayed, INT32 off_normal, INT32 off_hilite, INT32 on_normal, INT32 on_hilite, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click)
 {
 	BUTTON_PICS* const img = LoadButtonImage(gfx, grayed, off_normal, off_hilite, on_normal, on_hilite);
-	GUIButtonRef const btn = QuickCreateButton(img, x, y, priority, click);
+	auto * const btn = QuickCreateButton(img, x, y, priority, std::move(click));
 	btn->uiFlags |= BUTTON_SELFDELETE_IMAGE;
 	return btn;
 }
 
 
-GUIButtonRef QuickCreateButtonImg(char const* const gfx, INT32 const off_normal, INT32 const on_normal, INT16 const x, INT16 const y, INT16 const priority, GUI_CALLBACK const click)
+GUI_BUTTON * QuickCreateButtonImg(char const* const gfx, INT32 const off_normal, INT32 const on_normal, INT16 const x, INT16 const y, INT16 const priority, GUI_CALLBACK const click)
 {
 	return QuickCreateButtonImg(gfx, -1, off_normal, -1, on_normal, -1, x, y, priority, click);
 }
 
 
-GUIButtonRef CreateIconAndTextButton(BUTTON_PICS* Image, const ST::string& str, SGPFont font, INT16 sForeColor, INT16 sShadowColor, INT16 sForeColorDown, INT16 sShadowColorDown, INT16 xloc, INT16 yloc, INT16 Priority, GUI_CALLBACK ClickCallback)
+GUI_BUTTON * CreateIconAndTextButton(BUTTON_PICS* Image, const ST::string& str, SGPFont font, INT16 sForeColor, INT16 sShadowColor, INT16 sForeColorDown, INT16 sShadowColorDown, INT16 xloc, INT16 yloc, INT16 Priority, GUI_CALLBACK ClickCallback)
 {
-	GUIButtonRef const b = QuickCreateButton(Image, xloc, yloc, Priority, ClickCallback);
+	auto * const b = QuickCreateButton(Image, xloc, yloc,
+	Priority, std::move(ClickCallback));
 	b->codepoints       = str.to_utf32();
 	b->usFont           = font;
 	b->sForeColor       = sForeColor;
@@ -613,9 +607,10 @@ GUIButtonRef CreateIconAndTextButton(BUTTON_PICS* Image, const ST::string& str, 
 }
 
 
-GUIButtonRef CreateLabel(const ST::string& str, SGPFont font, INT16 forecolor, INT16 shadowcolor, INT16 x, INT16 y, INT16 w, INT16 h, INT16 priority)
+GUI_BUTTON * CreateLabel(const ST::string& str, SGPFont font, INT16 forecolor, INT16 shadowcolor, INT16 x, INT16 y, INT16 w, INT16 h, INT16 priority)
 {
-	GUIButtonRef const btn = CreateTextButton(str, font, forecolor, shadowcolor, x, y, w, h, priority, MSYS_NO_CALLBACK);
+	auto * const btn = CreateTextButton(str, font, forecolor, shadowcolor,
+	x, y, w, h, priority, MSYS_NO_CALLBACK);
 	btn->SpecifyDisabledStyle(GUI_BUTTON::DISABLED_STYLE_NONE);
 	DisableButton(btn);
 	return btn;
@@ -722,7 +717,6 @@ void GUI_BUTTON::SetFastHelpText(const ST::string& str)
  */
 static void QuickButtonCallbackMMove(MOUSE_REGION* reg, UINT32 reason)
 {
-	Assert(reg != NULL);
 	GUI_BUTTON* const b = reg->GetUserPtr<GUI_BUTTON>();
 
 	// ATE: New stuff for toggle buttons that work with new Win95 paradigm
@@ -750,7 +744,6 @@ static void QuickButtonCallbackMMove(MOUSE_REGION* reg, UINT32 reason)
  */
 static void QuickButtonCallbackMButn(MOUSE_REGION* reg, UINT32 reason)
 {
-	Assert(reg != NULL);
 	GUI_BUTTON* const b = reg->GetUserPtr<GUI_BUTTON>();
 
 	// ATE: New stuff for toggle buttons that work with new Win95 paradigm
@@ -904,11 +897,10 @@ static void DrawButtonFromPtr(GUI_BUTTON* b);
 void RenderButtons(void)
 {
 	SaveFontSettings();
-	FOR_EACH_BUTTON(i)
+	for (auto * const b : gManagedButtons)
 	{
 		// If the button exists, and it's not owned by another object, draw it
 		// Kris:  and make sure that the button isn't hidden.
-		GUI_BUTTON* const b = *i;
 		if (!(b->Area.uiFlags & MSYS_REGION_ENABLED)) continue;
 
 		if ((b->uiFlags ^ b->uiOldFlags) & (BUTTON_CLICKED_ON | BUTTON_ENABLED))
@@ -941,7 +933,7 @@ void RenderButtons(void)
 }
 
 
-void MarkAButtonDirty(GUIButtonRef const b)
+void MarkAButtonDirty(GUI_BUTTON * const b)
 {
 	// surgical dirtying -> marks a user specified button dirty, without dirty the whole lot of them
 	CHECKV(b != NULL); // XXX HACK000C
@@ -951,14 +943,14 @@ void MarkAButtonDirty(GUIButtonRef const b)
 
 void MarkButtonsDirty(void)
 {
-	FOR_EACH_BUTTON(i)
+	for (auto * const btn : gManagedButtons)
 	{
-		(*i)->uiFlags |= BUTTON_DIRTY;
+		btn->uiFlags |= BUTTON_DIRTY;
 	}
 }
 
 
-void UnMarkButtonDirty(GUIButtonRef const b)
+void UnMarkButtonDirty(GUI_BUTTON * const b)
 {
 	CHECKV(b != NULL); // XXX HACK000C
 	b->uiFlags &= ~BUTTON_DIRTY;
@@ -967,14 +959,14 @@ void UnMarkButtonDirty(GUIButtonRef const b)
 
 void UnmarkButtonsDirty(void)
 {
-	FOR_EACH_BUTTON(i)
+	for (auto * const btn : gManagedButtons)
 	{
-		UnMarkButtonDirty(*i);
+		UnMarkButtonDirty(btn);
 	}
 }
 
 
-void ForceButtonUnDirty(GUIButtonRef const b)
+void ForceButtonUnDirty(GUI_BUTTON * const b)
 {
 	CHECKV(b != NULL); // XXX HACK000C
 	b->uiFlags &= ~BUTTON_DIRTY;
@@ -1553,11 +1545,12 @@ static void DrawGenericButton(const GUI_BUTTON* b)
 }
 
 
-GUIButtonRef CreateCheckBoxButton(INT16 x, INT16 y, const char* filename, INT16 Priority, GUI_CALLBACK ClickCallback)
+GUI_BUTTON * CreateCheckBoxButton(INT16 x, INT16 y, const char* filename, INT16 Priority, GUI_CALLBACK ClickCallback)
 {
 	Assert(filename != NULL);
 	BUTTON_PICS* const ButPic = LoadButtonImage(filename, -1, 0, 1, 2, 3);
-	GUIButtonRef const b      = QuickCreateButtonInternal(ButPic, x, y, BUTTON_CHECKBOX, Priority, MSYS_NO_CALLBACK, ClickCallback);
+	auto * const b = QuickCreateButtonInternal(ButPic, x, y, BUTTON_CHECKBOX,
+		Priority, MSYS_NO_CALLBACK, std::move(ClickCallback));
 
 	//change the flags so that it isn't a quick button anymore
 	b->uiFlags &= ~BUTTON_QUICK;
@@ -1630,7 +1623,7 @@ void GUI_BUTTON::Hide()
 }
 
 
-void HideButton(GUIButtonRef const b)
+void HideButton(GUI_BUTTON * const b)
 {
 	CHECKV(b != NULL); // XXX HACK000C
 	b->Hide();
@@ -1645,7 +1638,7 @@ void GUI_BUTTON::Show()
 }
 
 
-void ShowButton(GUIButtonRef const b)
+void ShowButton(GUI_BUTTON * const b)
 {
 	CHECKV(b != NULL); // XXX HACK000C
 	b->Show();
@@ -1664,5 +1657,7 @@ GUI_CALLBACK ButtonCallbackPrimarySecondary(
 	bool triggerPrimaryOnMouseDown
 )
 {
-	return CallbackPrimarySecondary<GUI_BUTTON, BUTTON_ENABLED>(primaryAction, secondaryAction, allEvents, triggerPrimaryOnMouseDown);
+	return CallbackPrimarySecondary<GUI_BUTTON, BUTTON_ENABLED>(
+		std::move(primaryAction), std::move(secondaryAction),
+		std::move(allEvents), triggerPrimaryOnMouseDown);
 }

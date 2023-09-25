@@ -1040,8 +1040,8 @@ void CreateSMPanelButtons(void)
 
 	// Create buttons
 
-	// SET BUTTONS TO -1
-	std::fill(std::begin(iSMPanelButtons), std::end(iSMPanelButtons), GUIButtonRef::NoButton());
+	// Clear out possibly stale button pointers.
+	std::fill(std::begin(iSMPanelButtons), std::end(iSMPanelButtons), nullptr);
 
 	const INT32 dx = INTERFACE_START_X;
 	const INT32 dy = INV_INTERFACE_START_Y;

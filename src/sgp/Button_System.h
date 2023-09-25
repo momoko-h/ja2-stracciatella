@@ -7,7 +7,6 @@
 #include <string_theory/string>
 
 
-#define MAX_BUTTONS     400
 #define MAX_BUTTON_PICS 256
 
 
@@ -122,7 +121,6 @@ struct GUI_BUTTON
 	template<typename T> T* GetUserPtr() const { return static_cast<T*>(User.Ptr); }
 	void SetUserPtr(void* const p) { User.Ptr = p; }
 
-	INT32        IDNum;         // ID Number, contains it's own button number
 	BUTTON_PICS* image;         // Image to use (see DOCs for details)
 	MouseRegion  Area;          // Mouse System's mouse region to use for this button
 	GUI_CALLBACK ClickCallback; // Button Callback when button is clicked
@@ -134,7 +132,6 @@ struct GUI_BUTTON
 		INT32 Data;
 		void* Ptr;
 	} User;
-	INT8         bDisabledStyle; // Button disabled style
 
 	// For buttons with text
 	ST::utf32_buffer codepoints;
@@ -162,33 +159,12 @@ struct GUI_BUTTON
 
 	UINT8        ubToggleButtonActivated;
 
+	INT8         bDisabledStyle; // Button disabled style
 	UINT8        ubSoundSchemeID;
 };
 
-
-extern GUI_BUTTON* ButtonList[MAX_BUTTONS]; // Button System's Main Button List
-
-
-class GUIButtonRef
-{
-	public:
-		GUIButtonRef() : btn_id_(0) {}
-
-		GUIButtonRef(GUI_BUTTON* const b) : btn_id_(b->IDNum) {}
-
-		void Reset() { btn_id_ = 0; }
-
-		INT32 ID() const { return btn_id_; }
-
-		GUI_BUTTON* operator ->() const { return ButtonList[btn_id_]; }
-
-		operator GUI_BUTTON*() const { return ButtonList[btn_id_]; }
-
-		static GUIButtonRef NoButton() { GUIButtonRef b; b.btn_id_ = -1; return b; };
-
-	private:
-		INT32 btn_id_;
-};
+// For backwards compatibility only; please do not use this alias in new code.
+using GUIButtonRef = GUI_BUTTON *;
 
 
 /* Initializes the GUI button system for use. Must be called before using any
@@ -222,23 +198,23 @@ BUTTON_PICS* UseLoadedButtonImage(BUTTON_PICS* img, INT32 off_normal, INT32 on_n
 void UnloadButtonImage(BUTTON_PICS*);
 
 // Enables an already created button.
-void EnableButton(GUIButtonRef);
+void EnableButton(GUI_BUTTON *);
 
 /* Disables a button. The button remains in the system list, and can be
  * reactivated by calling EnableButton.  Diabled buttons will appear "grayed
  * out" on the screen (unless the graphics for such are not available).
  */
-void DisableButton(GUIButtonRef);
+void DisableButton(GUI_BUTTON *);
 
-void EnableButton(GUIButtonRef, bool enable);
+void EnableButton(GUI_BUTTON *, bool enable);
 
 /* Removes a button from the system's list. All memory associated with the
- * button is released.
+ * button is released. The pointer itself is set to null.
  */
-void RemoveButton(GUIButtonRef&);
+void RemoveButton(GUI_BUTTON *&);
 
-void HideButton(GUIButtonRef);
-void ShowButton(GUIButtonRef);
+void HideButton(GUI_BUTTON *);
+void ShowButton(GUI_BUTTON *);
 
 void RenderButtons(void);
 
@@ -248,37 +224,37 @@ extern BOOLEAN gfRenderHilights;
  * They cannot be re-sized, nor can the graphic be changed.  Providing you have
  * allocated your own image, this is a somewhat simplified function.
  */
-GUIButtonRef QuickCreateButton(BUTTON_PICS* image, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click);
-GUIButtonRef QuickCreateButtonNoMove(BUTTON_PICS* image, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click);
-GUIButtonRef QuickCreateButtonToggle(BUTTON_PICS* image, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click);
+GUI_BUTTON * QuickCreateButton(BUTTON_PICS* image, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click);
+GUI_BUTTON * QuickCreateButtonNoMove(BUTTON_PICS* image, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click);
+GUI_BUTTON * QuickCreateButtonToggle(BUTTON_PICS* image, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click);
 
-GUIButtonRef QuickCreateButtonImg(const char* gfx, INT32 grayed, INT32 off_normal, INT32 off_hilite, INT32 on_normal, INT32 on_hilite, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click);
-GUIButtonRef QuickCreateButtonImg(const char* gfx, INT32 off_normal, INT32 on_normal, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click);
+GUI_BUTTON * QuickCreateButtonImg(const char* gfx, INT32 grayed, INT32 off_normal, INT32 off_hilite, INT32 on_normal, INT32 on_hilite, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click);
+GUI_BUTTON * QuickCreateButtonImg(const char* gfx, INT32 off_normal, INT32 on_normal, INT16 x, INT16 y, INT16 priority, GUI_CALLBACK click);
 
-GUIButtonRef CreateCheckBoxButton(INT16 x, INT16 y, const char* filename, INT16 Priority, GUI_CALLBACK ClickCallback);
+GUI_BUTTON * CreateCheckBoxButton(INT16 x, INT16 y, const char* filename, INT16 Priority, GUI_CALLBACK ClickCallback);
 
 // Creates an Iconic type button.
-GUIButtonRef CreateIconButton(INT16 Icon, INT16 IconIndex, INT16 xloc, INT16 yloc, INT16 w, INT16 h, INT16 Priority, GUI_CALLBACK ClickCallback);
+GUI_BUTTON * CreateIconButton(INT16 Icon, INT16 IconIndex, INT16 xloc, INT16 yloc, INT16 w, INT16 h, INT16 Priority, GUI_CALLBACK ClickCallback);
 
 /* Creates a button like HotSpot. HotSpots have no graphics associated with
  * them.
  */
-GUIButtonRef CreateHotSpot(INT16 xloc, INT16 yloc, INT16 Width, INT16 Height, INT16 Priority, GUI_CALLBACK ClickCallback);
+GUI_BUTTON * CreateHotSpot(INT16 xloc, INT16 yloc, INT16 Width, INT16 Height, INT16 Priority, GUI_CALLBACK ClickCallback);
 
 // Creates a generic button with text on it.
-GUIButtonRef CreateTextButton(const ST::string& str, SGPFont font, INT16 sForeColor, INT16 sShadowColor, INT16 xloc, INT16 yloc, INT16 w, INT16 h, INT16 Priority, GUI_CALLBACK ClickCallback);
+GUI_BUTTON * CreateTextButton(const ST::string& str, SGPFont font, INT16 sForeColor, INT16 sShadowColor, INT16 xloc, INT16 yloc, INT16 w, INT16 h, INT16 Priority, GUI_CALLBACK ClickCallback);
 
-GUIButtonRef CreateIconAndTextButton(BUTTON_PICS* Image, const ST::string& str, SGPFont font, INT16 sForeColor, INT16 sShadowColor, INT16 sForeColorDown, INT16 sShadowColorDown, INT16 xloc, INT16 yloc, INT16 Priority, GUI_CALLBACK ClickCallback);
+GUI_BUTTON * CreateIconAndTextButton(BUTTON_PICS* Image, const ST::string& str, SGPFont font, INT16 sForeColor, INT16 sShadowColor, INT16 sForeColorDown, INT16 sShadowColorDown, INT16 xloc, INT16 yloc, INT16 Priority, GUI_CALLBACK ClickCallback);
 
 /* This is technically not a clickable button, but just a label with text. It is
  * implemented as button */
-GUIButtonRef CreateLabel(const ST::string& str, SGPFont font, INT16 forecolor, INT16 shadowcolor, INT16 x, INT16 y, INT16 w, INT16 h, INT16 priority);
+GUI_BUTTON * CreateLabel(const ST::string& str, SGPFont font, INT16 forecolor, INT16 shadowcolor, INT16 x, INT16 y, INT16 w, INT16 h, INT16 priority);
 
-void MarkAButtonDirty(GUIButtonRef); // will mark only selected button dirty
+void MarkAButtonDirty(GUI_BUTTON *); // will mark only selected button dirty
 void MarkButtonsDirty(void);// Function to mark buttons dirty ( all will redraw at next RenderButtons )
-void UnMarkButtonDirty(GUIButtonRef);  // unmark button
+void UnMarkButtonDirty(GUI_BUTTON *);  // unmark button
 void UnmarkButtonsDirty(void); // unmark ALL the buttoms on the screen dirty
-void ForceButtonUnDirty(GUIButtonRef); // forces button undirty no matter the reason, only lasts one frame
+void ForceButtonUnDirty(GUI_BUTTON *); // forces button undirty no matter the reason, only lasts one frame
 
 
 struct ButtonDimensions
