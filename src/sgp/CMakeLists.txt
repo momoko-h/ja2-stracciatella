@@ -25,6 +25,7 @@ set(LOCAL_JA2_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/Types.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/VObject.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/VObject_Blitters.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/VObject_Blitters_32.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/VSurface.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/Video.cc
 )
