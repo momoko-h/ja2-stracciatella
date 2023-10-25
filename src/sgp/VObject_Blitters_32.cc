@@ -70,12 +70,12 @@ template Blitter<uint32_t>::~Blitter();
 #if 0
 // Copy & paste this for any new blitter
 template<typename T>
-void Blitter<T>::
+void Blitter<T>::() const
 {
 	if (!ParseArgs()) return;
 }
-template void Blitter<uint16_t>::();
-template void Blitter<uint32_t>::();
+template void Blitter<uint16_t>::() const;
+template void Blitter<uint32_t>::() const;
 #endif
 
 template<typename T>
@@ -340,12 +340,105 @@ template void Blitter<uint16_t>::Transparent() const;
 template void Blitter<uint32_t>::Transparent() const;
 
 
-/*
+// ATE New blitter for rendering a different color for value 254.
+// Can be transparent if s16BPPColor is SGP_TRANSPARENT.
 template<typename T>
-void Blitter<T>::
+void Blitter<T>::Outline() const
 {
 	if (!ParseArgs()) return;
+
+	auto * const p16BPPPalette = srcVObject->CurrentShade();
+
+	int Unblitted;
+	int LSCount;
+	int PxCount;
+
+	do
+	{
+		for (LSCount = LeftSkip; LSCount > 0; LSCount -= PxCount)
+		{
+			PxCount = *SrcPtr++;
+			if (PxCount & 0x80)
+			{
+				PxCount &= 0x7F;
+				if (PxCount > LSCount)
+				{
+					PxCount -= LSCount;
+					LSCount = BlitLength;
+					goto BlitTransparent;
+				}
+			}
+			else
+			{
+				if (PxCount > LSCount)
+				{
+					SrcPtr += LSCount;
+					PxCount -= LSCount;
+					LSCount = BlitLength;
+					goto BlitNonTransLoop;
+				}
+				SrcPtr += PxCount;
+			}
+		}
+
+		LSCount = BlitLength;
+		while (LSCount > 0)
+		{
+			PxCount = *SrcPtr++;
+			if (PxCount & 0x80)
+			{
+BlitTransparent: // skip transparent pixels
+				PxCount &= 0x7F;
+				if (PxCount > LSCount)
+				{
+					PxCount = LSCount;
+				}
+				LSCount -= PxCount;
+				DstPtr += PxCount;
+			}
+			else
+			{
+BlitNonTransLoop: // blit non-transparent pixels
+				if (PxCount > LSCount)
+				{
+					Unblitted = PxCount - LSCount;
+					PxCount = LSCount;
+				}
+				else
+				{
+					Unblitted = 0;
+				}
+				LSCount -= PxCount;
+
+				do
+				{
+					if (*SrcPtr != 254)
+					{
+						if constexpr (sizeof(T) == 4)
+						{
+							*DstPtr = ABGR8888(p16BPPPalette[*SrcPtr]);
+						}
+						else
+						{
+							*DstPtr = p16BPPPalette[*SrcPtr];
+						}
+					}
+					else if (OutlineColor != 0)
+					{
+						*DstPtr = OutlineColor;
+					}
+					++SrcPtr;
+					++DstPtr;
+				}
+				while (--PxCount > 0);
+				SrcPtr += Unblitted;
+			}
+		}
+
+		while (*SrcPtr++ != 0) {} // skip along until we hit and end-of-line marker
+		DstPtr += LineSkip;
+	}
+	while (--BlitHeight > 0);
 }
-template void Blitter<uint16_t>::();
-template void Blitter<uint32_t>::();
-*/
+template void Blitter<uint16_t>::Outline() const;
+template void Blitter<uint32_t>::Outline() const;

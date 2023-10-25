@@ -42,10 +42,12 @@ public:
 	int                      y;
 	SGPRect const *          clipregion{ nullptr };
 
-	// Only used by MonoShadow
-	T                        Foreground;
-	T                        Background;
-	T                        Shadow;
+	T                        Foreground;         // Only used by MonoShadow
+	T                        Background;         // Only used by MonoShadow
+	union {
+	T                        Shadow;             // Only used by MonoShadow
+	T                        OutlineColor;       // Only used by Outline
+	};
 
 	Blitter() = default;
 	Blitter(Blitter const&) = delete;
@@ -60,6 +62,7 @@ public:
 	// clipregion field (the default value).
 
 	void MonoShadow() const;
+	void Outline() const;
 	void Transparent() const;
 };
 

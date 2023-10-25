@@ -246,18 +246,14 @@ void BltVideoObject(SGPVSurface* const dst, SGPVObject const* const src, UINT16 
 
 void BltVideoObjectOutline(SGPVSurface* const dst, SGPVObject const* const hSrcVObject, UINT16 const usIndex, INT32 const iDestX, INT32 const iDestY, INT16 const s16BPPColor)
 {
-	SGPVSurface::Lock l(dst);
-	UINT16* const pBuffer = l.Buffer<UINT16>();
-	UINT32  const uiPitch = l.Pitch();
-
-	if (BltIsClipped(hSrcVObject, iDestX, iDestY, usIndex, &ClippingRect))
-	{
-		Blt8BPPDataTo16BPPBufferOutlineClip(pBuffer, uiPitch, hSrcVObject, iDestX, iDestY, usIndex, s16BPPColor, &ClippingRect);
-	}
-	else
-	{
-		Blt8BPPDataTo16BPPBufferOutline(pBuffer, uiPitch, hSrcVObject, iDestX, iDestY, usIndex, s16BPPColor);
-	}
+	Blitter<uint16_t> blitter{dst};
+	blitter.clipregion = &ClippingRect;
+	blitter.x = iDestX;
+	blitter.y = iDestY;
+	blitter.srcVObject = hSrcVObject;
+	blitter.srcObjectIndex = usIndex;
+	blitter.OutlineColor = static_cast<uint16_t>(s16BPPColor);
+	blitter.Outline();
 }
 
 
