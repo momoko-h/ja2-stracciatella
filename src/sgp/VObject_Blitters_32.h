@@ -54,6 +54,11 @@ public:
 	Blitter(SDL_Texture *);
 	~Blitter();
 
+	// Previously many blitters came in two versions, one for clipped blits
+	// and one for blits without. That's no longer the case with the new
+	// blitters; if you want unrestricted blits pass in null for the
+	// clipregion field (the default value).
+
 	void MonoShadow() const;
 	void Transparent() const;
 };

@@ -2,8 +2,10 @@
 #include "HImage.h"
 #include "VObject.h"
 #include "VObject_Blitters.h"
+#include "VObject_Blitters_32.h"
 #include "VSurface.h"
 
+#include <cstdint>
 #include <string_theory/format>
 #include <string_theory/string>
 
@@ -232,18 +234,13 @@ void BltVideoObject(SGPVSurface* const dst, SGPVObject const* const src, UINT16 
 	Assert(src->BPP() ==  8);
 	Assert(dst->BPP() == 16);
 
-	SGPVSurface::Lock l(dst);
-	UINT16* const pBuffer = l.Buffer<UINT16>();
-	UINT32  const uiPitch = l.Pitch();
-
-	if (BltIsClipped(src, iDestX, iDestY, usRegionIndex, &ClippingRect))
-	{
-		Blt8BPPDataTo16BPPBufferTransparentClip(pBuffer, uiPitch, src, iDestX, iDestY, usRegionIndex, &ClippingRect);
-	}
-	else
-	{
-		Blt8BPPDataTo16BPPBufferTransparent(pBuffer, uiPitch, src, iDestX, iDestY, usRegionIndex);
-	}
+	Blitter<uint16_t> blitter{dst};
+	blitter.clipregion = &ClippingRect;
+	blitter.x = iDestX;
+	blitter.y = iDestY;
+	blitter.srcVObject = src;
+	blitter.srcObjectIndex = usRegionIndex;
+	blitter.Transparent();
 }
 
 
