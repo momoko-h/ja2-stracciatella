@@ -2,8 +2,6 @@
 #define FONT_H
 
 #include "Types.h"
-
-#include <map>
 #include <string_theory/string>
 
 
@@ -92,5 +90,8 @@ inline void FindFontCenterCoordinates(INT16 sLeft, INT16 sTop, INT16 sWidth, INT
 }
 
 bool IsPrintableChar(char32_t c);
+
+struct SDL_Texture;
+void MPrintTexture(SDL_Texture *, int x, int y, const ST::utf32_buffer& codepoints);
 
 #endif
