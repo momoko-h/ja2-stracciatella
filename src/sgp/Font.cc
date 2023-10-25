@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <stdarg.h>
 #include "HImage.h"
 #include "Types.h"
@@ -262,40 +263,48 @@ void GPrint(INT32 x, INT32 y, const ST::utf32_buffer& codepoints)
 }
 
 
+template<typename T>
+Blitter<T> & FontInitBlitter(Blitter<T> & blitter, int x, int y)
+{
+	blitter.srcVObject = FontDefault;
+	blitter.clipregion = &FontDestRegion;
+	blitter.x = x;
+	blitter.y = y;
+
+	if constexpr (sizeof(T) == 4)
+	{
+		blitter.Foreground = ABGR8888(FontForeground16);
+		blitter.Background = FontBackground16 == 0
+		// In this context, a value of 0 for background or shadow
+		// means transparent, alpha must be 0.
+			? 0 : ABGR8888(FontBackground16);
+		blitter.Shadow     = FontShadow16 == 0
+			? 0 : ABGR8888(FontShadow16);
+	}
+	else
+	{
+		blitter.Foreground = FontForeground16;
+		blitter.Background = FontBackground16;
+		blitter.Shadow     = FontShadow16;
+	}
+
+	return blitter;
+}
+
+
 UINT32 MPrintChar(INT32 x, INT32 y, char32_t c)
 {
 	GlyphIdx const glyph = GetGlyphIndex(c);
-	SGPFont  const font  = FontDefault;
-	{ SGPVSurface::Lock l(FontDestBuffer);
-		Blt8BPPDataTo16BPPBufferMonoShadowClip(l.Buffer<UINT16>(), l.Pitch(), font, x, y, glyph, &FontDestRegion, FontForeground16, FontBackground16, FontShadow16);
-	}
-	return GetWidth(font, glyph);
-}
-
-
-void MPrintBuffer(UINT16* pDestBuf, UINT32 uiDestPitchBYTES, INT32 x, INT32 y, const ST::utf32_buffer& codepoints)
-{
-	SGPFont const font = FontDefault;
-	for (char32_t c : codepoints)
-	{
-		GlyphIdx const glyph = GetGlyphIndex(c);
-		Blt8BPPDataTo16BPPBufferMonoShadowClip(pDestBuf, uiDestPitchBYTES, font, x, y, glyph, &FontDestRegion, FontForeground16, FontBackground16, FontShadow16);
-		x += GetWidth(font, glyph);
-	}
-}
-
-
-void MPrint(INT32 x, INT32 y, const ST::utf32_buffer& codepoints)
-{
 	Blitter<uint16_t> blitter{FontDestBuffer};
-	blitter.x = x;
-	blitter.y = y;
-	blitter.srcVObject = FontDefault;
-	blitter.clipregion = &FontDestRegion;
-	blitter.Foreground = FontForeground16;
-	blitter.Background = FontBackground16;
-	blitter.Shadow     = FontShadow16;
+	blitter.srcObjectIndex = glyph;
+	FontInitBlitter(blitter, x, y).MonoShadow();
+	return GetWidth(FontDefault, glyph);
+}
 
+
+template<typename T>
+static void MPrintCommon(T & blitter, ST::utf32_buffer const& codepoints)
+{
 	for (char32_t c : codepoints)
 	{
 		GlyphIdx const glyph = GetGlyphIndex(c);
@@ -303,6 +312,30 @@ void MPrint(INT32 x, INT32 y, const ST::utf32_buffer& codepoints)
 		blitter.MonoShadow();
 		blitter.x += GetWidth(FontDefault, glyph);
 	}
+}
+
+
+void MPrintBuffer(UINT16* pDestBuf, UINT32 uiDestPitchBYTES, INT32 x, INT32 y, const ST::utf32_buffer& codepoints)
+{
+	Blitter<uint16_t> blitter;
+	blitter.buffer = pDestBuf;
+	blitter.pitch = static_cast<int>(uiDestPitchBYTES);
+	MPrintCommon(FontInitBlitter(blitter, x, y), codepoints);
+}
+
+
+void MPrint(INT32 x, INT32 y, const ST::utf32_buffer& codepoints)
+{
+	Blitter<uint16_t> blitter{FontDestBuffer};
+	FontInitBlitter(blitter, x, y);
+	MPrintCommon(FontInitBlitter(blitter, x, y), codepoints);
+}
+
+
+void MPrint(SDL_Texture * texture, int x, int y, const ST::utf32_buffer& codepoints)
+{
+	Blitter<uint32_t> blitter{texture};
+	MPrintCommon(FontInitBlitter(blitter, x, y), codepoints);
 }
 
 
@@ -310,38 +343,4 @@ void InitializeFontManager(void)
 {
 	FontDefault    = 0;
 	SetFontDestBuffer(BACKBUFFER);
-}
-
-// Somewhat fast RGB565 to ABGR8888 (same as RGBA32 on little-endian CPUs) conversion routine.
-// Useless in this form on big-endian if we use RGBA32 textures, but easily adapted.
-constexpr UINT32 ABGR8888(UINT16 const RGB565)
-{
-       constexpr UINT8 RB5[32] = {0,9,17,25,33,42,50,58,66,75,83,91,99,107,116,124,132,140,149,157,165,173,181,190,198,206,214,223,231,239,247,255};
-       constexpr UINT8 G6[64] = {0,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77,81,85,90,94,98,102,106,110,114,118,122,126,130,134,138,142,146,150,154,158,162,166,170,175,179,183,187,191,195,199,203,207,211,215,219,223,227,231,235,239,243,247,251,255};
-       return
-               RB5[RGB565 & 0x1f] |               // red
-               (G6[(RGB565 >> 5) & 0x3f] << 8) |  // green
-               (RB5[(RGB565 >> 11)] << 16) |      // blue
-               (0xff << 24);                      // alpha
-};
-
-
-void MPrintTexture(SDL_Texture * texture, int x, int y, const ST::utf32_buffer& codepoints)
-{
-	Blitter<uint32_t> blitter{texture};
-	blitter.x = x;
-	blitter.y = y;
-	blitter.srcVObject = FontDefault;
-	blitter.clipregion = &FontDestRegion;
-	blitter.Foreground = ABGR8888(FontForeground16);
-	blitter.Background = ABGR8888(FontBackground16);
-	blitter.Shadow     = ABGR8888(FontShadow16);
-
-	for (char32_t c : codepoints)
-	{
-		GlyphIdx const glyph = GetGlyphIndex(c);
-		blitter.srcObjectIndex = glyph;
-		blitter.MonoShadow();
-		blitter.x += GetWidth(FontDefault, glyph);
-	}
 }

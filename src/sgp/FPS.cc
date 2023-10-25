@@ -16,7 +16,6 @@ namespace FPS
 
 struct SDLDeleter
 {
-	void operator()(SDL_Surface *s) { SDL_FreeSurface(s); }
 	void operator()(SDL_Texture *t) { SDL_DestroyTexture(t); }
 };
 
@@ -25,7 +24,6 @@ GameLoopFunc_t  ActualGameLoop; // the real game loop function
 GameLoopFunc_t  GameLoopPtr;    // the function MainLoop will call
 RenderPresent_t RenderPresentPtr{ SDL_RenderPresent };
 
-std::unique_ptr<SDL_Surface, SDLDeleter> Surface;
 std::unique_ptr<SDL_Texture, SDLDeleter> Texture;
 SGPVObject * DisplayFont;
 
@@ -39,12 +37,16 @@ void UpdateTexture(SDL_Renderer * const renderer)
 {
 	SetFontAttributes(DisplayFont, FONT_FCOLOR_WHITE);
 
-	SDL_FillRect(Surface.get(), nullptr, 0);
+	Texture.reset(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888,
+		SDL_TEXTUREACCESS_STREAMING, 320, 26));
+	if (!Texture)
+	{
+		// Just do nothing, not being able to display FPS is not critical.
+		return;
+	}
+	SDL_SetTextureBlendMode(Texture.get(), SDL_BLENDMODE_BLEND);
 
-	auto * const pixels = static_cast<UINT16*>(Surface->pixels);
-
-	MPrintBuffer(pixels, Surface->pitch, 0, 0,
-		ST::format("{} FPS", FramesSinceLastDisplay));
+	MPrint(Texture.get(), 0, 0, ST::format("{} FPS", FramesSinceLastDisplay));
 
 	if (!LastGameLoopDurations.empty())
 	{
@@ -55,12 +57,10 @@ void UpdateTexture(SDL_Renderer * const renderer)
 				Clock::duration{0})
 			/ LastGameLoopDurations.size();
 
-		MPrintBuffer(pixels, Surface->pitch, 0, 12,
-			ST::format("Game Loop: {} micros",
-				std::chrono::duration_cast<std::chrono::microseconds>(averageLoopDuration).count()));
+		MPrint(Texture.get(), 0, 12, ST::format("Game Loop: {} micros",
+			std::chrono::duration_cast<std::chrono::microseconds>
+				(averageLoopDuration).count()));
 	}
-
-	Texture.reset(SDL_CreateTextureFromSurface(renderer, Surface.get()));
 }
 
 
@@ -80,7 +80,7 @@ void RenderPresentHook(SDL_Renderer * const renderer)
 		LastGameLoopDurations.clear();
 	}
 
-	SDL_Rect const dest{ 11, 23, Surface->w, Surface->h };
+	SDL_Rect const dest{ 11, 23, 320, 26 };
 	SDL_RenderCopy(renderer, Texture.get(), nullptr, &dest);
 	SDL_RenderPresent(renderer);
 }
@@ -114,17 +114,12 @@ void ToggleOnOff()
 		// Currently disabled
 		RenderPresentPtr = RenderPresentHook;
 		GameLoopPtr = GameLoopHook;
-
-		Surface.reset(SDL_CreateRGBSurfaceWithFormat(0, 320, 26, 0, SDL_PIXELFORMAT_RGB565));
-		SDL_SetColorKey(Surface.get(), true, 0);
 	}
 	else
 	{
 		// Currently enabled
 		RenderPresentPtr = SDL_RenderPresent;
 		GameLoopPtr = ActualGameLoop;
-
-		Surface.reset();
 		Texture.reset();
 	}
 }

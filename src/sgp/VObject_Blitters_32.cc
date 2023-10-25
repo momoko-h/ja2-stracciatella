@@ -4,6 +4,7 @@
 #include "SDL.h"
 #include "SDL_render.h"
 #include "SDL_surface.h"
+#include "Types.h"
 #include <cstdint>
 #include <stdexcept>
 
@@ -17,7 +18,6 @@
 #pragma GCC diagnostic error "-Wold-style-cast"
 #endif
 
-static const SGPRect NoClipRect = { 0, 0, UINT16_MAX, UINT16_MAX };
 
 template<typename T>
 Blitter<T>::Blitter(SGPVSurface * surface)
@@ -39,6 +39,7 @@ template Blitter<uint32_t>::Blitter(SGPVSurface * surface);
 
 template<typename T>
 Blitter<T>::Blitter(SDL_Texture * texture)
+	: texture{texture}
 {
 	// Note: this locks the entire texture. If you know the exact
 	// target rectangle and need maximum speed, do not use this;
@@ -78,7 +79,7 @@ template void Blitter<uint32_t>::();
 #endif
 
 template<typename T>
-bool Blitter<T>::ParseArgs()
+bool Blitter<T>::ParseArgs() const
 {
 	// Assertions
 	Assert(srcVObject != nullptr);
@@ -90,23 +91,19 @@ bool Blitter<T>::ParseArgs()
 	int  const  width  = pTrav.usWidth;
 
 	// Add to start position of dest buffer
-	TempX = x + pTrav.sOffsetX;
-	TempY = y + pTrav.sOffsetY;
+	int const tempX = x + pTrav.sOffsetX;
+	int const tempY = y + pTrav.sOffsetY;
 
-	if (clipregion == nullptr)
-	{
-		clipregion = &NoClipRect;
-	}
-	int const ClipX1 = clipregion->iLeft;
-	int const ClipY1 = clipregion->iTop;
-	int const ClipX2 = clipregion->iRight;
-	int const ClipY2 = clipregion->iBottom;
+	int const ClipX1 = clipregion ? clipregion->iLeft : 0;
+	int const ClipY1 = clipregion ? clipregion->iTop : 0;
+	int const ClipX2 = clipregion ? clipregion->iRight : UINT16_MAX;
+	int const ClipY2 = clipregion ? clipregion->iBottom : UINT16_MAX;
 
 	// Calculate rows hanging off each side of the screen
-	LeftSkip    = std::min(ClipX1 - std::min(ClipX1, TempX), width);
-	RightSkip   = std::clamp(TempX + width - ClipX2, 0, width);
-	int TopSkip = std::min(ClipY1 - std::min(ClipY1, TempY), height);
-	BottomSkip  = std::clamp(TempY + height - ClipY2, 0, height);
+	LeftSkip    = std::min(ClipX1 - std::min(ClipX1, tempX), width);
+	RightSkip   = std::clamp(tempX + width - ClipX2, 0, width);
+	int TopSkip = std::min(ClipY1 - std::min(ClipY1, tempY), height);
+	BottomSkip  = std::clamp(tempY + height - ClipY2, 0, height);
 
 	// calculate the remaining rows and columns to blit
 	BlitLength = width  - LeftSkip - RightSkip;
@@ -119,7 +116,7 @@ bool Blitter<T>::ParseArgs()
 	if ((TopSkip >= height) || (BottomSkip >= height)) return false;
 
 	int const destSurfaceWidth = pitch / static_cast<int>(sizeof(T));
-	DstPtr = buffer + destSurfaceWidth * (TempY + TopSkip) + TempX + LeftSkip;
+	DstPtr = buffer + destSurfaceWidth * (tempY + TopSkip) + tempX + LeftSkip;
 	LineSkip = destSurfaceWidth - BlitLength;
 
 	SrcPtr = srcVObject->PixData(pTrav);
@@ -138,12 +135,12 @@ bool Blitter<T>::ParseArgs()
 
 	return true;
 }
-template bool Blitter<uint16_t>::ParseArgs();
-template bool Blitter<uint32_t>::ParseArgs();
+template bool Blitter<uint16_t>::ParseArgs() const;
+template bool Blitter<uint32_t>::ParseArgs() const;
 
 
 template<typename T>
-void Blitter<T>::MonoShadow()
+void Blitter<T>::MonoShadow() const
 {
 	if (!ParseArgs()) return;
 
@@ -236,8 +233,8 @@ BlitNonTransLoop: // blit non-transparent pixels
 	while (--BlitHeight > 0);
 
 }
-template void Blitter<uint16_t>::MonoShadow();
-template void Blitter<uint32_t>::MonoShadow();
+template void Blitter<uint16_t>::MonoShadow() const;
+template void Blitter<uint32_t>::MonoShadow() const;
 
 #if 0
 /**********************************************************************************************
@@ -416,7 +413,7 @@ BlitNonTransLoop: // blit non-transparent pixels
 
 **********************************************************************************************/
 template<typename T>
-void Blitter<T>::Transparent()
+void Blitter<T>::Transparent() const
 {
 	if (!ParseArgs()) return;
 
@@ -491,5 +488,5 @@ BlitNonTransLoop: // blit non-transparent pixels
 	while (--BlitHeight > 0);
 #endif
 }
-template void Blitter<uint16_t>::Transparent();
-template void Blitter<uint32_t>::Transparent();
+template void Blitter<uint16_t>::Transparent() const;
+template void Blitter<uint32_t>::Transparent() const;

@@ -92,6 +92,11 @@ inline void FindFontCenterCoordinates(INT16 sLeft, INT16 sTop, INT16 sWidth, INT
 bool IsPrintableChar(char32_t c);
 
 struct SDL_Texture;
-void MPrintTexture(SDL_Texture *, int x, int y, const ST::utf32_buffer& codepoints);
+void MPrint(SDL_Texture * texture, int x, int y, ST::utf32_buffer const& codepoints);
+// Prints to a texture, which must be in ABGR8888 format.
+inline void MPrint(SDL_Texture * texture, int x, int y, ST::string const& text)
+{
+	MPrint(texture, x, y, text.to_utf32());
+}
 
 #endif
