@@ -259,18 +259,13 @@ void BltVideoObjectOutline(SGPVSurface* const dst, SGPVObject const* const hSrcV
 
 void BltVideoObjectOutlineShadow(SGPVSurface* const dst, const SGPVObject* const src, const UINT16 usIndex, const INT32 iDestX, const INT32 iDestY)
 {
-	SGPVSurface::Lock l(dst);
-	UINT16* const pBuffer = l.Buffer<UINT16>();
-	UINT32  const uiPitch = l.Pitch();
-
-	if (BltIsClipped(src, iDestX, iDestY, usIndex, &ClippingRect))
-	{
-		Blt8BPPDataTo16BPPBufferOutlineShadowClip(pBuffer, uiPitch, src, iDestX, iDestY, usIndex, &ClippingRect);
-	}
-	else
-	{
-		Blt8BPPDataTo16BPPBufferOutlineShadow(pBuffer, uiPitch, src, iDestX, iDestY, usIndex);
-	}
+	Blitter<uint16_t> blitter{dst};
+	blitter.clipregion = &ClippingRect;
+	blitter.x = iDestX;
+	blitter.y = iDestY;
+	blitter.srcVObject = src;
+	blitter.srcObjectIndex = usIndex;
+	blitter.OutlineShadow();
 }
 
 

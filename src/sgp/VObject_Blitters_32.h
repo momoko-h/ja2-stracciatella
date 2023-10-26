@@ -1,10 +1,9 @@
 #ifndef SGP_VOBJECT_BLITTERS_32
 #define SGP_VOBJECT_BLITTERS_32
 
-#include "Types.h"
 #include "VObject.h"
 #include "VSurface.h"
-#include <stdint.h>
+#include <cstdint>
 struct SDL_Texture;
 
 
@@ -24,6 +23,7 @@ protected:
 	mutable int                   BlitLength;
 	mutable int                   BlitHeight;
 
+protected:
 	SDL_Texture *            texture{ nullptr };
 
 	// Returns false if we can skip blitting because we are
@@ -49,6 +49,10 @@ public:
 	T                        OutlineColor;       // Only used by Outline
 	};
 
+	// This value if of interest to MPrint and can easily be computed by
+	// ParseArgs. This saves two function calls in MPrintCommon().
+	mutable int              adjustedSrcWidth;
+
 	Blitter() = default;
 	Blitter(Blitter const&) = delete;
 	Blitter & operator=(Blitter const&) = delete;
@@ -60,16 +64,19 @@ public:
 	// and one for blits without. That's no longer the case with the new
 	// blitters; if you want unrestricted blits pass in null for the
 	// clipregion field (the default value).
+	//
+	// The old blitters had only the non-clipped version of OutlineShadow
+	// implemented.
 
 	void MonoShadow() const;
 	void Outline() const;
+	void OutlineShadow() const;
 	void Transparent() const;
 };
 
 
-// Somewhat fast RGB565 to ABGR8888 (same as RGBA32 on little-endian CPUs) conversion routine.
-// Useless in this form on big-endian if we use RGBA32 textures, but easily adapted.
-constexpr std::uint32_t ABGR8888(std::uint16_t const RGB565)
+// Somewhat fast RGB565 to RGBA32(same as ABGR8888 on little-endian CPUs) conversion routine.
+constexpr std::uint32_t RGBA32(std::uint16_t const RGB565)
 {
 	constexpr std::uint8_t RB5[32] {0,9,17,25,33,42,50,58,66,75,83,91,99,107,116,124,132,140,149,157,165,173,181,190,198,206,214,223,231,239,247,255};
 	constexpr std::uint8_t G6[64]  {0,5,9,13,17,21,25,29,33,37,41,45,49,53,57,61,65,69,73,77,81,85,90,94,98,102,106,110,114,118,122,126,130,134,138,142,146,150,154,158,162,166,170,175,179,183,187,191,195,199,203,207,211,215,219,223,227,231,235,239,243,247,251,255};
@@ -77,7 +84,9 @@ constexpr std::uint32_t ABGR8888(std::uint16_t const RGB565)
 		RB5[RGB565 & 0x1f] |               // red
 		(G6[(RGB565 >> 5) & 0x3f] << 8) |  // green
 		(RB5[(RGB565 >> 11)] << 16) |      // blue
-		(0xff << 24);                      // alpha
+		(255 << 24);                       // alpha
 };
+static_assert(RGBA32(0x6dcc) == 0xff6bbb63);
+static_assert(RGBA32(0x4a47) == 0xff4b493a);
 
 #endif

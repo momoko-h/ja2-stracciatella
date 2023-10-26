@@ -1,5 +1,4 @@
 #include <cstdint>
-#include <stdarg.h>
 #include "HImage.h"
 #include "Types.h"
 #include "Font.h"
@@ -273,13 +272,13 @@ Blitter<T> & FontInitBlitter(Blitter<T> & blitter, int x, int y)
 
 	if constexpr (sizeof(T) == 4)
 	{
-		blitter.Foreground = ABGR8888(FontForeground16);
+		blitter.Foreground = RGBA32(FontForeground16);
 		blitter.Background = FontBackground16 == 0
 		// In this context, a value of 0 for background or shadow
 		// means transparent, alpha must be 0.
-			? 0 : ABGR8888(FontBackground16);
+			? 0 : RGBA32(FontBackground16);
 		blitter.Shadow     = FontShadow16 == 0
-			? 0 : ABGR8888(FontShadow16);
+			? 0 : RGBA32(FontShadow16);
 	}
 	else
 	{
@@ -294,11 +293,10 @@ Blitter<T> & FontInitBlitter(Blitter<T> & blitter, int x, int y)
 
 UINT32 MPrintChar(INT32 x, INT32 y, char32_t c)
 {
-	GlyphIdx const glyph = GetGlyphIndex(c);
 	Blitter<uint16_t> blitter{FontDestBuffer};
-	blitter.srcObjectIndex = glyph;
+	blitter.srcObjectIndex = GetGlyphIndex(c);
 	FontInitBlitter(blitter, x, y).MonoShadow();
-	return GetWidth(FontDefault, glyph);
+	return static_cast<UINT32>(blitter.adjustedSrcWidth);
 }
 
 
@@ -307,10 +305,9 @@ static void MPrintCommon(T & blitter, ST::utf32_buffer const& codepoints)
 {
 	for (char32_t c : codepoints)
 	{
-		GlyphIdx const glyph = GetGlyphIndex(c);
-		blitter.srcObjectIndex = glyph;
+		blitter.srcObjectIndex = GetGlyphIndex(c);
 		blitter.MonoShadow();
-		blitter.x += GetWidth(FontDefault, glyph);
+		blitter.x += blitter.adjustedSrcWidth;
 	}
 }
 
@@ -327,12 +324,11 @@ void MPrintBuffer(UINT16* pDestBuf, UINT32 uiDestPitchBYTES, INT32 x, INT32 y, c
 void MPrint(INT32 x, INT32 y, const ST::utf32_buffer& codepoints)
 {
 	Blitter<uint16_t> blitter{FontDestBuffer};
-	FontInitBlitter(blitter, x, y);
 	MPrintCommon(FontInitBlitter(blitter, x, y), codepoints);
 }
 
 
-void MPrint(SDL_Texture * texture, int x, int y, const ST::utf32_buffer& codepoints)
+void MPrint(SDL_Texture * texture, int x, int y, ST::utf32_buffer const& codepoints)
 {
 	Blitter<uint32_t> blitter{texture};
 	MPrintCommon(FontInitBlitter(blitter, x, y), codepoints);

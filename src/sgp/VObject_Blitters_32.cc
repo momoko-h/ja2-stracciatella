@@ -1,10 +1,9 @@
 #include "VObject_Blitters_32.h"
 #include "Debug.h"
 #include "HImage.h"
+#include "Shading.h"
 #include "SDL.h"
-#include "SDL_render.h"
-#include "SDL_surface.h"
-#include "Types.h"
+#include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 
@@ -17,6 +16,25 @@
 #pragma GCC diagnostic error "-Wsign-compare"
 #pragma GCC diagnostic error "-Wold-style-cast"
 #endif
+
+
+// "Shades" a color similar to the way the ShadeTable created by the function
+// BuildShadeTable does it: multiply each RGB component individually by 0.48.
+// There is probably a clever way to do this faster, but it has to do for now.
+constexpr uint32_t Shade(uint32_t color)
+{
+	constexpr float shadeFactor = 0.48f;
+
+	float const r = static_cast<float>((color  >>  0U) & 255U) * shadeFactor;
+	float const g = static_cast<float>((color  >>  8U) & 255U) * shadeFactor;
+	float const b = static_cast<float>((color  >> 16U) & 255U) * shadeFactor;
+
+	return 
+		255U << 24U |
+		static_cast<uint32_t>(r) <<  0U |
+		static_cast<uint32_t>(g) <<  8U |
+		static_cast<uint32_t>(b) << 16U;
+}
 
 
 template<typename T>
@@ -67,17 +85,6 @@ template Blitter<uint16_t>::~Blitter();
 template Blitter<uint32_t>::~Blitter();
 
 
-#if 0
-// Copy & paste this for any new blitter
-template<typename T>
-void Blitter<T>::() const
-{
-	if (!ParseArgs()) return;
-}
-template void Blitter<uint16_t>::() const;
-template void Blitter<uint32_t>::() const;
-#endif
-
 template<typename T>
 bool Blitter<T>::ParseArgs() const
 {
@@ -93,6 +100,9 @@ bool Blitter<T>::ParseArgs() const
 	// Add to start position of dest buffer
 	int const tempX = x + pTrav.sOffsetX;
 	int const tempY = y + pTrav.sOffsetY;
+
+	// Help out MPrint.
+	adjustedSrcWidth = pTrav.sOffsetX + pTrav.usWidth;
 
 	int const ClipX1 = clipregion ? clipregion->iLeft : 0;
 	int const ClipY1 = clipregion ? clipregion->iTop : 0;
@@ -319,7 +329,8 @@ BlitNonTransLoop: // blit non-transparent pixels
 				{
 					if constexpr (sizeof(T) == 4)
 					{
-						*DstPtr++ = ABGR8888(p16BPPPalette[*SrcPtr++]);
+						// This code path is currently untested!
+						*DstPtr++ = RGBA32(p16BPPPalette[*SrcPtr++]);
 					}
 					else
 					{
@@ -416,7 +427,8 @@ BlitNonTransLoop: // blit non-transparent pixels
 					{
 						if constexpr (sizeof(T) == 4)
 						{
-							*DstPtr = ABGR8888(p16BPPPalette[*SrcPtr]);
+							// This code path is currently untested!
+							*DstPtr = RGBA32(p16BPPPalette[*SrcPtr]);
 						}
 						else
 						{
@@ -442,3 +454,112 @@ BlitNonTransLoop: // blit non-transparent pixels
 }
 template void Blitter<uint16_t>::Outline() const;
 template void Blitter<uint32_t>::Outline() const;
+
+
+template<typename T>
+void Blitter<T>::OutlineShadow() const
+{
+	if (!ParseArgs()) return;
+
+	int Unblitted;
+	int LSCount;
+	int PxCount;
+
+	do
+	{
+		for (LSCount = LeftSkip; LSCount > 0; LSCount -= PxCount)
+		{
+			PxCount = *SrcPtr++;
+			if (PxCount & 0x80)
+			{
+				PxCount &= 0x7F;
+				if (PxCount > LSCount)
+				{
+					PxCount -= LSCount;
+					LSCount = BlitLength;
+					goto BlitTransparent;
+				}
+			}
+			else
+			{
+				if (PxCount > LSCount)
+				{
+					SrcPtr += LSCount;
+					PxCount -= LSCount;
+					LSCount = BlitLength;
+					goto BlitNonTransLoop;
+				}
+				SrcPtr += PxCount;
+			}
+		}
+
+		LSCount = BlitLength;
+		while (LSCount > 0)
+		{
+			PxCount = *SrcPtr++;
+			if (PxCount & 0x80)
+			{
+BlitTransparent: // skip transparent pixels
+				PxCount &= 0x7F;
+				if (PxCount > LSCount)
+				{
+					PxCount = LSCount;
+				}
+				LSCount -= PxCount;
+				DstPtr += PxCount;
+			}
+			else
+			{
+BlitNonTransLoop: // blit non-transparent pixels
+				if (PxCount > LSCount)
+				{
+					Unblitted = PxCount - LSCount;
+					PxCount = LSCount;
+				}
+				else
+				{
+					Unblitted = 0;
+				}
+				LSCount -= PxCount;
+
+				do
+				{
+					if (*SrcPtr != 254)
+					{
+						if constexpr (sizeof(T) == 4)
+						{
+							// This code path is currently untested!
+							*DstPtr = Shade(*DstPtr);
+						}
+						else
+						{
+							*DstPtr = ShadeTable[*DstPtr];
+						}
+					}
+					++SrcPtr;
+					++DstPtr;
+				}
+				while (--PxCount > 0);
+				SrcPtr += Unblitted;
+			}
+		}
+
+		while (*SrcPtr++ != 0) {} // skip along until we hit and end-of-line marker
+		DstPtr += LineSkip;
+	}
+	while (--BlitHeight > 0);
+}
+template void Blitter<uint16_t>::OutlineShadow() const;
+template void Blitter<uint32_t>::OutlineShadow() const;
+
+
+#if 0
+// Copy & paste this for any new blitter
+template<typename T>
+void Blitter<T>::() const
+{
+	if (!ParseArgs()) return;
+}
+template void Blitter<uint16_t>::() const;
+template void Blitter<uint32_t>::() const;
+#endif
