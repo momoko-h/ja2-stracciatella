@@ -244,7 +244,8 @@ static SGPVSurface* guiBIGMAP;
 static SGPVObject* guiCHARICONS;
 
 // the merc arrival sector landing zone icon
-static SGPVObject* guiBULLSEYE;
+// TODO : change this back to static when the new blitters are finished.
+  SGPVObject* guiBULLSEYE;
 
 
 // the max allowable towns militia in a sector

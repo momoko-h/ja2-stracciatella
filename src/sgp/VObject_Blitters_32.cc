@@ -329,7 +329,6 @@ BlitNonTransLoop: // blit non-transparent pixels
 				{
 					if constexpr (sizeof(T) == 4)
 					{
-						// This code path is currently untested!
 						*DstPtr++ = RGBA32(p16BPPPalette[*SrcPtr++]);
 					}
 					else

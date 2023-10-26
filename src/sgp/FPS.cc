@@ -1,7 +1,10 @@
 #include "Font.h"
 #include "FPS.h"
 #include "SDL.h"
+#include "VObject.h"
+#include "VObject_Blitters_32.h"
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <numeric>
 #include <vector>
@@ -10,6 +13,7 @@
 
 using Clock = std::chrono::steady_clock;
 using namespace std::chrono_literals;
+    extern SGPVObject* guiBULLSEYE;
 
 namespace FPS
 {
@@ -61,6 +65,14 @@ void UpdateTexture(SDL_Renderer * const renderer)
 			std::chrono::duration_cast<std::chrono::microseconds>
 				(averageLoopDuration).count()));
 	}
+
+	// TODO: Remove this testing-only code.
+	// TODO: Need better source VObject which uses color 254.
+	Blitter<uint32_t> blitter{Texture.get()};
+	blitter.srcVObject = guiBULLSEYE;
+	blitter.srcObjectIndex = 0;
+	blitter.y = 1;
+	blitter.x = 180; blitter.Transparent();
 }
 
 
