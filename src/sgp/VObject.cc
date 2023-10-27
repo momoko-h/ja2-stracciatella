@@ -235,7 +235,7 @@ void BltVideoObject(SGPVSurface* const dst, SGPVObject const* const src, UINT16 
 	Assert(dst->BPP() == 16);
 
 	Blitter<uint16_t> blitter{dst};
-	blitter.clipregion = &ClippingRect;
+	blitter.clipregion = ClippingRect;
 	blitter.x = iDestX;
 	blitter.y = iDestY;
 	blitter.srcVObject = src;
@@ -247,7 +247,7 @@ void BltVideoObject(SGPVSurface* const dst, SGPVObject const* const src, UINT16 
 void BltVideoObjectOutline(SGPVSurface* const dst, SGPVObject const* const hSrcVObject, UINT16 const usIndex, INT32 const iDestX, INT32 const iDestY, INT16 const s16BPPColor)
 {
 	Blitter<uint16_t> blitter{dst};
-	blitter.clipregion = &ClippingRect;
+	blitter.clipregion = ClippingRect;
 	blitter.x = iDestX;
 	blitter.y = iDestY;
 	blitter.srcVObject = hSrcVObject;
@@ -260,7 +260,7 @@ void BltVideoObjectOutline(SGPVSurface* const dst, SGPVObject const* const hSrcV
 void BltVideoObjectOutlineShadow(SGPVSurface* const dst, const SGPVObject* const src, const UINT16 usIndex, const INT32 iDestX, const INT32 iDestY)
 {
 	Blitter<uint16_t> blitter{dst};
-	blitter.clipregion = &ClippingRect;
+	blitter.clipregion = ClippingRect;
 	blitter.x = iDestX;
 	blitter.y = iDestY;
 	blitter.srcVObject = src;

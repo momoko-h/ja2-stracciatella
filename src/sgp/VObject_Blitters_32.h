@@ -1,6 +1,7 @@
 #ifndef SGP_VOBJECT_BLITTERS_32
 #define SGP_VOBJECT_BLITTERS_32
 
+#include "Types.h"
 #include "VObject.h"
 #include "VSurface.h"
 #include <cstdint>
@@ -40,7 +41,7 @@ public:
 	SGPVObject const *       srcVObject;
 	int                      x;
 	int                      y;
-	SGPRect const *          clipregion{ nullptr };
+	SGPRect                  clipregion;
 
 	T                        Foreground;         // Only used by MonoShadow
 	T                        Background;         // Only used by MonoShadow
@@ -52,13 +53,22 @@ public:
 	// This value if of interest to MPrint and can easily be computed by
 	// ParseArgs. This saves two function calls in MPrintCommon().
 	mutable int              adjustedSrcWidth;
-
-	Blitter() = default;
-	Blitter(Blitter const&) = delete;
-	Blitter & operator=(Blitter const&) = delete;
-	Blitter(SGPVSurface *);
-	Blitter(SDL_Texture *);
 	~Blitter();
+
+	// This constructor is mainly intended to be used by MPrintBuffer(),
+	// which should probably be removed. The constructors below this
+	// are the recommended way to initialize this struct.
+	Blitter(T *destBuffer, int destBufferPitch, SGPRect clipregion)
+		: buffer{destBuffer}, pitch{destBufferPitch}, clipregion{clipregion}
+	{}
+
+	// Initialize buffer and pitch from the surface, sets the clipping
+	// region to the full size of the surface.
+	Blitter(SGPVSurface *);
+
+	// Lock the texture, initialize buffer and pitch from the texture and
+	// sets the clipping region to the full size of the texture.
+	Blitter(SDL_Texture *);
 
 	// Previously many blitters came in two versions, one for clipped blits
 	// and one for blits without. That's no longer the case with the new
@@ -72,6 +82,10 @@ public:
 	void Outline() const;
 	void OutlineShadow() const;
 	void Transparent() const;
+
+	Blitter() = delete;
+	Blitter(Blitter const&) = delete;
+	Blitter & operator=(Blitter const&) = delete;
 };
 
 

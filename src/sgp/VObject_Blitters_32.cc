@@ -1,6 +1,8 @@
 #include "VObject_Blitters_32.h"
 #include "Debug.h"
 #include "HImage.h"
+#include "SDL_pixels.h"
+#include "SDL_render.h"
 #include "Shading.h"
 #include "SDL.h"
 #include <algorithm>
@@ -50,6 +52,11 @@ Blitter<T>::Blitter(SGPVSurface * surface)
 
 	buffer = static_cast<T *>(sdl_surface.pixels);
 	pitch = sdl_surface.pitch;
+
+	clipregion.iLeft   = 0;
+	clipregion.iTop    = 0;
+	clipregion.iRight  = surface->Width() - 1;
+	clipregion.iBottom = surface->Height() - 1;;
 }
 template Blitter<uint16_t>::Blitter(SGPVSurface * surface);
 template Blitter<uint32_t>::Blitter(SGPVSurface * surface);
@@ -59,6 +66,20 @@ template<typename T>
 Blitter<T>::Blitter(SDL_Texture * texture)
 	: texture{texture}
 {
+	Uint32 pixelFormat;
+	int access;
+	int width;
+	int height;
+
+	if (SDL_QueryTexture(texture, &pixelFormat, &access, &width, &height) != 0
+	    || pixelFormat != SDL_PIXELFORMAT_RGBA32
+	    || access != SDL_TEXTUREACCESS_STREAMING)
+	{
+		// Terrible error message but I don't really expect this ever fail.
+		throw std::runtime_error("QueryTexture failed or texture not in"
+			"expected format or wrong access mode");
+	}
+
 	// Note: this locks the entire texture. If you know the exact
 	// target rectangle and need maximum speed, do not use this;
 	// lock the texture with a rect argument yourself.
@@ -68,6 +89,12 @@ Blitter<T>::Blitter(SDL_Texture * texture)
 		throw std::runtime_error("Could not lock texture");
 	}
 	buffer = static_cast<T *>(pixels);
+
+	clipregion.iLeft   = 0;
+	clipregion.iTop    = 0;
+	clipregion.iRight  = static_cast<UINT16>(width - 1);
+	clipregion.iBottom = static_cast<UINT16>(height - 1);
+
 }
 template Blitter<uint16_t>::Blitter(SDL_Texture * surface);
 template Blitter<uint32_t>::Blitter(SDL_Texture * surface);
@@ -104,10 +131,10 @@ bool Blitter<T>::ParseArgs() const
 	// Help out MPrint.
 	adjustedSrcWidth = pTrav.sOffsetX + pTrav.usWidth;
 
-	int const ClipX1 = clipregion ? clipregion->iLeft : 0;
-	int const ClipY1 = clipregion ? clipregion->iTop : 0;
-	int const ClipX2 = clipregion ? clipregion->iRight : UINT16_MAX;
-	int const ClipY2 = clipregion ? clipregion->iBottom : UINT16_MAX;
+	int const ClipX1 = clipregion.iLeft;
+	int const ClipY1 = clipregion.iTop;
+	int const ClipX2 = clipregion.iRight;
+	int const ClipY2 = clipregion.iBottom;
 
 	// Calculate rows hanging off each side of the screen
 	LeftSkip    = std::min(ClipX1 - std::min(ClipX1, tempX), width);

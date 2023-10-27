@@ -266,7 +266,7 @@ template<typename T>
 Blitter<T> & FontInitBlitter(Blitter<T> & blitter, int x, int y)
 {
 	blitter.srcVObject = FontDefault;
-	blitter.clipregion = &FontDestRegion;
+	blitter.clipregion = FontDestRegion;
 	blitter.x = x;
 	blitter.y = y;
 
@@ -314,9 +314,8 @@ static void MPrintCommon(T & blitter, ST::utf32_buffer const& codepoints)
 
 void MPrintBuffer(UINT16* pDestBuf, UINT32 uiDestPitchBYTES, INT32 x, INT32 y, const ST::utf32_buffer& codepoints)
 {
-	Blitter<uint16_t> blitter;
-	blitter.buffer = pDestBuf;
-	blitter.pitch = static_cast<int>(uiDestPitchBYTES);
+	Blitter<uint16_t> blitter{ pDestBuf,
+		static_cast<int>(uiDestPitchBYTES), FontDestRegion };
 	MPrintCommon(FontInitBlitter(blitter, x, y), codepoints);
 }
 
