@@ -94,7 +94,6 @@ Blitter<T>::Blitter(SDL_Texture * texture)
 	clipregion.iTop    = 0;
 	clipregion.iRight  = static_cast<UINT16>(width - 1);
 	clipregion.iBottom = static_cast<UINT16>(height - 1);
-
 }
 template Blitter<uint16_t>::Blitter(SDL_Texture * surface);
 template Blitter<uint32_t>::Blitter(SDL_Texture * surface);

@@ -13,7 +13,6 @@
 
 using Clock = std::chrono::steady_clock;
 using namespace std::chrono_literals;
-    extern SGPVObject* guiBULLSEYE;
 
 namespace FPS
 {
@@ -30,6 +29,7 @@ RenderPresent_t RenderPresentPtr{ SDL_RenderPresent };
 
 std::unique_ptr<SDL_Texture, SDLDeleter> Texture;
 SGPVObject * DisplayFont;
+SGPVObject * Len;
 
 std::vector<Clock::duration> LastGameLoopDurations;
 Clock::time_point TimeLastDisplayed;
@@ -42,7 +42,7 @@ void UpdateTexture(SDL_Renderer * const renderer)
 	SetFontAttributes(DisplayFont, FONT_FCOLOR_WHITE);
 
 	Texture.reset(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888,
-		SDL_TEXTUREACCESS_STREAMING, 320, 26));
+		SDL_TEXTUREACCESS_STREAMING, 320, 126));
 	if (!Texture)
 	{
 		// Just do nothing, not being able to display FPS is not critical.
@@ -69,7 +69,7 @@ void UpdateTexture(SDL_Renderer * const renderer)
 	// TODO: Remove this testing-only code.
 	// TODO: Need better source VObject which uses color 254.
 	Blitter<uint32_t> blitter{Texture.get()};
-	blitter.srcVObject = guiBULLSEYE;
+	blitter.srcVObject = Len;
 	blitter.srcObjectIndex = 0;
 	blitter.y = 1;
 	blitter.x = 180; blitter.Transparent();
@@ -92,7 +92,7 @@ void RenderPresentHook(SDL_Renderer * const renderer)
 		LastGameLoopDurations.clear();
 	}
 
-	SDL_Rect const dest{ 11, 23, 320, 26 };
+	SDL_Rect const dest{ 11, 23, 320, 126 };
 	SDL_RenderCopy(renderer, Texture.get(), nullptr, &dest);
 	SDL_RenderPresent(renderer);
 }
@@ -116,6 +116,8 @@ void Init(GameLoopFunc_t const gameLoop, SGPVObject * const displayFont)
 {
 	GameLoopPtr = ActualGameLoop = gameLoop;
 	DisplayFont = displayFont;
+	// Debug only variable, this doesn't get freed...
+	Len = AddVideoObjectFromFile("faces/bigfaces/27.sti");
 }
 
 

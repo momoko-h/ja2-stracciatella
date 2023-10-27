@@ -132,6 +132,7 @@ ScreenID MainMenuScreenHandle(void)
 		fInitialRender = FALSE;
 	}
 
+#if 0
 	RestoreButtonBackGrounds();
 
 	// Render buttons
@@ -139,7 +140,7 @@ ScreenID MainMenuScreenHandle(void)
 	{
 		MarkAButtonDirty(iMenuButtons[cnt]);
 	}
-
+#endif
 	RenderButtons();
 
 	HandleMainMenuInput();
