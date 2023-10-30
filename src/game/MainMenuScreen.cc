@@ -32,7 +32,6 @@
 #include <string_theory/format>
 
 
-//#define TESTFOREIGNFONTS
 
 // MENU ITEMS
 enum
@@ -45,13 +44,8 @@ enum
 	NUM_MENU_ITEMS
 };
 
-#if defined TESTFOREIGNFONTS
-#	define MAINMENU_Y         0
-#	define MAINMENU_Y_SPACE  18
-#else
-#	define MAINMENU_Y       277
-#	define MAINMENU_Y_SPACE  37
-#endif
+#define MAINMENU_Y       277
+#define MAINMENU_Y_SPACE  37
 
 
 static BUTTON_PICS* iMenuImages[NUM_MENU_ITEMS];
@@ -141,7 +135,9 @@ ScreenID MainMenuScreenHandle(void)
 		MarkAButtonDirty(iMenuButtons[cnt]);
 	}
 #endif
+	ButtonDestBuffer = g_back_buffer;
 	RenderButtons();
+	ButtonDestBuffer = FRAME_BUFFER;
 
 	HandleMainMenuInput();
 	HandleMainMenuScreen();
@@ -346,9 +342,8 @@ static void CreateDestroyMainMenuButtons(BOOLEAN fCreate)
 
 static void RenderMainMenu(void)
 {
-	BltVideoObject(FRAME_BUFFER, guiMainMenuBackGroundImage, 0, STD_SCREEN_X,       STD_SCREEN_Y     );
-	BltVideoObject(FRAME_BUFFER, guiJa2LogoImage,            0, STD_SCREEN_X + 188, STD_SCREEN_Y + 15);
-	BltVideoSurface(guiSAVEBUFFER, FRAME_BUFFER, 0, 0, NULL);
+	BltVideoObject(g_back_buffer, guiMainMenuBackGroundImage, 0, STD_SCREEN_X,       STD_SCREEN_Y     );
+	BltVideoObject(g_back_buffer, guiJa2LogoImage,            0, STD_SCREEN_X + 188, STD_SCREEN_Y + 15);
 }
 
 void RenderGameVersion() {
@@ -358,15 +353,4 @@ void RenderGameVersion() {
 
 void RenderCopyright() {
 	DrawTextToScreen(gzCopyrightText, 0, SCREEN_HEIGHT - 15, SCREEN_WIDTH, FONT10ARIAL, FONT_MCOLOR_WHITE, FONT_MCOLOR_BLACK, CENTER_JUSTIFIED);
-}
-
-static void RestoreButtonBackGrounds(void)
-{
-#ifndef TESTFOREIGNFONTS
-	for (UINT32 cnt = 0; cnt < NUM_MENU_ITEMS; ++cnt)
-	{
-		GUI_BUTTON const& b = *iMenuButtons[cnt];
-		RestoreExternBackgroundRect(b.X(), b.Y(), b.W() + 1, b.H() + 1);
-	}
-#endif
 }

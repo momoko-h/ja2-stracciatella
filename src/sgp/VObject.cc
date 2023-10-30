@@ -232,15 +232,30 @@ SGPVObject* AddVideoObjectFromFile(const ST::string& ImageFile)
 void BltVideoObject(SGPVSurface* const dst, SGPVObject const* const src, UINT16 const usRegionIndex, INT32 const iDestX, INT32 const iDestY)
 {
 	Assert(src->BPP() ==  8);
-	Assert(dst->BPP() == 16);
 
-	Blitter<uint16_t> blitter{dst};
-	blitter.clipregion = ClippingRect;
-	blitter.x = iDestX;
-	blitter.y = iDestY;
-	blitter.srcVObject = src;
-	blitter.srcObjectIndex = usRegionIndex;
-	blitter.Transparent();
+	if (dst->BPP() == 16)
+	{
+		Blitter<uint16_t> blitter{dst};
+		blitter.clipregion = ClippingRect;
+		blitter.x = iDestX;
+		blitter.y = iDestY;
+		blitter.srcVObject = src;
+		blitter.srcObjectIndex = usRegionIndex;
+		blitter.Transparent();
+	}
+	else if (dst->BPP() == 32)
+	{
+		Blitter<uint32_t> blitter{dst};
+		blitter.clipregion = ClippingRect;
+		blitter.x = iDestX;
+		blitter.y = iDestY;
+		blitter.srcVObject = src;
+		blitter.srcObjectIndex = usRegionIndex;
+		blitter.Transparent();
+	}
+	else {
+		Assert(false);
+	}
 }
 
 

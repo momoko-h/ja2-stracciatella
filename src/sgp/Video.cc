@@ -7,6 +7,8 @@
 #include "Logger.h"
 #include "RenderWorld.h"
 #include "Render_Dirty.h"
+#include "SDL_pixels.h"
+#include "SDL_surface.h"
 #include "Types.h"
 #include "VObject_Blitters.h"
 #include "VSurface.h"
@@ -147,16 +149,10 @@ void InitializeVideoManager(const VideoScaleQuality quality,
 
 	ClippingRect.set(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-	ScreenBuffer = SDL_CreateRGBSurface(
-					0,
-					SCREEN_WIDTH,
-					SCREEN_HEIGHT,
-					PIXEL_DEPTH,
-					RED_MASK,
-					GREEN_MASK,
-					BLUE_MASK,
-					ALPHA_MASK
-	);
+	constexpr Uint32 ScreenTexturePF = SDL_PIXELFORMAT_ABGR8888;
+
+	ScreenBuffer = SDL_CreateRGBSurfaceWithFormat(0,
+		SCREEN_WIDTH, SCREEN_HEIGHT, 0, ScreenTexturePF);
 
 	if (ScreenBuffer == NULL) {
 		SLOGE("SDL_CreateRGBSurface for ScreenBuffer failed: {}\n", SDL_GetError());
@@ -182,7 +178,7 @@ void InitializeVideoManager(const VideoScaleQuality quality,
 	{
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 		ScaledScreenTexture = SDL_CreateTexture(GameRenderer,
-			SDL_PIXELFORMAT_RGB565,
+			ScreenTexturePF,
 			SDL_TEXTUREACCESS_TARGET,
 			SCREEN_WIDTH * OVERSAMPLING_SCALE, SCREEN_HEIGHT * OVERSAMPLING_SCALE);
 
@@ -199,7 +195,7 @@ void InitializeVideoManager(const VideoScaleQuality quality,
 	}
 
 	ScreenTexture = SDL_CreateTexture(GameRenderer,
-					SDL_PIXELFORMAT_RGB565,
+					ScreenTexturePF,
 					SDL_TEXTUREACCESS_STREAMING,
 					SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -498,7 +494,7 @@ void RefreshScreen(void)
 		void operator+=(SDL_Rect const& r) { SDL_UnionRect(this, &r, this); }
 	} ScreenTextureUpdateRect{ MouseBackground };
 
-	if (gfForceFullScreenRefresh || guiDirtyRegionCount > 0 || guiDirtyRegionExCount > 0)
+	if (0)if (gfForceFullScreenRefresh || guiDirtyRegionCount > 0 || guiDirtyRegionExCount > 0)
 	{
 		if (gfFadeInitialized && gfFadeInVideo)
 		{
@@ -562,6 +558,7 @@ void RefreshScreen(void)
 	ScreenTextureUpdateRect += dst;
 	MouseBackground = dst;
 
+	ScreenTextureUpdateRect = {0,0,640,480};
 	uint8_t const * SrcPixels = static_cast<uint8_t *>(ScreenBuffer->pixels)
 		+ ScreenTextureUpdateRect.y * ScreenBuffer->pitch
 		+ ScreenTextureUpdateRect.x * ScreenBuffer->format->BytesPerPixel;
@@ -589,7 +586,7 @@ void RefreshScreen(void)
 
 static void GetRGBDistribution()
 {
-	SDL_PixelFormat const& f = *ScreenBuffer->format;
+	SDL_PixelFormat const& f = *FrameBuffer->format;
 
 	UINT32          const  r = f.Rmask;
 	UINT32          const  g = f.Gmask;
