@@ -89,7 +89,7 @@ public:
 };
 
 
-// Somewhat fast RGB565 to RGBA32(same as ABGR8888 on little-endian CPUs) conversion routine.
+// Somewhat fast RGB565 to ABGR8888 conversion routine.
 constexpr std::uint32_t RGBA32(std::uint16_t const RGB565)
 {
 	constexpr std::uint8_t RB5[32] {0,9,17,25,33,42,50,58,66,75,83,91,99,107,116,124,132,140,149,157,165,173,181,190,198,206,214,223,231,239,247,255};

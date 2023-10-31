@@ -277,8 +277,7 @@ Blitter<T> & FontInitBlitter(Blitter<T> & blitter, int x, int y)
 		// In this context, a value of 0 for background or shadow
 		// means transparent, alpha must be 0.
 			? 0 : RGBA32(FontBackground16);
-		blitter.Shadow     = FontShadow16 == 0
-			? 0 : RGBA32(FontShadow16);
+		blitter.Shadow     = RGBA32(FontShadow16);
 	}
 	else
 	{

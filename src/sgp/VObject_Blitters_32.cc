@@ -56,7 +56,7 @@ Blitter<T>::Blitter(SGPVSurface * surface)
 	clipregion.iLeft   = 0;
 	clipregion.iTop    = 0;
 	clipregion.iRight  = surface->Width() - 1;
-	clipregion.iBottom = surface->Height() - 1;;
+	clipregion.iBottom = surface->Height() - 1;
 }
 template Blitter<uint16_t>::Blitter(SGPVSurface * surface);
 template Blitter<uint32_t>::Blitter(SGPVSurface * surface);

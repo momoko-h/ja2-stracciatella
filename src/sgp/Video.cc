@@ -217,7 +217,7 @@ void InitializeVideoManager(const VideoScaleQuality quality,
 	}
 
 	MouseCursor = SDL_CreateRGBSurfaceWithFormat(0,
-		MAX_CURSOR_WIDTH, MAX_CURSOR_HEIGHT, 0, SDL_PIXELFORMAT_RGB565);
+		MAX_CURSOR_WIDTH, MAX_CURSOR_HEIGHT, 0, pixelFormat);
 	SDL_SetColorKey(MouseCursor, SDL_TRUE, 0);
 
 	if (MouseCursor == NULL)
@@ -586,7 +586,7 @@ void RefreshScreen(void)
 
 static void GetRGBDistribution()
 {
-	SDL_PixelFormat const& f = *MouseCursor->format;
+	SDL_PixelFormat & f = *SDL_AllocFormat(SDL_PIXELFORMAT_RGB565);
 
 	UINT32          const  r = f.Rmask;
 	UINT32          const  g = f.Gmask;
@@ -602,6 +602,8 @@ static void GetRGBDistribution()
 	gusRedShift   = f.Rshift - f.Rloss;
 	gusGreenShift = f.Gshift - f.Gloss;
 	gusBlueShift  = f.Bshift - f.Bloss;
+
+	SDL_FreeFormat(&f);
 }
 
 
