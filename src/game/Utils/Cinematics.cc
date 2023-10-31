@@ -287,33 +287,44 @@ static void SmkBlitVideoFrame(SMKFLIC* const sf, SGPVSurface* surface)
 	if (src_palette == nullptr) return;
 	if (smk_info_video(sf->smacker, &src_width, &src_height, nullptr) < 0) return;
 
+	bool const Target32bit = surface->BPP() == 32;
+	SGPVSurface::Lock lock(surface);
+	UINT16* dst = lock.Buffer<UINT16>();
+
 	// convert palette
-	UINT16 palette[256];
+	UINT32 palette[256];
 	for (int i = 0; i < 256; i++)
 	{
 		unsigned char* rgb = src_palette + i * 3;
-		palette[i] = Get16BPPColor(FROMRGB(rgb[0], rgb[1], rgb[2]));
+		palette[i] = Target32bit
+			? rgb[0] | (rgb[1] << 8) | (rgb[2] << 16) | (255U << 24U)
+			: Get16BPPColor(FROMRGB(rgb[0], rgb[1], rgb[2]));
 	}
 
 	// get surface (destination)
-	SGPVSurface::Lock lock(surface);
-	UINT16* dst = lock.Buffer<UINT16>();
-	Assert(lock.Pitch() % 2 == 0);
-	Assert(surface->BPP() == 16);
-	UINT32 dst_pitch = lock.Pitch() / 2; // pitch in pixels
+	UINT32 dst_width = surface->Width();
 	UINT16 dst_height = surface->Height();
 
 	// blit the intersection
 	unsigned long y_end = sf->top >= dst_height ? 0 : std::min(src_height, (unsigned long) (dst_height - sf->top));
-	unsigned long x_end = sf->left >= dst_pitch ? 0 : std::min(src_width, (unsigned long) (dst_pitch - sf->left));
-	dst += sf->left + sf->top * dst_pitch;
+	unsigned long x_end = sf->left >= dst_width ? 0 : std::min(src_width, (unsigned long) (dst_width - sf->left));
+	dst += sf->left + sf->top * dst_width;
+	UINT32* dst32 = reinterpret_cast<UINT32*>(dst);
 	for (unsigned long y = 0; y < y_end; y++)
 	{
 		for (unsigned long x = 0; x < x_end; x++)
 		{
-			dst[x] = palette[src[x]];
+			if (Target32bit)
+			{
+				dst32[x] = palette[src[x]];
+			}
+			else
+			{
+				dst[x] = palette[src[x]];
+			}
 		}
-		dst += dst_pitch;
+		dst += dst_width;
+		dst32 += dst_width;
 		src += src_width;
 	}
 }

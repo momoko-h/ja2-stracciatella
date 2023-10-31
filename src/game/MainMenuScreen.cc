@@ -72,7 +72,6 @@ static void HandleMainMenuScreen(void);
 static void RenderMainMenu(void);
 static void RenderGameVersion(void);
 static void RenderCopyright(void);
-static void RestoreButtonBackGrounds(void);
 
 
 ScreenID MainMenuScreenHandle(void)
@@ -126,18 +125,13 @@ ScreenID MainMenuScreenHandle(void)
 		fInitialRender = FALSE;
 	}
 
-#if 0
-	RestoreButtonBackGrounds();
-
 	// Render buttons
 	for (UINT32 cnt = 0; cnt < NUM_MENU_ITEMS; ++cnt)
 	{
 		MarkAButtonDirty(iMenuButtons[cnt]);
 	}
-#endif
-	ButtonDestBuffer = g_back_buffer;
+
 	RenderButtons();
-	ButtonDestBuffer = FRAME_BUFFER;
 
 	HandleMainMenuInput();
 	HandleMainMenuScreen();
@@ -342,8 +336,8 @@ static void CreateDestroyMainMenuButtons(BOOLEAN fCreate)
 
 static void RenderMainMenu(void)
 {
-	BltVideoObject(g_back_buffer, guiMainMenuBackGroundImage, 0, STD_SCREEN_X,       STD_SCREEN_Y     );
-	BltVideoObject(g_back_buffer, guiJa2LogoImage,            0, STD_SCREEN_X + 188, STD_SCREEN_Y + 15);
+	BltVideoObject(FRAME_BUFFER, guiMainMenuBackGroundImage, 0, STD_SCREEN_X,       STD_SCREEN_Y     );
+	BltVideoObject(FRAME_BUFFER, guiJa2LogoImage,            0, STD_SCREEN_X + 188, STD_SCREEN_Y + 15);
 }
 
 void RenderGameVersion() {
