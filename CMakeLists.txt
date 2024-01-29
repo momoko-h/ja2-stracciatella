@@ -29,7 +29,7 @@ endif()
 project(ja2-stracciatella)
 set(JA2_BINARY "ja2")
 set(LAUNCHER_BINARY "ja2-launcher")
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ## Semantic Versioning
@@ -282,7 +282,7 @@ endif()
 
 target_sources(ja2 PRIVATE ${JA2_SOURCES})
 target_link_libraries(${JA2_BINARY} ${JA2_LIBRARIES})
-# target_compile_features(ja2 PRIVATE cxx_std_20)  # not yet...
+target_compile_features(ja2 PRIVATE cxx_std_20)
 
 if (WITH_ASAN)
     target_compile_options(${JA2_BINARY} PRIVATE -fsanitize=address)
