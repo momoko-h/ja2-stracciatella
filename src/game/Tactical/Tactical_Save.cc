@@ -1,6 +1,5 @@
 #include "Directories.h"
 #include "ItemModel.h"
-#include "LoadSaveRottingCorpse.h"
 #include "MapScreen.h"
 #include "Soldier_Init_List.h"
 #include "Types.h"
@@ -9,6 +8,7 @@
 #include "StrategicMap.h"
 #include "Tactical_Save.h"
 #include "Campaign_Types.h"
+#include "Persistant.h"
 #include "SaveLoadGame.h"
 #include "WorldDef.h"
 #include "Rotting_Corpses.h"
@@ -611,7 +611,7 @@ static void SaveRottingCorpsesToTempCorpseFile(const SGPSector& sector)
 	// Loop through all the carcases in the array and save the active ones
 	CFOR_EACH_ROTTING_CORPSE(c)
 	{
-		InjectRottingCorpseIntoFile(f, &c->def);
+		Save(f, c->def);
 	}
 
 	SetSectorFlag(sector, SF_ROTTING_CORPSE_TEMP_FILE_EXISTS);
@@ -638,7 +638,7 @@ static void LoadRottingCorpsesFromTempCorpseFile(const SGPSector& sMap)
 	for (UINT32 n = n_corpses; n != 0; --n)
 	{
 		ROTTING_CORPSE_DEFINITION def;
-		ExtractRottingCorpseFromFile(f, &def);
+		Load(f, def);
 
 		// Check the flags to see if we have to find a gridno to place the rotting
 		// corpses at
@@ -761,7 +761,7 @@ void AddRottingCorpseToUnloadedSectorsRottingCorpseFile(const SGPSector& sMap, R
 	f->write(&corpse_count, sizeof(corpse_count));
 
 	f->seek(0, FILE_SEEK_FROM_END);
-	InjectRottingCorpseIntoFile(f, corpse_def);
+	Save(f, *corpse_def);
 
 	SetSectorFlag(sMap, SF_ROTTING_CORPSE_TEMP_FILE_EXISTS);
 }

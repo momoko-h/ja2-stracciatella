@@ -1,5 +1,5 @@
 #include "Directories.h"
-#include "LoadSaveBullet.h"
+#include "Persistant.h"
 #include "SGPFile.h"
 #include "TileDat.h"
 #include "WorldDef.h"
@@ -388,7 +388,7 @@ void SaveBulletStructureToSaveGameFile(HWFILE const hFile)
 			if( gBullets[ usCnt ].fAllocated )
 			{
 				//Save the the Bullet structure
-				InjectBulletIntoFile(hFile, &gBullets[usCnt]);
+				Save(hFile, gBullets[usCnt]);
 			}
 		}
 	}
@@ -407,7 +407,7 @@ void LoadBulletStructureFromSavedGameFile(HWFILE const hFile)
 	{
 		BULLET* const b = &gBullets[i];
 		//Load the the Bullet structure
-		ExtractBulletFromFile(hFile, b);
+		Load(hFile, *b);
 
 		//Set some parameters
 		b->uiLastUpdate = 0;

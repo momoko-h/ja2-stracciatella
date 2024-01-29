@@ -1,16 +1,14 @@
-#include "Debug.h"
-#include "LoadSaveRottingCorpse.h"
 #include "LoadSaveData.h"
 #include "Overhead_Types.h"
-#include "SGPFile.h"
+#include "Persistant.h"
+#include "Rotting_Corpses.h"
 
 
-void ExtractRottingCorpseFromFile(HWFILE const file, ROTTING_CORPSE_DEFINITION* const c)
+template<>
+void Load(DataReader & d, ROTTING_CORPSE_DEFINITION & corpse)
 {
-	BYTE data[160];
-	file->read(data, sizeof(data));
+	auto * c = &corpse;
 
-	DataReader d{data};
 	EXTR_U8(d, c->ubType)
 	EXTR_U8(d, c->ubBodyType)
 	EXTR_I16(d, c->sGridNo)
@@ -31,15 +29,14 @@ void ExtractRottingCorpseFromFile(HWFILE const file, ROTTING_CORPSE_DEFINITION* 
 	EXTR_BOOL(d, c->fHeadTaken)
 	EXTR_U8(d, c->ubAIWarningValue)
 	EXTR_SKIP(d, 12)
-	Assert(d.getConsumed() == lengthof(data));
 }
 
 
-void InjectRottingCorpseIntoFile(HWFILE const file, ROTTING_CORPSE_DEFINITION const* const c)
+template<>
+void Save(DataWriter & d, ROTTING_CORPSE_DEFINITION const& corpse)
 {
-	BYTE data[160];
+	auto * c = &corpse;
 
-	DataWriter d{data};
 	INJ_U8(d, c->ubType)
 	INJ_U8(d, c->ubBodyType)
 	INJ_I16(d, c->sGridNo)
@@ -60,7 +57,4 @@ void InjectRottingCorpseIntoFile(HWFILE const file, ROTTING_CORPSE_DEFINITION co
 	INJ_BOOL(d, c->fHeadTaken)
 	INJ_U8(d, c->ubAIWarningValue)
 	INJ_SKIP(d, 12)
-	Assert(d.getConsumed() == lengthof(data));
-
-	file->write(data, sizeof(data));
 }

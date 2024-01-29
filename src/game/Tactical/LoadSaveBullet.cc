@@ -1,16 +1,12 @@
-#include "Debug.h"
-#include "LoadSaveBullet.h"
-#include "LoadSaveData.h"
+#include "Bullets.h"
 #include "Overhead.h"
-#include "SGPFile.h"
+#include "Persistant.h"
 
 
-void ExtractBulletFromFile(HWFILE const file, BULLET* const b)
+template<>
+void Load(DataReader & s, BULLET & bullet)
 {
-	BYTE src[128] = { 0 };
-	DataReader s{src};
-
-	file->read(src, sizeof(src));
+	auto * b = &bullet;
 
 	EXTR_SKIP(s, 4)
 	EXTR_SOLDIER(s, b->pFirer)
@@ -59,14 +55,13 @@ void ExtractBulletFromFile(HWFILE const file, BULLET* const b)
 	EXTR_PTR(s, b->pShadowAniTile)
 	EXTR_U8(s, b->ubItemStatus)
 	EXTR_SKIP(s, 3)
-	Assert(s.getConsumed() == lengthof(src));
 }
 
 
-void InjectBulletIntoFile(HWFILE const file, BULLET const* b)
+template<>
+void Save(DataWriter & d, BULLET const& bullet)
 {
-	BYTE dst[128];
-	DataWriter d{dst};
+	auto * b = &bullet;
 
 	INJ_SKIP(d, 4)
 	INJ_SOLDIER(d, b->pFirer)
@@ -115,7 +110,4 @@ void InjectBulletIntoFile(HWFILE const file, BULLET const* b)
 	INJ_PTR(d, b->pShadowAniTile)
 	INJ_U8(d, b->ubItemStatus)
 	INJ_SKIP(d, 3)
-	Assert(d.getConsumed() == lengthof(dst));
-
-	file->write(dst, sizeof(dst));
 }
