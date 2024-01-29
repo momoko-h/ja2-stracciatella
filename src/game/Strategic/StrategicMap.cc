@@ -41,7 +41,6 @@
 #include "Items.h"
 #include "JAScreens.h"
 #include "Keys.h"
-#include "LoadSaveSectorInfo.h"
 #include "LoadSaveStrategicMapElement.h"
 #include "Loading_Screen.h"
 #include "Logger.h"
@@ -62,6 +61,7 @@
 #include "OppList.h"
 #include "Overhead.h"
 #include "PathAI.h"
+#include "Persistant.h"
 #include "Physics.h"
 #include "Points.h"
 #include "PreBattle_Interface.h"
@@ -2339,7 +2339,7 @@ void SaveStrategicInfoToSavedFile(HWFILE const f)
 	// Save the Sector Info
 	FOR_EACH(SECTORINFO const, i, SectorInfo)
 	{
-		InjectSectorInfoIntoFile(f, *i);
+		Save(f, *i);
 	}
 
 	// Skip the SAM controlled sector information
@@ -2362,7 +2362,7 @@ void LoadStrategicInfoFromSavedFile(HWFILE const f)
 	// Load the Sector Info
 	FOR_EACH(SECTORINFO, i, SectorInfo)
 	{
-		ExtractSectorInfoFromFile(f, *i);
+		Load(f, *i);
 	}
 
 	// Skip the SAM controlled sector information

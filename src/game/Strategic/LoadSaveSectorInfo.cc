@@ -1,15 +1,11 @@
-#include "Debug.h"
-#include "LoadSaveSectorInfo.h"
+#include "Campaign_Types.h"
 #include "LoadSaveData.h"
-#include "SGPFile.h"
+#include "Persistant.h"
 
 
-void ExtractSectorInfoFromFile(HWFILE const f, SECTORINFO& s)
+template<>
+void Load(DataReader & d, SECTORINFO & s)
 {
-	BYTE data[116];
-	f->read(data, sizeof(data));
-
-	DataReader d{data};
 	EXTR_U32( d, s.uiFlags)
 	EXTR_SKIP(d, 1)
 	EXTR_U8(  d, s.ubGarrisonID)
@@ -44,14 +40,12 @@ void ExtractSectorInfoFromFile(HWFILE const f, SECTORINFO& s)
 	EXTR_SKIP(d, 3)
 	EXTR_U32( d, s.uiNumberOfWorldItemsInTempFileThatCanBeSeenByPlayer)
 	EXTR_SKIP(d, 44)
-	Assert(d.getConsumed() == lengthof(data));
 }
 
 
-void InjectSectorInfoIntoFile(HWFILE const f, SECTORINFO const& s)
+template<>
+void Save(DataWriter & d, SECTORINFO const& s)
 {
-	BYTE  data[116];
-	DataWriter d{data};
 	INJ_U32( d, s.uiFlags)
 	INJ_SKIP(d, 1)
 	INJ_U8(  d, s.ubGarrisonID)
@@ -86,7 +80,4 @@ void InjectSectorInfoIntoFile(HWFILE const f, SECTORINFO const& s)
 	INJ_SKIP(d, 3)
 	INJ_U32( d, s.uiNumberOfWorldItemsInTempFileThatCanBeSeenByPlayer)
 	INJ_SKIP(d, 44)
-	Assert(d.getConsumed() == lengthof(data));
-
-	f->write(data, sizeof(data));
 }

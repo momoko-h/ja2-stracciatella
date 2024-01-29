@@ -24,6 +24,7 @@ inline constexpr unsigned PersistantSize = 0;
 #define PERSISTANTSIZE(NAME, SIZE) struct NAME; template<> inline constexpr unsigned PersistantSize<NAME> = (SIZE);
 PERSISTANTSIZE(BULLET, 128)
 PERSISTANTSIZE(ROTTING_CORPSE_DEFINITION, 160)
+PERSISTANTSIZE(SECTORINFO, 116)
 #undef PERSISTANTSIZE
 
 
