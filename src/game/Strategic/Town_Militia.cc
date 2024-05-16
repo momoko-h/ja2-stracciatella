@@ -740,19 +740,10 @@ void HandleContinueOfTownTraining( void )
 		{
 			fContinueEventPosted = TRUE;
 
-			class DialogueEventContinueTrainingMilitia : public CharacterDialogueEvent
+			DialogueEvent::Add([soldier = &s]
 			{
-				public:
-					DialogueEventContinueTrainingMilitia(SOLDIERTYPE& soldier) : CharacterDialogueEvent(soldier) {}
-
-					bool Execute()
-					{
-						HandleInterfaceMessageForContinuingTrainingMilitia(&soldier_);
-						return false;
-					}
-			};
-
-			DialogueEvent::Add(new DialogueEventContinueTrainingMilitia(s));
+				HandleInterfaceMessageForContinuingTrainingMilitia(soldier);
+			});
 		}
 
 		// next entry

@@ -38,7 +38,6 @@
 #include "TileDat.h"
 #include "UILayout.h"
 #include "Vehicles.h"
-#include "WorldDef.h"
 #include "WorldMan.h"
 
 // the amounts of time to wait for hover stuff
@@ -568,25 +567,10 @@ static void SkyriderDialogue(UINT16 const quote)
 
 static void SkyriderDialogueWithSpecialEvent(SkyriderMonologueEvent const event, UINT32 const special_code)
 {
-	class DialogueEventSkyriderMapScreenEvent : public DialogueEvent
+	DialogueEvent::Add([=]
 	{
-		public:
-			DialogueEventSkyriderMapScreenEvent(SkyriderMonologueEvent const event, UINT32 const special_code) :
-				event_(event),
-				special_code_(special_code)
-			{}
-
-			bool Execute()
-			{
-				HandleSkyRiderMonologueEvent(event_, special_code_);
-				return false;
-			}
-
-		private:
-			SkyriderMonologueEvent const event_;
-			UINT32                 const special_code_;
-	};
-	DialogueEvent::Add(new DialogueEventSkyriderMapScreenEvent(event, special_code));
+		HandleSkyRiderMonologueEvent(event, special_code);
+	});
 }
 
 static void HeliCharacterDialogue(UINT16 const usQuoteNum)
@@ -760,7 +744,7 @@ static void HandleSkyRiderMonologueAboutDrassenSAMSite(UINT32 const uiSpecialCod
 			SkyriderDialogue(MENTION_DRASSEN_SAM_SITE);
 			SkyriderDialogueWithSpecialEvent(SKYRIDER_MONOLOGUE_EVENT_DRASSEN_SAM_SITE, 1);
 
-			auto samList = GCM->getSamSites();
+			auto const& samList = GCM->getSamSites();
 			if (StrategicMap[SGPSector(samList[SAM_SITE_TWO]->sectorId).AsStrategicIndex()].fEnemyControlled)
 			{
 				SkyriderDialogue(SECOND_HALF_OF_MENTION_DRASSEN_SAM_SITE);
@@ -894,7 +878,7 @@ void HandleAnimationOfSectors( void )
 	static BOOLEAN fOldShowEstoniRefuelHighLight = FALSE;
 	static BOOLEAN fOldShowOtherSAMHighLight = FALSE;
 
-	auto samList = GCM->getSamSites();
+	auto const& samList = GCM->getSamSites();
 
 	// find out which mode we are in and animate for that mode
 
@@ -1037,7 +1021,7 @@ static bool IsHelicopterOnGroundAtRefuelingSite(RefuelSite const& r)
 	return v.sSector.AsStrategicIndex() == r.sector;
 }
 
-static void HeliCrashSoundStopCallback(void* pData)
+static void HeliCrashSoundStopCallback(void *)
 {
 	SkyriderDestroyed( );
 }

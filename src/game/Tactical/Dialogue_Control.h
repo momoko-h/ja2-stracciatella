@@ -286,7 +286,8 @@ public:
 	{
 	}
 
-	bool Execute() override {
+	bool Execute() override
+	{
 		if constexpr (std::is_void_v<decltype(callback())>)
 		{
 			// Support for callbacks that return void.

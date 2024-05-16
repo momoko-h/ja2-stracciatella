@@ -684,30 +684,13 @@ void CharacterDialogue(UINT8 const character, UINT16 const quote, FACETYPE* cons
 
 void CharacterDialogueUsingAlternateFile(SOLDIERTYPE& s, UINT16 const quote, DialogueHandler const handler)
 {
-	class CharacterDialogueEventUsingAlternateFile : public CharacterDialogueEvent
+	DialogueEvent::Add([&]
 	{
-		public:
-			CharacterDialogueEventUsingAlternateFile(SOLDIERTYPE& soldier, UINT16 const quote, DialogueHandler const handler) :
-				CharacterDialogueEvent(soldier),
-				quote_(quote),
-				handler_(handler)
-			{}
+		if (SoundIsPlaying(s.uiBattleSoundID)) return true;
 
-			bool Execute()
-			{
-				if (!MayExecute()) return true;
-
-				SOLDIERTYPE const& s = soldier_;
-				ExecuteCharacterDialogue(s.ubProfile, quote_, s.face, handler_, TRUE, true);
-				return false;
-			}
-
-		private:
-			UINT16          const quote_;
-			DialogueHandler const handler_;
-	};
-
-	DialogueEvent::Add(new CharacterDialogueEventUsingAlternateFile(s, gTacticalStatus.ubGuideDescriptionToUse, handler));
+		ExecuteCharacterDialogue(s.ubProfile, quote, s.face, handler, TRUE, true);
+		return false;
+	});
 }
 
 
