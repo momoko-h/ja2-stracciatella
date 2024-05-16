@@ -798,5 +798,5 @@ static void HandleFirstHeliDropOfGame(void)
 	}
 
 	// Send message to turn on ai again....
-	DialogueEvent::Add(new DialogueEventCallback<UnPauseAI>());
+	DialogueEvent::Add(UnPauseAI);
 }

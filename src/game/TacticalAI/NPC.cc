@@ -1391,7 +1391,7 @@ void ResetOncePerConvoRecordsForAllNPCsInLoadedSector( void )
 
 static void NPCClosePanel()
 {
-	DialogueEvent::Add(new DialogueEventCallback<DeleteTalkingMenu>());
+	DialogueEvent::Add(DeleteTalkingMenu);
 }
 
 

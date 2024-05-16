@@ -4,6 +4,7 @@
 #include "GameScreen.h"
 #include "JA2Types.h"
 #include <string_theory/string>
+#include <type_traits>
 
 
 // An enumeration for dialog quotes
@@ -261,17 +262,50 @@ class DialogueEvent
 		virtual bool Execute() = 0;
 
 		static void Add(DialogueEvent*);
+
+		// C++20: static void Add(std::invocable auto callback);
+		template<typename TCallback, std::enable_if_t<std::is_invocable_v<TCallback>, bool> = true>
+		static void Add(TCallback callback);
+
+	protected:
+		template<typename TCallback>
+		class Callback;
 };
 
-template<void (&callback)()> class DialogueEventCallback : public DialogueEvent
+// Helper class which enables you to implement DialogueEvent with a closure
+// or a plain old function pointer.
+template<typename TCallback>
+class DialogueEvent::Callback : public DialogueEvent
 {
-	public:
-		bool Execute()
+	TCallback callback;
+
+public:
+	~Callback() override = default;
+	Callback(TCallback callable)
+		: callback{ std::move(callable) }
+	{
+	}
+
+	bool Execute() override {
+		if constexpr (std::is_void_v<decltype(callback())>)
 		{
+			// Support for callbacks that return void.
 			callback();
 			return false;
 		}
+		else
+		{
+			// Support for callbacks that return bool.
+			return callback();
+		}
+	}
 };
+
+template<typename TCallback, std::enable_if_t<std::is_invocable_v<TCallback>, bool>>
+inline void DialogueEvent::Add(TCallback callable)
+{
+	Add(new Callback(std::move(callable)));
+}
 
 class CharacterDialogueEvent : public DialogueEvent
 {
