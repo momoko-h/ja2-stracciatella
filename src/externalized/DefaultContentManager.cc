@@ -178,6 +178,7 @@ DefaultContentManager::~DefaultContentManager()
 	deleteElements(m_MERCListings);
 	deleteElements(m_mercProfileInfo);
 	deleteElements(m_mercProfiles);
+	deleteElements(m_mercStructs);
 	deleteElements(m_vehicles);
 }
 
@@ -1195,6 +1196,25 @@ bool DefaultContentManager::loadMercsData()
 	}
 	MERCListingModel::validateData(m_MERCListings);
 
+	std::vector<MERCPROFILESTRUCT*> temp_mercStructs;
+	temp_mercStructs.resize(NUM_PROFILES);
+
+	json = readJsonDataFileWithSchema("mercs-profiles.json");
+	for (auto& element : json.toVec()) {
+		JsonObject reader = element.toObject();
+		const MercProfileInfo* inf = this->getMercProfileInfoByName(reader.GetString("profile"));
+		temp_mercStructs[inf->profileID] = MercProfile::deserializeStruct(reader, this);
+	}
+
+	json = readJsonDataFileWithSchema("mercs-relations.json");
+	for (auto& element : json.toVec()) {
+		JsonObject reader = element.toObject();
+		const MercProfileInfo* inf = this->getMercProfileInfoByName(reader.GetString("profile"));		
+		MercProfile::deserializeStructRelations(temp_mercStructs[inf->profileID], reader, this);
+	}
+
+	m_mercStructs.assign(temp_mercStructs.begin(), temp_mercStructs.end());
+
 	return true;
 }
 
@@ -1489,6 +1509,15 @@ const MercProfileInfo* DefaultContentManager::getMercProfileInfoByName(const ST:
 const std::vector<const MercProfile*>& DefaultContentManager::listMercProfiles() const
 {
 	return m_mercProfiles;
+}
+
+void DefaultContentManager::resetMercProfileStructs() const
+{
+	for (size_t i = 0; i < NUM_PROFILES; i++) {
+		if (m_mercStructs[i] != nullptr) {
+			gMercProfiles[i] = *m_mercStructs[i];
+		}
+	}
 }
 
 const VehicleModel* DefaultContentManager::getVehicle(uint8_t const vehicleID) const
