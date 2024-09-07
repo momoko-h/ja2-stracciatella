@@ -6,7 +6,7 @@ jobs:
     name: Ubuntu Latest, GCC 14
     runs-on: ubuntu-24.04
     steps:
-      - name: Install Nina
+      - name: Install Ninja
         shell: bash
         run: |
           sudo apt-get install ninja-build -y
@@ -14,6 +14,10 @@ jobs:
         shell: bash
         run: |
           sudo apt-get install libsdl2-dev -y
+      - name: Install FLTK
+        shell: bash
+        run: |
+          sudo apt install fltk1.3-dev -<
       - uses: actions/checkout@v4
       - name: Configure CMake
         shell: bash
@@ -25,3 +29,20 @@ jobs:
         run: |
           cmake --build /tmp/build --config RelWithDebInfo
 
+  Build-with-clang:
+    name: Ubuntu Latest, Clang 18
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install Ninja
+        run: sudo apt-get install ninja-build -y
+      - name: Install SDL2
+        run: sudo apt-get install libsdl2-dev -y
+      - uses: actions/checkout@v4
+      - name: Configure CMake
+        shell: bash
+        run: |
+          mkdir /tmp/build
+          cmake -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_C_COMPILER=clang-18 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -G "Ninja Multi-Config" -S . -B /tmp/build
+      - name: Build
+        shell: bash
+        run: cmake --build /tmp/build --config RelWithDebInfo
