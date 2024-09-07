@@ -1,4 +1,4 @@
-name: Stracciatella fork Github runner configuration
+name: Triggered by push
 on: push
 
 jobs:
@@ -7,20 +7,18 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Install Ninja
-        shell: bash
-        run: |
-          sudo apt-get install ninja-build -y
+        run: sudo apt-get install ninja-build
       - name: Install SDL2
-        run: sudo apt-get install libsdl2-dev -y
+        run: sudo apt-get install libsdl2-dev
       - name: Install FLTK
-        run: sudo apt install fltk1.3-dev -y
+        run: sudo apt install libfltk1.3-dev
       - name: Checkout
         uses: actions/checkout@v4
       - name: Configure CMake
         shell: bash
         run: |
           mkdir /tmp/build
-          cmake -DCMAKE_CXX_COMPILER=g++-14 -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -G "Ninja Multi-Config" -S . -B /tmp/build
+          cmake -DCMAKE_CXX_COMPILER=g++-14 -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -DWITH_MAGICENUM:bool=OFF -G "Ninja Multi-Config" -S . -B /tmp/build
       - name: Build
         run: cmake --build /tmp/build --config RelWithDebInfo
 
@@ -29,9 +27,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Install Ninja
-        run: sudo apt-get install ninja-build -y
+        run: sudo apt-get install ninja-build 
       - name: Install SDL2
-        run: sudo apt-get install libsdl2-dev -y
+        run: sudo apt-get install libsdl2-dev
       - uses: actions/checkout@v4
       - name: Configure CMake
         shell: bash
