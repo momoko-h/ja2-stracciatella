@@ -4,7 +4,7 @@ on: push
 jobs:
   Build-with-gcc:
     name: Ubuntu Latest, GCC 14, Ninja
-    runs-on: &os ubuntu-24.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Install Ninja
         run: sudo apt-get install ninja-build
@@ -32,7 +32,7 @@ jobs:
 
   Build-with-clang:
     name: Ubuntu Latest, Clang 18, Make
-    runs-on: *os
+    runs-on: ubuntu-24.04
     steps:
       - name: Install SDL2, Lua 5.3 and gtest
         run: sudo apt-get install libsdl2-dev liblua5.3-dev libgtest-dev
