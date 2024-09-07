@@ -6,6 +6,10 @@ jobs:
     name: Ubuntu Latest, GCC 14
     runs-on: ubuntu-24.04
     steps:
+      - name: Install Nina
+        shell: bash
+        run: |
+          sudo apt-get install ninja-build
       - uses: actions/checkout@v4
       - name: Configure CMake
         shell: bash
