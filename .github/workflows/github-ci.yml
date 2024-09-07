@@ -14,17 +14,12 @@ jobs:
         shell: bash
         run: |
           sudo apt-get install libsdl2-dev -y
-      - name: Choose GCC 14
-        shell: bash
-        run: |
-          update-alternatives --query g++
-          sudo update-alternatives --set /usr/bin/g++14
       - uses: actions/checkout@v4
       - name: Configure CMake
         shell: bash
         run: |
           mkdir /tmp/build
-          cmake -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -G "Ninja Multi-Config" -S . -B ./tmp/build
+          cmake -DCMAKE_CXX_COMPILER=g++14 -DCMAKE_C_COMPILER=gcc14 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -G "Ninja Multi-Config" -S . -B ./tmp/build
       - name: Build
         shell: bash
         run: |
