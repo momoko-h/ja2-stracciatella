@@ -9,11 +9,8 @@ jobs:
       - name: Install Ninja
         run: sudo apt-get install ninja-build
 
-      - name: Install SDL2
-        run: sudo apt-get install libsdl2-dev
-
-      - name: Install FLTK
-        run: sudo apt-get install libfltk1.3-dev
+      - name: Install SDL2 and FLTK
+        run: sudo apt-get install libsdl2-dev libfltk1.3-dev
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,13 +38,13 @@ jobs:
         shell: bash
         run: |
           mkdir /tmp/build
-          cmake -DLOCAL_LUA_LIB:bool=OFF -DLOCAL_GTEST_LIB:bool=OFF -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_C_COMPILER=clang-18 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -S . -B /tmp/build
+          cmake -DBUILD_LAUNCHER:bool=OFF -DLOCAL_LUA_LIB:bool=OFF -DLOCAL_GTEST_LIB:bool=OFF -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_C_COMPILER=clang-18 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -S . -B /tmp/build
 
       - name: Build
         run: |
           cmake --build /tmp/build -j 4
-          echo -n "Executable size:"
-          du -b ./ja2
+          echo -n "Executable size: "
+          du -b /tmp/build/ja2
 
       - name: Run unit tests
         shell: bash
