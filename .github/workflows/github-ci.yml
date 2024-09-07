@@ -19,7 +19,7 @@ jobs:
         shell: bash
         run: |
           mkdir /tmp/build
-          cmake -DCMAKE_CXX_COMPILER=g++14 -DCMAKE_C_COMPILER=gcc14 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -G "Ninja Multi-Config" -S . -B ./tmp/build
+          cmake -DCMAKE_CXX_COMPILER=g++-14 -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -G "Ninja Multi-Config" -S . -B ./tmp/build
       - name: Build
         shell: bash
         run: |
