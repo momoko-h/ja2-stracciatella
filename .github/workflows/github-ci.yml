@@ -3,7 +3,7 @@ on: push
 
 jobs:
   Build-with-gcc:
-    name: Ubuntu Latest, GCC 14
+    name: Ubuntu Latest, GCC 14, Ninja
     runs-on: ubuntu-24.04
     steps:
       - name: Install Ninja
@@ -11,7 +11,7 @@ jobs:
       - name: Install SDL2
         run: sudo apt-get install libsdl2-dev
       - name: Install FLTK
-        run: sudo apt install libfltk1.3-dev
+        run: sudo apt-get install libfltk1.3-dev
       - name: Checkout
         uses: actions/checkout@v4
       - name: Configure CMake
@@ -23,11 +23,9 @@ jobs:
         run: cmake --build /tmp/build --config RelWithDebInfo
 
   Build-with-clang:
-    name: Ubuntu Latest, Clang 18
+    name: Ubuntu Latest, Clang 18, Make
     runs-on: ubuntu-24.04
     steps:
-      - name: Install Ninja
-        run: sudo apt-get install ninja-build 
       - name: Install SDL2
         run: sudo apt-get install libsdl2-dev
       - uses: actions/checkout@v4
@@ -35,9 +33,9 @@ jobs:
         shell: bash
         run: |
           mkdir /tmp/build
-          cmake -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_C_COMPILER=clang-18 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -G "Ninja Multi-Config" -S . -B /tmp/build
+          cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_C_COMPILER=clang-18 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -S . -B /tmp/build
       - name: Build
-        run: cmake --build /tmp/build --config RelWithDebInfo
+        run: cmake --build /tmp/build
       - name: Run unit tests
         shell: bash
         run: |
