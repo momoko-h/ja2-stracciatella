@@ -11,23 +11,18 @@ jobs:
         run: |
           sudo apt-get install ninja-build -y
       - name: Install SDL2
-        shell: bash
-        run: |
-          sudo apt-get install libsdl2-dev -y
+        run: sudo apt-get install libsdl2-dev -y
       - name: Install FLTK
-        shell: bash
-        run: |
-          sudo apt install fltk1.3-dev -<
-      - uses: actions/checkout@v4
+        run: sudo apt install fltk1.3-dev -y
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Configure CMake
         shell: bash
         run: |
           mkdir /tmp/build
           cmake -DCMAKE_CXX_COMPILER=g++-14 -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -G "Ninja Multi-Config" -S . -B /tmp/build
       - name: Build
-        shell: bash
-        run: |
-          cmake --build /tmp/build --config RelWithDebInfo
+        run: cmake --build /tmp/build --config RelWithDebInfo
 
   Build-with-clang:
     name: Ubuntu Latest, Clang 18
@@ -44,5 +39,9 @@ jobs:
           mkdir /tmp/build
           cmake -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_C_COMPILER=clang-18 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -G "Ninja Multi-Config" -S . -B /tmp/build
       - name: Build
-        shell: bash
         run: cmake --build /tmp/build --config RelWithDebInfo
+      - name: Run unit tests
+        shell: bash
+        run: |
+          cd /tmp/build/RelWithDebInfo
+          ./ja2 -unittests
