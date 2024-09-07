@@ -14,6 +14,11 @@ jobs:
         shell: bash
         run: |
           sudo apt-get install libsdl2-dev -y
+      - name: Choose GCC 14
+        shell: bash
+        run |
+          update-alternatives --query g++
+          sudo update-alternatives --set /usr/bin/g++14
       - uses: actions/checkout@v4
       - name: Configure CMake
         shell: bash
