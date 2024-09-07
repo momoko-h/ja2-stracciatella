@@ -17,15 +17,16 @@ jobs:
 
       - name: Configure CMake
         run: >
-          mkdir /tmp/build &&
+          mkdir /tmp/build
+
           cmake
-            -DCMAKE_CXX_COMPILER=g++-14
-            -DCMAKE_C_COMPILER=gcc-14
-            -DCMAKE_UNITY_BUILD:bool=ON
-            -DENABLE_PCH:bool=ON
-            -DWITH_MAGICENUM:bool=OFF
-            -G "Ninja Multi-Config"
-            -S . -B /tmp/build
+          -DCMAKE_CXX_COMPILER=g++-14
+          -DCMAKE_C_COMPILER=gcc-14
+          -DCMAKE_UNITY_BUILD:bool=ON
+          -DENABLE_PCH:bool=ON
+          -DWITH_MAGICENUM:bool=OFF
+          -G "Ninja Multi-Config"
+          -S . -B /tmp/build
 
       - name: Build
         run: cmake --build /tmp/build --config RelWithDebInfo
