@@ -35,9 +35,10 @@ jobs:
           mkdir /tmp/build
           cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_C_COMPILER=clang-18 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -S . -B /tmp/build
       - name: Build
-        run: cmake --build /tmp/build
+        run: cmake --build /tmp/build -j 4
       - name: Run unit tests
         shell: bash
         run: |
-          cd /tmp/build/RelWithDebInfo
+          cd /tmp/build/
+          ls
           ./ja2 -unittests
