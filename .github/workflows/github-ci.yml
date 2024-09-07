@@ -9,7 +9,11 @@ jobs:
       - name: Install Nina
         shell: bash
         run: |
-          sudo apt-get install ninja-build
+          sudo apt-get install ninja-build -y
+      - name: Install SDL2
+        shell: bash
+        run: |
+          sudo apt-get install libdsl2-dev -y
       - uses: actions/checkout@v4
       - name: Configure CMake
         shell: bash
