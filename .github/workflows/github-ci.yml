@@ -43,9 +43,7 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          show-progress: false
-          clean: false
+        with: [ show-progress: false, clean: false ]
 
       - name: Configure CMake
         run: |
@@ -60,3 +58,10 @@ jobs:
       - name: Run unit tests
         working-directory: /tmp/build
         run: ./ja2 -unittests
+
+  Tar version:
+    name: Tar
+    runs-on: ubuntu-20.04
+    steps:
+      -name: Print tar version
+      -run: tar --version
