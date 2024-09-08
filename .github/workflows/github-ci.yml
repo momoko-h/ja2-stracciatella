@@ -27,8 +27,10 @@ jobs:
           -DCMAKE_C_COMPILER=gcc-14
           -DCMAKE_UNITY_BUILD:bool=ON
           -DENABLE_PCH:bool=ON
-          -G "Ninja Multi-Config"
+          -DLOCAL_GTEST_LIB:bool=ON
+          -DLOCAL_LUA_LIB:bool=ON
           -S . -B /tmp/build
+          -G "Ninja Multi-Config"
 
       - name: Build
         run: cmake --build /tmp/build --config RelWithDebInfo
@@ -49,16 +51,16 @@ jobs:
           mkdir /tmp/build
 
           cmake
-          -DBUILD_LAUNCHER:bool=OFF
-          -DLOCAL_LUA_LIB:bool=OFF
-          -DLOCAL_GTEST_LIB:bool=OFF
-          -DCMAKE_BUILD_TYPE=MinSizeRel
           -DCMAKE_CXX_COMPILER=clang++-18
           -DCMAKE_C_COMPILER=clang-18
+          -DCMAKE_BUILD_TYPE=MinSizeRel
+          -DBUILD_LAUNCHER:bool=OFF
+          -DWITH_MAGICENUM:bool=OFF
+          -DLOCAL_GTEST_LIB:bool=ON
+          -DLOCAL_LUA_LIB:bool=ON
           -DCMAKE_UNITY_BUILD:bool=ON
           -DENABLE_PCH:bool=ON
-          -DWITH_MAGICENUM:bool=OFF
-           -S . -B /tmp/build
+          -S . -B /tmp/build
 
       - name: Build
         run: |
