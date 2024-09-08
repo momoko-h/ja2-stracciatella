@@ -43,7 +43,7 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-        with: [ show-progress: false, clean: false ]
+        with: { show-progress: false, clean: false }
 
       - name: Configure CMake
         run: |
