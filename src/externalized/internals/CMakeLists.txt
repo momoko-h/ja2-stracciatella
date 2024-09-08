@@ -10,3 +10,9 @@ set(JA2_INCLUDES
     ${CMAKE_CURRENT_SOURCE_DIR}
     PARENT_SCOPE
 )
+
+set_property(
+    SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/enums.cc
+    DIRECTORY ${CMAKE_SOURCE_DIR}
+    PROPERTY UNITY_GROUP "externalized_subdirectories"
+)
