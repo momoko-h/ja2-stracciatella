@@ -3,7 +3,7 @@ on: push
 
 jobs:
   Build-with-gcc:
-    name: Ubuntu Latest, GCC 14, Ninja
+    name: Ubuntu Latest, GCC 14
     runs-on: ubuntu-24.04
     steps:
       - name: Install Ninja
@@ -14,9 +14,7 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          show-progress: false
-          clean: false
+        with: { show-progress: false, clean: false }
 
       - name: Configure CMake
         run: >
@@ -26,20 +24,24 @@ jobs:
           -DCMAKE_CXX_COMPILER=g++-14
           -DCMAKE_C_COMPILER=gcc-14
           -DCMAKE_CXX_FLAGS=-pipe
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
           -DCMAKE_UNITY_BUILD:bool=ON
           -DENABLE_PCH:bool=ON
           -DLOCAL_GTEST_LIB:bool=OFF
           -DLOCAL_LUA_LIB:bool=OFF
           -S . -B /tmp/build
-          -G "Ninja Multi-Config"
+          -G "Ninja"
 
       - name: Build
-        run: cmake --build /tmp/build --config RelWithDebInfo
+        run: cmake --build /tmp/build
 
   Build-with-clang:
-    name: Ubuntu Latest, Clang 18, Make
+    name: Ubuntu Latest, Clang 18
     runs-on: ubuntu-24.04
     steps:
+      - name: Install Ninja
+        run: sudo apt-get install ninja-build
+
       - name: Install dependencies
         run: sudo apt-get install libsdl2-dev liblua5.3-dev libgtest-dev
 
@@ -63,10 +65,11 @@ jobs:
           -DCMAKE_UNITY_BUILD:bool=ON
           -DENABLE_PCH:bool=ON
           -S . -B /tmp/build
+          -G "Ninja"
 
       - name: Build
         run: |
-          cmake --build /tmp/build -j 4
+          cmake --build /tmp/build
           echo -n "Executable size: " && du -b /tmp/build/ja2
 
       - name: Run unit tests
