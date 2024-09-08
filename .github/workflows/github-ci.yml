@@ -59,7 +59,7 @@ jobs:
         working-directory: /tmp/build
         run: ./ja2 -unittests
 
-  Tar version:
+  Tar_version:
     name: Tar
     runs-on: ubuntu-20.04
     steps:
