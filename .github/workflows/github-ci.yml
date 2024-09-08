@@ -25,10 +25,11 @@ jobs:
           cmake
           -DCMAKE_CXX_COMPILER=g++-14
           -DCMAKE_C_COMPILER=gcc-14
+          -DCMAKE_CXX_FLAGS=-pipe
           -DCMAKE_UNITY_BUILD:bool=ON
           -DENABLE_PCH:bool=ON
-          -DLOCAL_GTEST_LIB:bool=ON
-          -DLOCAL_LUA_LIB:bool=ON
+          -DLOCAL_GTEST_LIB:bool=OFF
+          -DLOCAL_LUA_LIB:bool=OFF
           -S . -B /tmp/build
           -G "Ninja Multi-Config"
 
@@ -53,11 +54,12 @@ jobs:
           cmake
           -DCMAKE_CXX_COMPILER=clang++-18
           -DCMAKE_C_COMPILER=clang-18
+          -DCMAKE_CXX_FLAGS=-pipe
           -DCMAKE_BUILD_TYPE=MinSizeRel
           -DBUILD_LAUNCHER:bool=OFF
           -DWITH_MAGICENUM:bool=OFF
-          -DLOCAL_GTEST_LIB:bool=ON
-          -DLOCAL_LUA_LIB:bool=ON
+          -DLOCAL_GTEST_LIB:bool=OFF
+          -DLOCAL_LUA_LIB:bool=OFF
           -DCMAKE_UNITY_BUILD:bool=ON
           -DENABLE_PCH:bool=ON
           -S . -B /tmp/build
