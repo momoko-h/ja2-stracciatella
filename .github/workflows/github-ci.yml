@@ -27,7 +27,6 @@ jobs:
           -DCMAKE_C_COMPILER=gcc-14
           -DCMAKE_UNITY_BUILD:bool=ON
           -DENABLE_PCH:bool=ON
-          -DWITH_MAGICENUM:bool=OFF
           -G "Ninja Multi-Config"
           -S . -B /tmp/build
 
@@ -46,9 +45,20 @@ jobs:
         with: { show-progress: false, clean: false }
 
       - name: Configure CMake
-        run: |
+        run: >
           mkdir /tmp/build
-          cmake -DBUILD_LAUNCHER:bool=OFF -DLOCAL_LUA_LIB:bool=OFF -DLOCAL_GTEST_LIB:bool=OFF -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_C_COMPILER=clang-18 -DCMAKE_UNITY_BUILD:bool=ON -DENABLE_PCH:bool=ON -S . -B /tmp/build
+
+          cmake
+          -DBUILD_LAUNCHER:bool=OFF
+          -DLOCAL_LUA_LIB:bool=OFF
+          -DLOCAL_GTEST_LIB:bool=OFF
+          -DCMAKE_BUILD_TYPE=MinSizeRel
+          -DCMAKE_CXX_COMPILER=clang++-18
+          -DCMAKE_C_COMPILER=clang-18
+          -DCMAKE_UNITY_BUILD:bool=ON
+          -DENABLE_PCH:bool=ON
+          -DWITH_MAGICENUM:bool=OFF
+           -S . -B /tmp/build
 
       - name: Build
         run: |
@@ -58,10 +68,3 @@ jobs:
       - name: Run unit tests
         working-directory: /tmp/build
         run: ./ja2 -unittests
-
-  Tar_version:
-    name: Tar
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Print tar version
-        run: tar --version
