@@ -63,5 +63,5 @@ jobs:
     name: Tar
     runs-on: ubuntu-20.04
     steps:
-      -name: Print tar version
-      -run: tar --version
+      - name: Print tar version
+        run: tar --version
