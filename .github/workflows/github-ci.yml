@@ -9,8 +9,8 @@ jobs:
       - name: Install Ninja
         run: sudo apt-get install ninja-build
 
-      - name: Install SDL2 and FLTK
-        run: sudo apt-get install libsdl2-dev libfltk1.3-dev
+      - name: Install dependencies
+        run: sudo apt-get install libsdl2-dev libfltk1.3-dev liblua5.3-dev libgtest-dev
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,7 +40,7 @@ jobs:
     name: Ubuntu Latest, Clang 18, Make
     runs-on: ubuntu-24.04
     steps:
-      - name: Install SDL2, Lua 5.3 and gtest
+      - name: Install dependencies
         run: sudo apt-get install libsdl2-dev liblua5.3-dev libgtest-dev
 
       - name: Checkout
