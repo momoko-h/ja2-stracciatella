@@ -14,6 +14,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+          show-progress: false
+          clean: false
 
       - name: Configure CMake
         run: >
@@ -40,6 +42,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+          show-progress: false
+          clean: false
 
       - name: Configure CMake
         run: |
@@ -52,4 +56,5 @@ jobs:
           echo -n "Executable size: " && du -b /tmp/build/ja2
 
       - name: Run unit tests
-        run: cd /tmp/build/ && ./ja2 -unittests
+        working-directory: /tmp/build
+        run: ./ja2 -unittests
