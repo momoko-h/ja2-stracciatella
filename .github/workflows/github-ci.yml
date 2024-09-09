@@ -35,6 +35,10 @@ jobs:
       - name: Build
         run: cmake --build /tmp/build
 
+      - name: Run unit tests
+        working-directory: /tmp/build
+        run: ./ja2 -unittests
+
   Build-with-clang:
     name: Ubuntu Latest, Clang 18
     runs-on: ubuntu-24.04
@@ -56,10 +60,12 @@ jobs:
           cmake
           -DCMAKE_CXX_COMPILER=clang++-18
           -DCMAKE_C_COMPILER=clang-18
-          -DCMAKE_CXX_FLAGS=-pipe
+          -DCMAKE_CXX_FLAGS=-pipe -Wold-style-cast
           -DCMAKE_BUILD_TYPE=MinSizeRel
           -DBUILD_LAUNCHER:bool=OFF
           -DWITH_MAGICENUM:bool=OFF
+          -DWITH_UNITTESTS:bool=OFF
+          -DWITH_RUST_BINARIES:bool=OFF
           -DLOCAL_GTEST_LIB:bool=OFF
           -DLOCAL_LUA_LIB:bool=OFF
           -DCMAKE_UNITY_BUILD:bool=ON
@@ -71,7 +77,3 @@ jobs:
         run: |
           cmake --build /tmp/build
           echo -n "Executable size: " && du -b /tmp/build/ja2
-
-      - name: Run unit tests
-        working-directory: /tmp/build
-        run: ./ja2 -unittests
