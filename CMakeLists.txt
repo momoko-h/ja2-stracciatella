@@ -294,7 +294,7 @@ set_property(SOURCE ${CMAKE_SOURCE_DIR}/src/game/GameVersion.cc APPEND PROPERTY 
 
 function(add_warnings target)
     if (NOT MSVC)
-        target_compile_options(${target} PRIVATE -Wall -Wtype-limits -Wignored-qualifiers -Wold-style-cast -Wconversion)
+        target_compile_options(${target} PRIVATE -Wall -Wtype-limits -Wignored-qualifiers)
     else()
         target_compile_options(${target} PRIVATE /W3 /wd4018 /wd4101 /wd4200 /wd4244 /wd4996)
         # 4018 : example: signed/unsigned mismatch
