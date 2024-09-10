@@ -56,7 +56,8 @@ set_property(
 set_property(
     SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/Fade_Screen.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/GameInitOptionsScreen.cc
+#   Clashes with SaveLoadScreen.cc
+#   ${CMAKE_CURRENT_SOURCE_DIR}/GameInitOptionsScreen.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/GameScreen.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/HelpScreen.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/JA2_Splash.cc
