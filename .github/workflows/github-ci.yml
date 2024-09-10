@@ -23,6 +23,7 @@ jobs:
           cmake
           -DCMAKE_CXX_COMPILER=g++-14
           -DCMAKE_C_COMPILER=gcc-14
+          -DCMAKE_CXX_COMPILER_FLAGS=-pipe
           -DCMAKE_BUILD_TYPE=RelWithDebInfo
           -DCMAKE_UNITY_BUILD:bool=ON
           -DENABLE_PCH:bool=ON
