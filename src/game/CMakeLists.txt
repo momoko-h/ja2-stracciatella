@@ -53,6 +53,24 @@ set_property(
     PROPERTY UNITY_GROUP "LoadSaveDataTypes"
 )
 
+set_property(
+    SOURCE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Fade_Screen.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/GameInitOptionsScreen.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/GameScreen.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/HelpScreen.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/JA2_Splash.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/JAScreens.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Loading_Screen.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/MainMenuScreen.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/MessageBoxScreen.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Options_Screen.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/SaveLoadScreen.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Screens.cc
+    DIRECTORY ${CMAKE_SOURCE_DIR}
+    PROPERTY UNITY_GROUP "Screens"
+)
+
 set(JA2_SOURCES
     ${JA2_SOURCES}
     ${LOCAL_JA2_SOURCES}
