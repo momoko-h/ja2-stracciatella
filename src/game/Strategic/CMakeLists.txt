@@ -59,24 +59,6 @@ set_property(
     PROPERTY UNITY_GROUP "LoadSaveDataTypes"
 )
 
-set_property(
-    SOURCE
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic_AI.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic_Event_Handler.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic_Merc_Handler.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic_Mines.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic_Movement.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic_Movement_Costs.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic_Pathing.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic_Status.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic_Town_Loyalty.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Strategic_Turns.cc
-    DIRECTORY ${CMAKE_SOURCE_DIR}
-    PROPERTY UNITY_GROUP "Strategic_1"
-)
-
-
 set(JA2_INCLUDES
     ${JA2_INCLUDES}
     ${CMAKE_CURRENT_SOURCE_DIR}
