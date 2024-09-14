@@ -29,6 +29,6 @@ jobs:
         run: cmake --build %TEMP%\build
 
       - name: Run unit tests
-        working-directory: %TEMP%\build
+        working-directory: "%TEMP%/build"
         run: ./ja2 -unittests
 
