@@ -1,5 +1,5 @@
-name: Triggered by push
-on: push
+name: Manual trigger
+on: workflow_event
 
 jobs:
   Build-with-gcc:
