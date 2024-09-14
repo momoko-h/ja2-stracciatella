@@ -1,5 +1,5 @@
 name: Manual trigger
-on: workflow_event
+on: workflow_dispatch
 
 jobs:
   Build-with-gcc:
