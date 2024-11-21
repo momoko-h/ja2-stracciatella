@@ -28,7 +28,6 @@
 #include "LightEffects.h"
 #include "Meanwhile.h"
 #include "SkillCheck.h"
-#include "AIInternals.h"
 #include "AIList.h"
 #include "RenderWorld.h"
 #include "Rotting_Corpses.h"
@@ -60,16 +59,21 @@ static inline SOLDIERTYPE* LatestInterruptGuy(void)
 }
 
 
-#define REMOVE_LATEST_INTERRUPT_GUY()	(DeleteFromIntList( (UINT8) (gubOutOfTurnPersons), TRUE ))
-#define INTERRUPTS_OVER		(gubOutOfTurnPersons == 1)
-
 BOOLEAN gfHiddenInterrupt = FALSE;
 static SOLDIERTYPE* gLastInterruptedGuy = NULL;
 
 extern SightFlags gubSightFlags;
 
-
-#define MIN_APS_TO_INTERRUPT		4
+namespace {
+void DebugDumpQueue(char const * const prefix)
+{
+	for (int cnt = gubOutOfTurnPersons; cnt > 0; --cnt)
+	{
+		auto const& soldier{ *gOutOfTurnOrder[cnt] };
+		SLOGD("{}: Q position {}: {} ({})", prefix, cnt, soldier.ubID, soldier.name);
+	}
+}
+}
 
 void ClearIntList( void )
 {
@@ -497,7 +501,7 @@ void SayCloseCallQuotes(void)
 }
 
 
-static void DeleteFromIntList(UINT8 ubIndex, BOOLEAN fCommunicate);
+static void DeleteFromIntList(UINT8 ubIndex);
 
 
 static void StartInterrupt(void)
@@ -506,11 +510,7 @@ static void StartInterrupt(void)
 	const INT8  bTeam = first_interrupter->bTeam;
 	SOLDIERTYPE *Interrupter = first_interrupter;
 
-	// display everyone on int queue!
-	for (INT32 cnt = gubOutOfTurnPersons; cnt > 0; --cnt)
-	{
-		SLOGD("STARTINT: Q position {}: {}", cnt, gOutOfTurnOrder[cnt]->ubID);
-	}
+	DebugDumpQueue("STARTINT");
 
 	gTacticalStatus.fInterruptOccurred = TRUE;
 
@@ -531,7 +531,7 @@ static void StartInterrupt(void)
 			Interrupter->bMoved = FALSE;
 			SLOGD("INTERRUPT: popping {} off of the interrupt queue", Interrupter->ubID);
 
-			REMOVE_LATEST_INTERRUPT_GUY();
+			DeleteFromIntList(gubOutOfTurnPersons);
 			// now LatestInterruptGuy() is the guy before the previous
 			Interrupter = LatestInterruptGuy();
 
@@ -623,7 +623,7 @@ static void StartInterrupt(void)
 
 			SLOGD("INTERRUPT: popping {} off of the interrupt queue", Interrupter->ubID);
 
-			REMOVE_LATEST_INTERRUPT_GUY();
+			DeleteFromIntList(gubOutOfTurnPersons);
 			// now LatestInterruptGuy() is the guy before the previous
 			Interrupter = LatestInterruptGuy();
 			if (Interrupter == NULL) // previously emptied slot!
@@ -686,10 +686,7 @@ static void EndInterrupt(BOOLEAN fMarkInterruptOccurred)
 	BOOLEAN					fFound;
 	UINT8						ubMinAPsToAttack;
 
-	for (INT32 cnt = gubOutOfTurnPersons; cnt > 0; --cnt)
-	{
-		SLOGD("ENDINT: Q position {}: {}", cnt, gOutOfTurnOrder[cnt]->ubID);
-	}
+	DebugDumpQueue("ENDINT");
 
 	// ATE: OK, now if this all happended on one frame, we may not have to stop
 	// guy from walking... so set this flag to false if so...
@@ -906,7 +903,8 @@ static void EndInterrupt(BOOLEAN fMarkInterruptOccurred)
 
 BOOLEAN StandardInterruptConditionsMet(const SOLDIERTYPE* const pSoldier, const SOLDIERTYPE* const pOpponent, const INT8 bOldOppList)
 {
-	//UINT8 ubAniType;
+	constexpr INT8 MIN_APS_TO_INTERRUPT{ 4 };
+
 	UINT8 ubMinPtsNeeded;
 	INT8  bDir;
 
@@ -983,11 +981,6 @@ BOOLEAN StandardInterruptConditionsMet(const SOLDIERTYPE* const pSoldier, const 
 	if (pSoldier->bUnderFire)
 	{
 		return(FALSE);
-	}
-
-	if (pSoldier->bCollapsed)
-	{
-		return( FALSE );
 	}
 
 	// don't allow neutral folks to get interrupts
@@ -1306,7 +1299,7 @@ BOOLEAN InterruptDuel( SOLDIERTYPE * pSoldier, SOLDIERTYPE * pOpponent)
 }
 
 
-static void DeleteFromIntList(UINT8 ubIndex, BOOLEAN fCommunicate)
+static void DeleteFromIntList(UINT8 ubIndex)
 {
 	UINT8 ubLoop;
 
@@ -1332,7 +1325,7 @@ static void DeleteFromIntList(UINT8 ubIndex, BOOLEAN fCommunicate)
 }
 
 
-void AddToIntList(SOLDIERTYPE* const s, const BOOLEAN fGainControl, const BOOLEAN fCommunicate)
+void AddToIntList(SOLDIERTYPE* const s, const BOOLEAN fGainControl, BOOLEAN)
 {
 	UINT8 ubLoop;
 
@@ -1355,7 +1348,7 @@ void AddToIntList(SOLDIERTYPE* const s, const BOOLEAN fGainControl, const BOOLEA
 			{
 				// GAINING control, so delete him from this slot (because later he'll
 				// get added to the end and we don't want him listed more than once!)
-				DeleteFromIntList( ubLoop, FALSE );
+				DeleteFromIntList(ubLoop);
 			}
 		}
 	}
@@ -1422,7 +1415,7 @@ static void VerifyOutOfTurnOrderArray(void)
 							// If they were turning from prone, stop them
 							gOutOfTurnOrder[ubNextIndex]->fTurningFromPronePosition = FALSE;
 
-							DeleteFromIntList( ubNextIndex, FALSE );
+							DeleteFromIntList(ubNextIndex);
 						}
 
 						fFoundLoop = TRUE;
@@ -1478,7 +1471,7 @@ static void VerifyOutOfTurnOrderArray(void)
 				// If they were turning from prone, stop them
 				gOutOfTurnOrder[ubLoop]->fTurningFromPronePosition = FALSE;
 
-				DeleteFromIntList( ubLoop, FALSE );
+				DeleteFromIntList(ubLoop);
 
 				// since we deleted someone from the list, we want to check the same index in the
 				// array again, hence we DON'T increment.
@@ -1656,7 +1649,7 @@ void ResolveInterruptsVs( SOLDIERTYPE * pSoldier, UINT8 ubInterruptType)
 				{
 					// add this guy to everyone's interrupt queue
 					AddToIntList(IntList[ubSmallestSlot], TRUE, TRUE);
-					if (INTERRUPTS_OVER)
+					if (gubOutOfTurnPersons == 1)
 					{
 						// a loop was created which removed all the people in the interrupt queue!
 						EndInterrupt( TRUE );
