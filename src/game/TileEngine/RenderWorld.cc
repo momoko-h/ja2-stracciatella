@@ -1310,7 +1310,7 @@ zlevel_topmost:
 								{
 									if (fPixelate)
 									{
-										Blt8BPPDataTo16BPPBufferTransZNBClipTranslucent(pDestBuf, uiDestPitchBYTES, gpZBuffer, sZLevel, hVObject, sXPos, sYPos, usImageIndex, &gClippingRect);
+										Blt8BPPDataTo16BPPBufferTransZNBTranslucentClip(pDestBuf, uiDestPitchBYTES, gpZBuffer, sZLevel, hVObject, sXPos, sYPos, usImageIndex, &gClippingRect);
 									}
 									else if (fMerc)
 									{
