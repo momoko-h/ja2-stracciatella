@@ -297,17 +297,10 @@ void MercArrivesCallback(SOLDIERTYPE& s)
 
 			TacticalCharacterDialogue(&s, QUOTE_MERC_REACHED_DESTINATION);
 
-			class DialogueEventUnsetArrivesFlag : public DialogueEvent
-			{
-				public:
-					bool Execute()
-					{
-						gTacticalStatus.bMercArrivingQuoteBeingUsed = FALSE;
-						return false;
-					}
-			};
-
-			DialogueEvent::Add(new DialogueEventUnsetArrivesFlag());
+			DialogueEvent::Add([] {
+				gTacticalStatus.bMercArrivingQuoteBeingUsed = FALSE;
+				return false;
+			});
 		}
 	}
 

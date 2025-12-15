@@ -7972,42 +7972,23 @@ static void MapscreenMarkButtonsDirty(void)
 
 void LockMapScreenInterface(bool const lock)
 {
-	class DialogueEventLockMapScreenInterface : public DialogueEvent
-	{
-		public:
-			DialogueEventLockMapScreenInterface(bool const lock) : lock_(lock) {}
-
-			bool Execute()
-			{
-				fLockOutMapScreenInterface = lock_;
-				return false;
-			}
-
-		private:
-			bool const lock_;
-	};
-
-	DialogueEvent::Add(new DialogueEventLockMapScreenInterface(lock));
+	DialogueEvent::Add([lock] {
+		fLockOutMapScreenInterface = lock;
+		return false;
+	});
 }
 
 
 void MakeDialogueEventEnterMapScreen()
 {
-	class DialogueEventEnterMapScreen : public DialogueEvent
-	{
-		public:
-			bool Execute()
-			{
-				if (guiCurrentScreen != MAP_SCREEN)
-				{
-					gfEnteringMapScreen    = TRUE;
-					fEnterMapDueToContract = TRUE;
-				}
-				return false;
-			}
-	};
-
-	DialogueEvent::Add(new DialogueEventEnterMapScreen());
+	DialogueEvent::Add([] {
+		if (guiCurrentScreen != MAP_SCREEN)
+		{
+			gfEnteringMapScreen    = TRUE;
+			fEnterMapDueToContract = TRUE;
+		}
+		return false;
+	});
 }
 
 

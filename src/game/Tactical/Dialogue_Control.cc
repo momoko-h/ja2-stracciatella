@@ -480,6 +480,26 @@ void DialogueEvent::Add(DialogueEvent* const d)
 }
 
 
+void DialogueEvent::Add(DialogueEvent::DialogueEvent_Fn fn)
+{
+	struct LambdaWrapper : public DialogueEvent
+	{
+		DialogueEvent_Fn wrappedLambda;
+
+		LambdaWrapper(DialogueEvent_Fn && fn)
+			: wrappedLambda{ std::move(fn) }
+		{}
+
+		bool Execute() override
+		{
+			return wrappedLambda();
+		}
+	};
+
+	Add(new LambdaWrapper{ std::move(fn) });
+}
+
+
 bool CharacterDialogueEvent::MayExecute() const
 {
 	return !SoundIsPlaying(soldier_.uiBattleSoundID);

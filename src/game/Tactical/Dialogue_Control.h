@@ -4,7 +4,7 @@
 #include "GameScreen.h"
 #include "JA2Types.h"
 #include <string_theory/string>
-
+#include <functional>
 
 // An enumeration for dialog quotes
 enum DialogQuoteIDs
@@ -256,11 +256,14 @@ extern BOOLEAN gfFacePanelActive;
 class DialogueEvent
 {
 	public:
-		virtual ~DialogueEvent() {}
+		using DialogueEvent_Fn = std::function<bool ()>;
+
+		virtual ~DialogueEvent() = default;
 
 		virtual bool Execute() = 0;
 
 		static void Add(DialogueEvent*);
+		static void Add(DialogueEvent_Fn);
 };
 
 template<void (&callback)()> class DialogueEventCallback : public DialogueEvent

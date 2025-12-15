@@ -6699,24 +6699,12 @@ static void InternalUnescortEPC(SOLDIERTYPE* const s)
 		SetFactTrue(fact_to_set_to_true);
 	}
 
-	class DialogueEventRemoveEPC : public DialogueEvent
-	{
-		public:
-			DialogueEventRemoveEPC(ProfileID const epc) : epc_(epc) {}
-
-			bool Execute()
-			{
-				GetProfile(epc_).ubMiscFlags &= ~PROFILE_MISC_FLAG_FORCENPCQUOTE;
-				UnRecruitEPC(epc_);
-				ReBuildCharactersList();
-				return false;
-			}
-
-		private:
-			ProfileID const epc_;
-	};
-
-	DialogueEvent::Add(new DialogueEventRemoveEPC(profile));
+	DialogueEvent::Add([profile] {
+		GetProfile(profile).ubMiscFlags &= ~PROFILE_MISC_FLAG_FORCENPCQUOTE;
+		UnRecruitEPC(profile);
+		ReBuildCharactersList();
+		return false;
+	});
 }
 
 
