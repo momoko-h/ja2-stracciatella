@@ -13,6 +13,11 @@
 #include "UILayout.h"
 
 
+enum FadeType : INT8 {
+	FADE_OUT_REALFADE,
+	FADE_IN_REALFADE
+};
+
 static ScreenID guiExitScreen;
 BOOLEAN gfFadeInitialized = FALSE;
 INT16   gsFadeLimit;
@@ -20,12 +25,11 @@ UINT32  guiTime;
 UINT32  guiFadeDelay;
 BOOLEAN gfFirstTimeInFade = FALSE;
 INT16   gsFadeCount;
-static INT8 gbFadeType;
+static FadeType gbFadeType;
 INT16   gsFadeRealCount;
-BOOLEAN gfFadeInVideo;
 
-
-FADE_FUNCTION gFadeFunction = NULL;
+using FADE_FUNCTION = void (*)();
+static FADE_FUNCTION gFadeFunction = NULL;
 
 FADE_HOOK gFadeInDoneCallback  = NULL;
 FADE_HOOK gFadeOutDoneCallback = NULL;
@@ -50,14 +54,14 @@ void FadeOutNextFrame( )
 }
 
 
-static void BeginFade(ScreenID uiExitScreen, INT8 bFadeValue, INT8 bType, UINT32 uiDelay);
+static void BeginFade(ScreenID uiExitScreen, FadeType bType, UINT32 uiDelay);
 
 
 BOOLEAN HandleBeginFadeIn(ScreenID const uiScreenExit)
 {
 	if ( gfFadeIn )
 	{
-		BeginFade( uiScreenExit, 35, FADE_IN_REALFADE, 5 );
+		BeginFade(uiScreenExit, FADE_IN_REALFADE, 5);
 
 		gfFadeIn = FALSE;
 
@@ -73,7 +77,7 @@ BOOLEAN HandleBeginFadeOut(ScreenID const uiScreenExit)
 {
 	if ( gfFadeOut )
 	{
-		BeginFade( uiScreenExit, 35, FADE_OUT_REALFADE, 5 );
+		BeginFade(uiScreenExit, FADE_OUT_REALFADE, 5);
 
 		gfFadeOut = FALSE;
 
@@ -130,14 +134,12 @@ static void FadeFrameBufferRealFade(void);
 static void FadeInFrameBufferRealFade(void);
 
 
-static void BeginFade(ScreenID const uiExitScreen, INT8 const bFadeValue, INT8 const bType, UINT32 const uiDelay)
+static void BeginFade(ScreenID const uiExitScreen, FadeType const bType, UINT32 const uiDelay)
 {
 	//Init some paramters
 	guiExitScreen	= uiExitScreen;
 	guiFadeDelay			= uiDelay;
 	gfFadeIn = FALSE;
-	gfFadeInVideo = TRUE;
-
 
 	// Calculate step;
 	switch (bType)
@@ -146,7 +148,6 @@ static void BeginFade(ScreenID const uiExitScreen, INT8 const bFadeValue, INT8 c
 			gsFadeRealCount = -1;
 			gsFadeLimit			= 8;
 			gFadeFunction = FadeInFrameBufferRealFade;
-			gfFadeInVideo   = FALSE;
 
 			BltVideoSurface(guiSAVEBUFFER, FRAME_BUFFER, 0, 0, NULL);
 			FRAME_BUFFER->Fill(Get16BPPColor(FROMRGB(0, 0, 0)));
@@ -156,7 +157,6 @@ static void BeginFade(ScreenID const uiExitScreen, INT8 const bFadeValue, INT8 c
 			gsFadeRealCount = -1;
 			gsFadeLimit			= 10;
 			gFadeFunction = FadeFrameBufferRealFade;
-			gfFadeInVideo   = FALSE;
 			break;
 	}
 
@@ -198,18 +198,8 @@ ScreenID FadeScreenHandle()
 
 	if ( ( uiTime - guiTime ) > guiFadeDelay )
 	{
-		// Fade!
-		if ( !gfFadeIn )
-		{
-			//gFadeFunction( );
-		}
-
 		InvalidateScreen();
-
-		if ( !gfFadeInVideo )
-		{
-			gFadeFunction( );
-		}
+		gFadeFunction();
 
 		gsFadeCount++;
 
@@ -219,6 +209,8 @@ ScreenID FadeScreenHandle()
 			{
 				case FADE_OUT_REALFADE:
 					FRAME_BUFFER->Fill(Get16BPPColor(FROMRGB(0, 0, 0)));
+					break;
+				case FADE_IN_REALFADE:
 					break;
 			}
 

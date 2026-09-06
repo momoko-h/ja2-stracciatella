@@ -1,6 +1,5 @@
 #include "Cursor_Control.h"
 #include "Debug.h"
-#include "Fade_Screen.h"
 #include "FPS.h"
 #include "HImage.h"
 #include "Local.h"
@@ -26,11 +25,6 @@
 #define MAX_CURSOR_HEIGHT 64
 
 #define MAX_DIRTY_REGIONS 128
-
-#define RED_MASK 0xF800
-#define GREEN_MASK 0x07E0
-#define BLUE_MASK 0x001F
-#define ALPHA_MASK 0
 
 #define OVERSAMPLING_SCALE 4
 
@@ -460,39 +454,32 @@ void RefreshScreen(void)
 
 	if (gfForceFullScreenRefresh || guiDirtyRegionCount > 0 || guiDirtyRegionExCount > 0)
 	{
-		if (gfFadeInitialized && gfFadeInVideo)
+		if (gfForceFullScreenRefresh)
 		{
-			gFadeFunction();
+			SDL_BlitSurface(FrameBuffer, NULL, ScreenBuffer, NULL);
+			ScreenTextureUpdateRect = { 0, 0, ScreenBuffer->w, ScreenBuffer->h };
 		}
 		else
 		{
-			if (gfForceFullScreenRefresh)
+			for (UINT32 i = 0; i < guiDirtyRegionCount; i++)
 			{
-				SDL_BlitSurface(FrameBuffer, NULL, ScreenBuffer, NULL);
-				ScreenTextureUpdateRect = { 0, 0, ScreenBuffer->w, ScreenBuffer->h };
+				ScreenTextureUpdateRect += DirtyRegions[i];
+				SDL_BlitSurface(FrameBuffer, &DirtyRegions[i], ScreenBuffer, &DirtyRegions[i]);
 			}
-			else
-			{
-				for (UINT32 i = 0; i < guiDirtyRegionCount; i++)
-				{
-					ScreenTextureUpdateRect += DirtyRegions[i];
-					SDL_BlitSurface(FrameBuffer, &DirtyRegions[i], ScreenBuffer, &DirtyRegions[i]);
-				}
 
-				for (UINT32 i = 0; i < guiDirtyRegionExCount; i++)
+			for (UINT32 i = 0; i < guiDirtyRegionExCount; i++)
+			{
+				SDL_Rect* r = &DirtyRegionsEx[i];
+				if (scrolling)
 				{
-					SDL_Rect* r = &DirtyRegionsEx[i];
-					if (scrolling)
+					// Check if we are completely out of bounds
+					if (r->y <= gsVIEWPORT_WINDOW_END_Y && r->y + r->h <= gsVIEWPORT_WINDOW_END_Y)
 					{
-						// Check if we are completely out of bounds
-						if (r->y <= gsVIEWPORT_WINDOW_END_Y && r->y + r->h <= gsVIEWPORT_WINDOW_END_Y)
-						{
-							continue;
-						}
+						continue;
 					}
-					ScreenTextureUpdateRect += *r;
-					SDL_BlitSurface(FrameBuffer, r, ScreenBuffer, r);
 				}
+				ScreenTextureUpdateRect += *r;
+				SDL_BlitSurface(FrameBuffer, r, ScreenBuffer, r);
 			}
 		}
 		if (scrolling)
