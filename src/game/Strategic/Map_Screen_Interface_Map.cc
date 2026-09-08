@@ -104,26 +104,6 @@
 #define MAX_VIEW_SECTORS      16
 
 
-//Map Location index regions
-
-// x start of hort index
-#define MAP_HORT_INDEX_X (STD_SCREEN_X + 292)
-
-// y position of hort index
-#define MAP_HORT_INDEX_Y  (STD_SCREEN_Y + 10)
-
-// height of hort index
-#define MAP_HORT_HEIGHT  GetFontHeight(MAP_FONT)
-
-// vert index start x
-#define MAP_VERT_INDEX_X (STD_SCREEN_X + 273)
-
-// vert index start y
-#define MAP_VERT_INDEX_Y  (STD_SCREEN_Y + 31)
-
-// vert width
-#define MAP_VERT_WIDTH   GetFontHeight(MAP_FONT)
-
 // "Boxes" Icons
 #define SMALL_YELLOW_BOX      0
 #define BIG_YELLOW_BOX        1
@@ -423,6 +403,21 @@ void InitMapScreenInterfaceMap()
 
 void DrawMapIndexBigMap(BOOLEAN fSelectedCursorIsYellow)
 {
+	// x start of hort index
+	int const MAP_HORT_INDEX_X = (STD_SCREEN_X + 292);
+
+	// y position of hort index
+	int const MAP_HORT_INDEX_Y = (STD_SCREEN_Y + 10);
+
+	// height of hort index
+	int const MAP_HORT_HEIGHT = GetFontHeight(MAP_FONT);
+
+	// vert index start x
+	int const MAP_VERT_INDEX_X = (STD_SCREEN_X + 273);
+
+	// vert index start y
+	int const MAP_VERT_INDEX_Y = (STD_SCREEN_Y + 31);
+
 	// this procedure will draw the coord indexes on the zoomed out map
 	SetFontDestBuffer(FRAME_BUFFER);
 	SetFont(MAP_FONT);
@@ -431,19 +426,18 @@ void DrawMapIndexBigMap(BOOLEAN fSelectedCursorIsYellow)
 	bool  const draw_cursors  = CanDrawSectorCursor();
 	bool  const sel_candidate = bSelectedDestChar == -1 && !fPlotForHelicopter;
 	UINT8 const sel_colour    = fSelectedCursorIsYellow ? FONT_YELLOW : FONT_WHITE;
+	HCenterVCenterAlign const hortIndexAlign{ MAP_GRID_X, MAP_HORT_HEIGHT };
+	HCenterVCenterAlign const vertIndexAlign{ MAP_HORT_HEIGHT, MAP_GRID_Y };
+
 	for (INT32 i = 1; i <= MAX_VIEW_SECTORS; ++i)
 	{
-		INT16 usX;
-		INT16 usY;
-
 		UINT8 const colour_x =
 			!draw_cursors                  ? MAP_INDEX_COLOR :
 			i == sSelMap.x && sel_candidate ? sel_colour      :
 			i == gsHighlightSector.x       ? FONT_WHITE      :
 			MAP_INDEX_COLOR;
 		SetFontForeground(colour_x);
-		FindFontCenterCoordinates(MAP_HORT_INDEX_X + (i - 1) * MAP_GRID_X, MAP_HORT_INDEX_Y, MAP_GRID_X, MAP_HORT_HEIGHT, pMapHortIndex[i], MAP_FONT, &usX, &usY);
-		MPrint(usX, usY, pMapHortIndex[i]);
+		MPrint(MAP_HORT_INDEX_X + (i - 1) * MAP_GRID_X, MAP_HORT_INDEX_Y, pMapHortIndex[i], hortIndexAlign);
 
 		UINT8 const colour_y =
 			!draw_cursors                  ? MAP_INDEX_COLOR :
@@ -451,8 +445,7 @@ void DrawMapIndexBigMap(BOOLEAN fSelectedCursorIsYellow)
 			i == gsHighlightSector.y       ? FONT_WHITE      :
 			MAP_INDEX_COLOR;
 		SetFontForeground(colour_y);
-		FindFontCenterCoordinates(MAP_VERT_INDEX_X, MAP_VERT_INDEX_Y + (i - 1) * MAP_GRID_Y, MAP_HORT_HEIGHT, MAP_GRID_Y, pMapVertIndex[i], MAP_FONT, &usX, &usY);
-		MPrint(usX, usY, pMapVertIndex[i]);
+		MPrint(MAP_VERT_INDEX_X, MAP_VERT_INDEX_Y + (i - 1) * MAP_GRID_Y, pMapVertIndex[i], vertIndexAlign);
 	}
 
 	InvalidateRegion(MAP_VERT_INDEX_X, MAP_VERT_INDEX_Y, MAP_VERT_INDEX_X + MAP_HORT_HEIGHT,               MAP_VERT_INDEX_Y + MAX_VIEW_SECTORS * MAP_GRID_Y);
