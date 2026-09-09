@@ -2250,7 +2250,9 @@ UINT32 CalcChanceToHitGun(SOLDIERTYPE *pSoldier, UINT16 sGridNo, UINT8 ubAimTime
 		bAttachPos = FindAttachment( pInHand, SNIPERSCOPE );
 
 		// does gun have scope, long range recommends its use, and shooter's aiming?
-		if (bAttachPos != NO_SLOT && (iRange > MIN_SCOPE_RANGE) && (ubAimTime > 0))
+		// Bursts get no aim bonus, so they get no scope bonus either.
+		if (bAttachPos != NO_SLOT && (iRange > MIN_SCOPE_RANGE) && (ubAimTime > 0) &&
+			!pSoldier->bDoBurst)
 		{
 			// reduce effective sight range by 20% per extra aiming time AP of the distance
 			// beyond MIN_SCOPE_RANGE.  Max reduction is 80% of the range beyond.
@@ -3810,6 +3812,11 @@ void ChangeWeaponMode(SOLDIERTYPE* const s)
 	}
 
 	EnsureConsistentWeaponMode(s);
+
+	// Aim clicks belong to the mode they were spent in. Burst and launcher mode
+	// cannot refine the aim, so carrying clicks over from normal mode would hand
+	// out their bonus for free - the AP cost of those modes ignores the aim time.
+	s->bShownAimTime = REFINE_AIM_1;
 
 	DirtyMercPanelInterface(s, DIRTYLEVEL2);
 	gfUIForceReExamineCursorData = TRUE;
