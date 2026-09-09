@@ -1,7 +1,6 @@
 #ifndef VSURFACE_H
 #define VSURFACE_H
 
-#include "Buffer.h"
 #include "SDL_helpers.h"
 #include "Types.h"
 #include <memory>
@@ -27,7 +26,7 @@ class SGPVSurface
 	public:
 		SGPVSurface(SDL_Surface*);
 		SGPVSurface(UINT16 w, UINT16 h, UINT8 bpp);
-		virtual ~SGPVSurface();
+		~SGPVSurface();
 
 		UINT16 Width()  const { return surface_->w; }
 		UINT16 Height() const { return surface_->h; }
@@ -37,7 +36,7 @@ class SGPVSurface
 		void SetPalette(const SGPPaletteEntry* src_pal);
 
 		// Get the RGB palette entry values
-		SGPPaletteEntry const* GetPalette() const { return palette_; }
+		SGPPaletteEntry const * GetPalette() const;
 
 		void SetTransparency(COLORVAL);
 
@@ -62,7 +61,6 @@ class SGPVSurface
 
 	private:
 		SurfaceUniquePtr                           surface_;
-		SGP::Buffer<SGPPaletteEntry>               palette_;
 	public:
 		UINT16*                                    p16BPPPalette; // A 16BPP palette used for 8->16 blits
 	private:
@@ -135,10 +133,7 @@ SGPVSurface* AddVideoSurfaceFromFile(const char* Filename);
 void BltVideoSurfaceHalf(SGPVSurface* dst, SGPVSurface* src, INT32 DestX, INT32 DestY, SGPBox const* src_rect);
 
 // Deletes all data, including palettes
-static inline void DeleteVideoSurface(SGPVSurface* const vs)
-{
-	delete vs;
-}
+void DeleteVideoSurface(SGPVSurface const * vs);
 
 void BltVideoSurfaceOnce(SGPVSurface* dst, const char* filename, INT32 x, INT32 y);
 

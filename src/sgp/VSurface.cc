@@ -3,10 +3,8 @@
 #include "Shading.h"
 #include "VObject_Blitters.h"
 #include "VSurface.h"
-#include "Logger.h"
 
 #include "SDL3/SDL.h"
-#include <SDL3/SDL_pixels.h>
 #include <string_theory/format>
 #include <string_theory/string>
 
@@ -96,13 +94,14 @@ SGPVSurface::~SGPVSurface()
 
 void SGPVSurface::SetPalette(const SGPPaletteEntry* const src_pal)
 {
-	// Create palette object if not already done so
-	if (!palette_) palette_.Allocate(256);
-	SGPPaletteEntry* const p = palette_;
-	for (UINT32 i = 0; i < 256; i++)
-	{
-		p[i] = src_pal[i];
-	}
+	// SDL's palettes are reference counted, so we can
+	// a) safely insert the newly created palette into a surface without
+	//    checking for an existing one first
+	// b) destroy the palette after doing so
+	auto * palette = SDL_CreatePalette(256);
+	SDL_SetPaletteColors(palette, src_pal, 0, 256);
+	SDL_SetSurfacePalette(surface_.get(), palette);
+	SDL_DestroyPalette(palette);
 
 	if (p16BPPPalette != NULL) delete[] p16BPPPalette;
 	p16BPPPalette = Create16BPPPalette(src_pal);
@@ -221,63 +220,21 @@ void BltVideoSurface(SGPVSurface* const dst, SGPVSurface* const src, INT32 const
 	Assert(dst);
 	Assert(src);
 
-	const UINT8 src_bpp = src->BPP();
-	const UINT8 dst_bpp = dst->BPP();
-	if (src_bpp == dst_bpp)
+	SDL_Rect* src_rect = 0;
+	SDL_Rect  r;
+	if (src_box)
 	{
-		SDL_Rect* src_rect = 0;
-		SDL_Rect  r;
-		if (src_box)
-		{
-			r.x = src_box->x;
-			r.y = src_box->y;
-			r.w = src_box->w;
-			r.h = src_box->h;
-			src_rect = &r;
-		}
-
-		SDL_Rect dstrect;
-		dstrect.x = iDestX;
-		dstrect.y = iDestY;
-		SDL_BlitSurface(src->surface_.get(), src_rect, dst->surface_.get(), &dstrect);
+		r.x = src_box->x;
+		r.y = src_box->y;
+		r.w = src_box->w;
+		r.h = src_box->h;
+		src_rect = &r;
 	}
-	else if (src_bpp < dst_bpp)
-	{
-		SGPBox const* src_rect = src_box;
-		SGPBox        r;
-		if (!src_rect)
-		{
-			// Check Sizes, SRC size MUST be <= DEST size
-			if (dst->Height() < src->Height())
-			{
-				SLOGD("Incompatible height size given in Video Surface blit");
-				return;
-			}
-			if (dst->Width() < src->Width())
-			{
-				SLOGD("Incompatible height size given in Video Surface blit");
-				return;
-			}
 
-			r.x = 0;
-			r.y = 0;
-			r.w = src->Width();
-			r.h = src->Height();
-			src_rect = &r;
-		}
-
-		SGPVSurface::Lock lsrc(src);
-		SGPVSurface::Lock ldst(dst);
-		UINT8*  const s_buf  = lsrc.Buffer<UINT8>();
-		UINT32  const spitch = lsrc.Pitch();
-		UINT16* const d_buf  = ldst.Buffer<UINT16>();
-		UINT32  const dpitch = ldst.Pitch();
-		Blt8BPPDataSubTo16BPPBuffer(d_buf, dpitch, src, s_buf, spitch, iDestX, iDestY, src_rect);
-	}
-	else
-	{
-		SLOGD("Incompatible BPP values with src and dest Video Surfaces for blitting");
-	}
+	SDL_Rect dstrect;
+	dstrect.x = iDestX;
+	dstrect.y = iDestY;
+	SDL_BlitSurface(src->surface_.get(), src_rect, dst->surface_.get(), &dstrect);
 }
 
 
@@ -359,4 +316,15 @@ void FillVideoSurfaceWithStretch(SGPVSurface* const dst, SGPVSurface* const src)
 	srcRec.set(0, 0, src->Width(), src->Height());
 	dstRec.set(0, 0, dst->Width(), dst->Height());
 	BltStretchVideoSurface(dst, src, &srcRec, &dstRec);
+}
+
+SGPPaletteEntry const * SGPVSurface::GetPalette() const
+{
+	auto * palette = SDL_GetSurfacePalette(surface_.get());
+	return palette ? palette->colors : nullptr;
+}
+
+void DeleteVideoSurface(SGPVSurface const * vs)
+{
+	delete vs;
 }
