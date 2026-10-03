@@ -141,7 +141,6 @@ void MusicPoll(void)
 	INT32 iVol;
 
 	SoundServiceStreams();
-	SoundServiceRandom();
 
 	// Handle Sound every sound overhead time....
 	if ( COUNTERDONE( MUSICOVERHEAD )  )

@@ -13,6 +13,7 @@ using RandomSoundID = UINT32;
 // Sound error values (they're all the same)
 constexpr SoundManagerID NO_SAMPLE   = 0xffffffff;
 constexpr SoundManagerID SOUND_ERROR = 0xffffffff;
+constexpr RandomSoundID NO_RANDOM_SAMPLE = 0xffffffff;
 
 
 /* Opaque initialization of the sound manager. If noSound is true, the sound functions
@@ -52,14 +53,6 @@ RandomSoundID SoundPlayRandom(const char* pFilename, UINT32 time_min, UINT32 tim
  * If you are using the end of sample callbacks, you must call this function
  * periodically to check the sample's status. */
 void SoundServiceStreams(void);
-
-/* This function should be polled by the application if random samples are
- * used. The time marks on each are checked and if it is time to spawn a new
- * instance of the sound, the number already in existance are checked, and if
- * there is room, a new one is made and the count updated.
- * If random samples are not being used, there is no purpose in polling this
- * function. */
-void SoundServiceRandom(void);
 
 // Stops all currently playing sounds.
 void SoundStopAll(void);
