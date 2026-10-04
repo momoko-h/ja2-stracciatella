@@ -7,20 +7,19 @@
 *********************************************************************************/
 
 #include "SoundMan.h"
-#include "Random.h"
-#include "SGPFile.h"
 
 #include "ContentManager.h"
 #include "GameInstance.h"
 #include "Logger.h"
+#include "Random.h"
+#include "SGPFile.h"
 #include "Types.h"
 
-#include <optional>
-#include <random>
 #include <string_theory/format>
 #include <algorithm>
-#include <chrono>
 #include <memory>
+#include <optional>
+#include <random>
 #include <stdexcept>
 #include <variant>
 #include <vector>
@@ -50,9 +49,17 @@ namespace SoundMan {
 constexpr float SoundLibsConversionFactor{ 127.0f };
 // Convert an integer in the range [0..127] as used by the Miles Sound System
 // to a float in the range [0..1] as used by miniaudio.
-constexpr float MSStoMA(UINT32 value)
+constexpr float MSSVolumetoMA(UINT32 value)
 {
 	return float(std::min(value, 127U)) / SoundLibsConversionFactor;
+}
+
+// In MSS, a pan value of 0 shifts left, 63 and 64 do not shift and 127
+// shifts right. In miniaudio, -1 shifts left and +1 shifts right.
+constexpr float MSSPantoMA(UINT32 value)
+{
+	return MSSVolumetoMA(value);
+//	return float(std::min(value, 127U)) * (2.0f / SoundLibsConversionFactor) - 1.0f;
 }
 
 
@@ -152,11 +159,18 @@ struct SoundObject
 	std::variant<std::monostate, AudioFile, AudioBuffer> dataSource;
 
 	void (*endCallback)(void *);
-	void * callbackUserData; // Points to the memory buffer is the data source is an audio buffer
+	void * callbackUserData;
 
 	// The name that was passed to PlaySound(). Not really used but helps
 	// during debugging;
 	ST::string name;
+
+	// # of times we still have to play this sound.
+	UINT32 loops{ 1 };
+
+	// Random sounds are not automatically removed when their loop count
+	// drops to 0.
+	bool isRandom{ false };
 
 	~SoundObject()
 	{
@@ -170,23 +184,24 @@ ma_engine Engine;
 
 static void Start(SoundObject & so, UINT32 volume, UINT32 pan)
 {
-	ma_sound_set_volume(&so.sound, MSStoMA(volume));
-	ma_sound_set_pan(&so.sound, MSStoMA(pan));
+	ma_sound_set_volume(&so.sound, MSSVolumetoMA(volume));
+	ma_sound_set_pan(&so.sound, MSSPantoMA(pan));
 	ma_sound_start(&so.sound);
 }
 
 
-static ma_sound * FromID(SoundManagerID id)
+static auto FromID(SoundManagerID id)
 {
 	auto pos{ Sounds.find(id) };
-	return pos != Sounds.end() ? &pos->second.sound : nullptr;
+	return pos != Sounds.end() ? &pos->second : nullptr;
 }
 
 
 static void InitDataSource(ma_data_source * source, SoundObject & soundObject)
 {
-	Require(ma_sound_init_from_data_source(&Engine, source, 0, nullptr,
-		&soundObject.sound), "ma_sound_init_from_data_source");
+	Require(ma_sound_init_from_data_source(&Engine, source,
+		MA_SOUND_FLAG_NO_PITCH | MA_SOUND_FLAG_NO_SPATIALIZATION | MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC,
+		nullptr, &soundObject.sound), "ma_sound_init_from_data_source");
 }
 
 
@@ -203,11 +218,11 @@ static auto GetSoundObject()
 static auto GetSoundObject(char const * filename)
 {
 	auto pos{ GetSoundObject() };
-	SoundObject & so{ pos->second };
+	SoundObject & soundObject{ pos->second };
 
-	auto & audioFile{ so.dataSource.emplace<SoundObject::AudioFile>(filename) };
+	auto & audioFile{ soundObject.dataSource.emplace<SoundObject::AudioFile>(filename) };
 
-	InitDataSource(&audioFile.decoder, so);
+	InitDataSource(&audioFile.decoder, soundObject);
 	return pos;
 }
 
@@ -239,7 +254,10 @@ static auto GetSoundObject(std::vector<UINT8> & rawData, ma_format format,
  *          otherwise. */
 static ma_sound * SoundGetByID(SoundManagerID id)
 {
-	return fSoundSystemInit ? FromID(id) : nullptr;
+	if (!fSoundSystemInit) return nullptr;
+
+	auto soundObject = FromID(id);
+	return soundObject ? &soundObject->sound : nullptr;
 }
 
 
@@ -249,24 +267,13 @@ std::optional<decltype(GetSoundObject())> SoundPlay(const char * pFilename,
 	if (!fSoundSystemInit) return std::nullopt;
 
 	auto emplaceResult{ GetSoundObject(pFilename) };
-	auto && [ id, soundObject] { *emplaceResult };
-	ma_sound * sound{ &soundObject.sound };
+	auto & soundObject { emplaceResult->second };
 
-	ma_sound_set_looping(sound, loop > 1);
-
-	if (end_callback)
-	{
-		soundObject.endCallback = end_callback;
-		soundObject.callbackUserData = data;
-
-		ma_sound_set_end_callback(sound, [](void * userData, ma_sound *)
-		{
-			auto cbd  { reinterpret_cast<SoundObject *>(userData) };
-			cbd->endCallback(cbd->callbackUserData);
-		}, &soundObject);
-	}
-
+	soundObject.endCallback = end_callback;
+	soundObject.callbackUserData = data;
 	soundObject.name = pFilename;
+	soundObject.loops = loop;
+
 	return emplaceResult;
 }
 }
@@ -301,7 +308,6 @@ SoundManagerID SoundPlay(const char * pFilename, UINT32 volume, UINT32 pan,
 
 	auto && [ id, soundObject] { **optionalEmplaceResult };
 
-	soundObject.name = pFilename;
 	Start(soundObject, volume, pan);
 	return id;
 }
@@ -313,7 +319,7 @@ SoundManagerID SoundPlay(const char * pFilename, UINT32 volume, UINT32 pan,
 SoundManagerID SoundPlayRawPCMData(char const * name, UINT8 channels,
 	UINT8 depth, UINT32 rate, std::vector<UINT8> & buf, UINT32 volume, UINT32 pan)
 {
-	SLOGI("SoundPlayRawPCMData {}", name);
+	SLOGD("SoundPlayRawPCMData {}", name);
 
 	if (buf.empty()) return SOUND_ERROR;
 
@@ -362,7 +368,7 @@ bool SoundSetVolume(SoundManagerID id, UINT32 uiVolume)
 	ma_sound * const sound { SoundGetByID(id) };
 	if (!sound) return FALSE;
 
-	ma_sound_set_volume(sound, MSStoMA(uiVolume));
+	ma_sound_set_volume(sound, MSSVolumetoMA(uiVolume));
 	return TRUE;
 }
 
@@ -372,7 +378,7 @@ bool SoundSetPan(SoundManagerID id, UINT32 uiPan)
 	ma_sound * const sound { SoundGetByID(id) };
 	if (!sound) return FALSE;
 
-	ma_sound_set_pan(sound, MSStoMA(uiPan));
+	ma_sound_set_pan(sound, MSSPantoMA(uiPan));
 	return TRUE;
 }
 
@@ -385,21 +391,32 @@ UINT32 SoundGetVolume(SoundManagerID id)
 	return static_cast<UINT32>(ma_sound_get_volume(sound) * SoundLibsConversionFactor);
 }
 
-using namespace std::chrono;
 
 namespace SoundMan
 {
+auto RndRange(UINT32 min, UINT32 max)
+{
+	return std::uniform_int_distribution{ min, max }(gRandomEngine);
+};
+
 struct RandomSound
 {
 	RandomSoundID  ownID;
 	SoundManagerID soundID;
-	steady_clock::time_point startTime;
+	UINT32 timeMin, timeMax;
+	UINT32 volMin, volMax;
+	UINT32 panMin, panMax;
 
-	RandomSound(milliseconds startDelay)
-		: ownID{ CreateUniqueID() }
-		, soundID{ NO_SAMPLE }
-		, startTime{ steady_clock::now() + startDelay }
+	void Queue(SoundObject & soundObject) const
 	{
+		ma_sound * sound{ &soundObject.sound };
+		UINT32 delay{ RndRange(timeMin, timeMax) };
+		ma_sound_set_start_time_in_milliseconds(sound,
+			ma_engine_get_time_in_milliseconds(&Engine) + delay);
+		Start(soundObject, RndRange(volMin, volMax), RndRange(panMin, panMax));
+
+		SLOGD("Queued random sound '{}' (ID {}), starting in {} ms",
+			soundObject.name, ownID, delay);
 	}
 };
 
@@ -407,19 +424,14 @@ std::vector<RandomSound> RandomSounds;
 }
 
 
-UINT32 SoundPlayRandom(const char* pFilename, UINT32 time_min, UINT32 time_max,
-	UINT32 vol_min, UINT32 vol_max, UINT32 pan_min, UINT32 pan_max)
+RandomSoundID SoundPlayRandom(const char* pFilename,
+	UINT32 time_min, UINT32 time_max, UINT32 vol_min, UINT32 vol_max,
+	UINT32 pan_min, UINT32 pan_max)
 {
-	auto rndRange = [](UINT32 min, UINT32 max)
-	{
-		return std::uniform_int_distribution{ min, max }(gRandomEngine);
-	};
-
-	SLOGI("playing random Sound: \"{}\"", pFilename);
 	if (!fSoundSystemInit) return NO_RANDOM_SAMPLE;
 
-	milliseconds startDelay{ rndRange(time_min, time_max) };
-	auto & randomSound{ RandomSounds.emplace_back(startDelay) };
+	auto & randomSound{ RandomSounds.emplace_back(CreateUniqueID(), NO_SAMPLE,
+		time_min, time_max, vol_min, vol_max, pan_min, pan_max) };
 
 	auto optionalEmplaceResult{ SoundPlay(pFilename, 1, nullptr, nullptr) };
 	if (!optionalEmplaceResult)
@@ -429,14 +441,10 @@ UINT32 SoundPlayRandom(const char* pFilename, UINT32 time_min, UINT32 time_max,
 	}
 
 	auto & soundObject{ (**optionalEmplaceResult).second };
-	soundObject.name = pFilename;
-
-	ma_sound * sound{ &soundObject.sound };
-	ma_sound_set_volume(sound, MSStoMA(rndRange(vol_min, vol_max)));
-	ma_sound_set_pan   (sound, MSStoMA(rndRange(pan_min, pan_max)));
-
 	randomSound.soundID = (**optionalEmplaceResult).first;
-	SLOGI("Queued random sound '{}' (ID {})", pFilename, randomSound.ownID);
+	soundObject.isRandom = true;
+
+	randomSound.Queue(soundObject);
 	return randomSound.ownID;
 }
 
@@ -483,38 +491,41 @@ void SoundServiceStreams()
 	// Garbage collect all sounds that have already finished playing.
 	for (auto it{ Sounds.begin() }; it != Sounds.end(); )
 	{
-		if (ma_sound_at_end(&it->second.sound))
-			it = Sounds.erase(it);
-		else
-			++it;
-	}
+		auto & soundObject{ it-> second };
 
-	bool finishedServicingRandom;
-	do
-	{
-		for (auto & random : RandomSounds)
+		if (!soundObject.isRandom)
 		{
-			ma_sound * sound{ FromID(random.soundID) };
-
-			if (!sound)
+			if (ma_sound_at_end(&soundObject.sound))
 			{
-				// This random sound has finished playing and was removed in
-				// the garbage collection loop above.
-				SoundStopRandom(random.ownID);
+				if (--soundObject.loops == 0)
+				{
+					if (soundObject.endCallback)
+					{
+						soundObject.endCallback(soundObject.callbackUserData);
+					}
 
-				// We must restart the for loop.
-				finishedServicingRandom = false;
-				break;
-			}
-
-			if (random.startTime <= steady_clock::now() &&
-				!ma_sound_is_playing(sound))
-			{
-				SLOGI("Starting random sound (ID {})", random.ownID);
-				ma_sound_start(sound);
+					it = Sounds.erase(it);
+					continue;
+				}
+				else
+				{
+					ma_sound_start(&soundObject.sound);
+				}
 			}
 		}
 
-		finishedServicingRandom = true;
-	} while (!finishedServicingRandom);
+		++it;
+	}
+
+	for (auto const& random : RandomSounds)
+	{
+		auto * soundObject{ FromID(random.soundID) };
+		if (!soundObject) continue;
+
+		if (auto * sound{ &soundObject->sound }; ma_sound_at_end(sound))
+		{
+			// Finished playing, restart (miniaudio handles the wait time).
+			random.Queue(*soundObject);
+		}
+	}
 }
